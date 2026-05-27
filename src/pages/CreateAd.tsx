@@ -1,0 +1,588 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage, handleFirestoreError, OperationType } from '../firebase';
+import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
+import { CITIES, Ad, MarketplaceSettings } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
+import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw } from 'lucide-react';
+import { compressImage } from '../lib/imageUtils';
+
+const CreateAd = () => {
+  const { categories } = useSettings();
+  const { id } = useParams();
+  const { user, profile, isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [originalAd, setOriginalAd] = useState<Ad | null>(null);
+
+  const prefill = location.state?.prefill;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading]);
+
+  const [formData, setFormData] = useState({
+    title: prefill?.title || '',
+    description: prefill?.description || '',
+    price: prefill?.price?.toString() || '',
+    images: [] as string[],
+    city: prefill?.city || CITIES[0],
+    category: prefill?.category || categories[0] || 'Outros',
+    plan: 'free' as 'free' | 'intermediate' | 'premium',
+    duration: 30, // Default for free
+    contactEmail: '',
+    externalUrl: ''
+  });
+  const [settings, setSettings] = useState<MarketplaceSettings | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const uploadRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchSettings();
+    if (id) {
+      fetchAd();
+    }
+  }, [id]);
+
+  const fetchSettings = async () => {
+    try {
+      const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
+      if (settingsSnap.exists()) {
+        setSettings(settingsSnap.data());
+      }
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+    }
+  };
+
+  const fetchAd = async () => {
+    setFetching(true);
+    try {
+      const docRef = doc(db, 'ads', id!);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Ad;
+        if (data.sellerId !== user?.uid && !isAdmin) {
+          navigate('/');
+          return;
+        }
+        setOriginalAd(data);
+        setFormData({
+          title: data.title,
+          description: data.description,
+          price: data.price?.toString() || '',
+          images: data.images || (data.imageUrl ? [data.imageUrl] : []),
+          city: data.city,
+          category: data.category,
+          plan: data.plan || 'free',
+          duration: 30, // Duration is only used for calculation on submit
+          contactEmail: data.contactEmail || '',
+          externalUrl: data.externalUrl || ''
+        });
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.GET, `ads/${id}`);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const maxAllowed = React.useMemo(() => {
+    if (formData.category === 'Imigração') return 2;
+    if (!settings) return 1;
+    return settings.maxImages?.[formData.plan] || (formData.plan === 'free' ? 1 : formData.plan === 'intermediate' ? 3 : 5);
+  }, [settings, formData.plan, formData.category]);
+
+  // Se o utilizador selecionar 'Imigração' mas tiver mais do que 2 imagens do produto, corta para 2.
+  useEffect(() => {
+    if (formData.category === 'Imigração' && formData.images.length > 2) {
+      alert('A categoria Imigração permite apenas 2 fotos. As imagens excedentes foram removidas.');
+      setFormData(prev => ({
+        ...prev,
+        images: prev.images.slice(0, 2)
+      }));
+    }
+  }, [formData.category]);
+
+  const processFiles = async (files: File[]) => {
+    if (uploadRef.current) return;
+
+    const currentImagesCount = formData.images.length;
+    const remainingSlots = maxAllowed - currentImagesCount;
+
+    if (remainingSlots <= 0) {
+      alert(`Limite de ${maxAllowed} imagens atingido para este plano.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const filesToUpload = files.slice(0, remainingSlots);
+
+    // List any oversized files to warn the user
+    const oversized = filesToUpload.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversized.length > 0) {
+      alert(`As seguintes imagens excedem o limite de 5MB e foram puladas:\n${oversized.map(f => f.name).join('\n')}`);
+    }
+
+    const filesToProceed = filesToUpload.filter(file => file.size <= 5 * 1024 * 1024);
+    if (filesToProceed.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    uploadRef.current = true;
+    setUploading(true);
+
+    const fileToBase64 = (blob: Blob): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    };
+
+    try {
+      const uploadPromises = filesToProceed.map(async (file, index) => {
+        const compressedBlob = await compressImage(file, 1200, 0.8);
+        const base64Data = await fileToBase64(compressedBlob);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: base64Data,
+            filename: file.name,
+            userId: user?.uid
+          }),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || 'Falha no upload do servidor proxy');
+        }
+
+        const data = await response.json();
+        return data.url as string;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      const validUrls = urls.filter((url): url is string => url !== null);
+
+      if (validUrls.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...validUrls].slice(0, maxAllowed)
+        }));
+      }
+
+    } catch (err) {
+      console.error('Erro no upload:', err);
+      alert('Erro ao carregar imagens. Por favor, tente novamente.');
+    } finally {
+      setUploading(false);
+      uploadRef.current = false;
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []) as File[];
+    processFiles(files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files || []) as File[];
+    processFiles(files);
+  };
+  const removeImage = async (index: number) => {
+    setFormData(prev => {
+      const imageUrl = prev.images[index];
+      const newImages = prev.images.filter((_, i) => i !== index);
+      
+      // Optional: Delete from storage if it's a firebase storage URL
+      if (imageUrl && imageUrl.includes('firebasestorage.googleapis.com')) {
+        const imageRef = ref(storage, imageUrl);
+        deleteObject(imageRef).catch(err => {
+          console.error('Error deleting image from storage:', err);
+        });
+      }
+      
+      return { ...prev, images: newImages };
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !profile) {
+      alert('Erro ao carregar o seu perfil. Por favor, tente recarregar a página.');
+      return;
+    }
+
+    if (!profile.phone) {
+      alert('Por favor, adicione seu telemóvel no perfil antes de criar um anúncio.');
+      navigate('/profile');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (!formData.title.trim() || !formData.description.trim()) {
+        alert('Por favor, preencha o título e a descrição do seu anúncio.');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.images.length === 0) {
+        alert('Por favor, carregue pelo menos uma imagem para o seu anúncio.');
+        setLoading(false);
+        return;
+      }
+
+      const adId = id || doc(collection(db, 'ads')).id;
+      
+      // Calculate expiration date
+      let days = 30;
+      if (settings?.planDurations) {
+        if (formData.plan === 'free') {
+          days = formData.duration;
+        } else {
+          days = settings.planDurations[formData.plan] || 30;
+        }
+      } else {
+        // Fallback defaults
+        if (formData.plan === 'free') days = formData.duration;
+        else if (formData.plan === 'intermediate') days = 180;
+        else if (formData.plan === 'premium') days = 365;
+      }
+
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + days);
+
+      const adData = {
+        id: adId,
+        title: formData.title,
+        description: formData.description,
+        price: formData.category === 'Imigração' ? 0 : (formData.price ? parseFloat(formData.price) : 0),
+        imageUrl: formData.images[0], // Primary image
+        images: formData.images,
+        city: formData.city,
+        category: formData.category,
+        sellerId: id && originalAd ? originalAd.sellerId : user.uid,
+        sellerPhone: id && originalAd ? originalAd.sellerPhone : profile.phone,
+        sellerName: id && originalAd ? originalAd.sellerName : profile.name,
+        status: isAdmin && id ? (originalAd?.status || 'pending') : 'pending',
+        adStatus: id && originalAd ? originalAd.adStatus : 'active',
+        plan: formData.plan,
+        expirationDate: expirationDate,
+        userNotified: isAdmin && id ? true : false,
+        createdAt: id && originalAd ? originalAd.createdAt : serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        contactEmail: formData.category === 'Imigração' ? (formData.contactEmail || '') : '',
+        externalUrl: formData.category === 'Imigração' ? (formData.externalUrl || '') : ''
+      };
+
+      await setDoc(doc(db, 'ads', adId), adData, { merge: true });
+      if (id) {
+        if (isAdmin && originalAd?.sellerId !== user.uid) {
+          alert('Anúncio atualizado com sucesso (Edição de Administrador).');
+          navigate('/admin/ads');
+        } else {
+          alert('Anúncio atualizado! O seu anúncio voltou para a fila de aprovação do administrador.');
+          navigate('/profile');
+        }
+      } else {
+        alert('Anúncio enviado! Receberá um alerta quando o seu anúncio estiver aprovado.');
+        navigate('/profile');
+      }
+    } catch (err) {
+      handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, `ads/${id || 'new'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (fetching) return <div className="text-center py-20">A carregar...</div>;
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 mb-6 font-medium transition-colors">
+        <ChevronLeft size={20} /> Voltar
+      </button>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100"
+      >
+        <h1 className="text-3xl font-bold text-slate-900 mb-8">{id ? 'Editar Anúncio' : 'Novo Anúncio'}</h1>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Image Upload */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Imagens do Produto</label>
+              <span className="text-xs font-bold text-slate-400">
+                {formData.images.length} de {maxAllowed} imagens
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+              <AnimatePresence mode="popLayout">
+                {formData.images.map((url, index) => (
+                  url && (
+                    <motion.div
+                      key={`${url}-${index}`}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="aspect-square bg-slate-100 rounded-2xl overflow-hidden relative group border border-slate-200"
+                    >
+                      <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <X size={14} />
+                      </button>
+                      {index === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-indigo-600 text-white text-[10px] font-bold py-1 text-center uppercase tracking-tighter">
+                          Principal
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                ))}
+              </AnimatePresence>
+
+              {formData.images.length < maxAllowed && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  disabled={uploading}
+                  className={`aspect-square border-2 border-dashed rounded-2xl flex items-center justify-center relative transition-colors duration-200 group disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDragging
+                      ? 'border-indigo-500 bg-indigo-50/50 text-indigo-600 scale-[1.02]'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <div className="text-center p-4">
+                    {uploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <RefreshCcw className="animate-spin text-indigo-600" size={32} />
+                        <span className="text-xs font-bold text-indigo-600">A carregar...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Plus className={`mx-auto mb-1 transition-colors ${isDragging ? 'text-indigo-600' : 'text-slate-300 group-hover:text-indigo-400'}`} size={32} />
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                          {isDragging ? 'Largar aqui' : 'Arrastar ou Clique'}
+                        </p>
+                        <p className="text-[9px] text-slate-400 mt-0.5 uppercase tracking-tighter font-semibold">
+                          (Fotos)
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">
+              * A primeira imagem será a principal. Máximo 5MB por arquivo. Otimização automática aplicada.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Título do Anúncio</label>
+              <div className="relative">
+                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                  placeholder="Ex: Guia Completo de Imigração para Portugal"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Categoria</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none"
+              >
+                {categories
+                  .filter(c => c !== 'Imigração' || isAdmin || profile?.role === 'admin' || profile?.role === 'moderator')
+                  .map((c, index) => <option key={`category-${c}-${index}`} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {formData.category !== 'Imigração' ? (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Preço (€)</label>
+                <div className="relative">
+                  <Euro className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">E-mail de Contacto (Opcional)</label>
+                  <input
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="exemplo@dominio.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Link Externo / Website (URL)</label>
+                  <input
+                    type="url"
+                    value={formData.externalUrl}
+                    onChange={(e) => setFormData({ ...formData, externalUrl: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="https://exemplo.com"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cidade / Região</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <select
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none"
+                >
+                  {CITIES.map((c, index) => <option key={`city-${c}-${index}`} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-4 md:col-span-2">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Plano de Duração</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, plan: 'free' })}
+                  className={`p-4 rounded-2xl border-2 transition-all text-left ${formData.plan === 'free' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
+                >
+                  <p className="font-bold text-slate-900">Plano Gratuito</p>
+                  <p className="text-xs text-slate-500 mb-2">Ideal para vendas rápidas</p>
+                  <select
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0, plan: 'free' })}
+                    className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm outline-none"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value={15}>15 Dias</option>
+                    <option value={30}>30 Dias</option>
+                  </select>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, plan: 'intermediate' })}
+                  className={`p-4 rounded-2xl border-2 transition-all text-left ${formData.plan === 'intermediate' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
+                >
+                  <p className="font-bold text-slate-900">Plano Intermédio</p>
+                  <p className="text-xs text-slate-500 mb-2">Maior visibilidade</p>
+                  <p className="text-sm font-bold text-indigo-600">180 Dias</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, plan: 'premium' })}
+                  className={`p-4 rounded-2xl border-2 transition-all text-left ${formData.plan === 'premium' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
+                >
+                  <p className="font-bold text-slate-900">Plano Premium</p>
+                  <p className="text-xs text-slate-500 mb-2">Duração máxima</p>
+                  <p className="text-sm font-bold text-indigo-600">1 Ano</p>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Descrição Detalhada</label>
+              <div className="relative">
+                <FileText className="absolute left-4 top-6 text-slate-400" size={20} />
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                  rows={6}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all resize-none"
+                  placeholder="Descreva o estado do produto, acessórios incluídos, etc."
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'A processar...' : id ? 'Atualizar Anúncio' : 'Publicar Anúncio'}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+export default CreateAd;

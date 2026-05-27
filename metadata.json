@@ -1,0 +1,8 @@
+{
+  "name": "Mercado Luso Clean",
+  "description": "Marketplace moderno para Portugal, focado em simplicidade, conexão via WhatsApp e com deploy limpo sem caches legados.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

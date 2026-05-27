@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin", "moderator"] },
+        "acceptedTerms": { "type": "boolean" },
+        "acceptedTermsAt": { "type": "string", "format": "date-time" },
+        "ratingAverage": { "type": "number" },
+        "ratingCount": { "type": "number" }
+      },
+      "required": ["uid", "name", "email", "phone", "role", "acceptedTerms", "acceptedTermsAt"]
+    },
+    "Ad": {
+      "title": "Ad",
+      "description": "Marketplace advertisement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "city": { "type": "string" },
+        "category": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "sellerPhone": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "expired", "archived", "sold"] },
+        "adStatus": { "type": "string", "enum": ["active", "near_expiration", "expired", "archived", "sold"] },
+        "plan": { "type": "string", "enum": ["free", "intermediate", "premium"] },
+        "expirationDate": { "type": "string", "format": "date-time" },
+        "renewalHistory": { "type": "array" },
+        "views": { "type": "number" },
+        "whatsappClicks": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "description", "imageUrl", "city", "category", "sellerId", "sellerPhone", "sellerName", "status", "createdAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global marketplace settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "planDurations": { "type": "object" },
+        "maxImages": { "type": "object" },
+        "expirationAction": { "type": "string", "enum": ["archive", "delete"] },
+        "warningDays": { "type": "number" }
+      },
+      "required": ["id", "planDurations", "expirationAction", "warningDays"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System notification for users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["expiration_warning", "ad_expired", "ad_approved"] },
+        "adId": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "message", "type", "read", "createdAt"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "User's favorite advertisements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "adId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "adId", "createdAt"]
+    },
+    "Metric": {
+      "title": "Metric",
+      "description": "Daily aggregated metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "users": { "type": "object" },
+        "ads": { "type": "object" },
+        "interactions": { "type": "object" },
+        "notifications": { "type": "object" }
+      },
+      "required": ["id", "date", "users", "ads", "interactions", "notifications"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User report for an advertisement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "adId": { "type": "string" },
+        "userId": { "type": "string" },
+        "reason": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved", "dismissed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "adId", "userId", "reason", "status", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User review after a transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "adId": { "type": "string" },
+        "adTitle": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "success": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "adId", "adTitle", "sellerId", "buyerName", "rating", "comment", "success", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/ads/{adId}": {
+      "schema": "Ad",
+      "description": "Advertisements"
+    },
+    "/settings/{settingsId}": {
+      "schema": "Settings",
+      "description": "Global settings"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": "Favorite",
+      "description": "User favorites"
+    },
+    "/metrics/{metricId}": {
+      "schema": "Metric",
+      "description": "Daily metrics"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Ad reports"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "User reviews"
+    }
+  }
+}
