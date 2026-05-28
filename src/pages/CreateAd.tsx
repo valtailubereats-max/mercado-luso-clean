@@ -142,39 +142,16 @@ const CreateAd = () => {
     uploadRef.current = true;
     setUploading(true);
 
-    const fileToBase64 = (blob: Blob): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    };
-
     try {
-      const uploadPromises = filesToProceed.map(async (file, index) => {
+      const uploadPromises = filesToProceed.map(async (file) => {
         const compressedBlob = await compressImage(file, 1200, 0.8);
-        const base64Data = await fileToBase64(compressedBlob);
+        const fileName = `${Date.now()}_${file.name}`;
+        const imageRef = ref(storage, `ads/${fileName}`);
         
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            image: base64Data,
-            filename: file.name,
-            userId: user?.uid
-          }),
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || 'Falha no upload do servidor proxy');
-        }
-
-        const data = await response.json();
-        return data.url as string;
+        // Upload directly to Firebase Storage
+        const uploadResult = await uploadBytes(imageRef, compressedBlob);
+        const downloadUrl = await getDownloadURL(uploadResult.ref);
+        return downloadUrl;
       });
 
       const urls = await Promise.all(uploadPromises);
@@ -188,8 +165,8 @@ const CreateAd = () => {
       }
 
     } catch (err) {
-      console.error('Erro no upload:', err);
-      alert('Erro ao carregar imagens. Por favor, tente novamente.');
+      console.error('Erro no upload real:', err);
+      alert(`Erro ao carregar imagens: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setUploading(false);
       uploadRef.current = false;
