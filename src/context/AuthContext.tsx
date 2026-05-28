@@ -42,9 +42,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    const checkDemoUser = () => {
+      const stored = localStorage.getItem('demo_user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setUser({
+            uid: parsed.uid,
+            email: parsed.email,
+            displayName: parsed.displayName,
+            emailVerified: true,
+            isAnonymous: false,
+            providerData: [],
+          } as any);
+          setProfile({
+            uid: parsed.uid,
+            name: parsed.displayName,
+            email: parsed.email,
+            phone: parsed.phone || '',
+            role: parsed.role || 'user',
+            acceptedTerms: true,
+          } as any);
+          setLoading(false);
+          return true;
+        } catch (e) {
+          console.error("Error parsing demo user session:", e);
+        }
+      }
+      return false;
+    };
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
       if (u) {
+        setUser(u);
         // Use finally to guarantee loading is unset even if Firestore is completely offline/timed out
         fetchProfile(u.uid).finally(() => {
           setLoading(false);
@@ -53,11 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateDoc(doc(db, 'users', u.uid), {
           lastLoginAt: serverTimestamp()
         }).catch((err) => {
-          console.error("Error updating last login:", err);
+          console.error("Error updating last login in Firestore:", err);
         });
       } else {
-        setProfile(null);
-        setLoading(false);
+        const hasDemo = checkDemoUser();
+        if (!hasDemo) {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
       }
     });
     return unsubscribe;

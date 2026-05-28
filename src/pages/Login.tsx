@@ -11,7 +11,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, ShieldCheck, Mail, Lock, User as UserIcon, ArrowRight, Github, Eye, EyeOff } from 'lucide-react';
+import { ShoppingBag, ShieldCheck, Mail, Lock, User as UserIcon, ArrowRight, Github, Eye, EyeOff, Sparkles, Info } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,6 +26,32 @@ const Login = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  const handleDemoLogin = (role: 'admin' | 'user') => {
+    if (!acceptedTerms) {
+      setError('Deve aceitar os Termos de Uso para continuar.');
+      return;
+    }
+    const demoProfile = role === 'admin' 
+      ? {
+          uid: 'valtair-demo-admin-uid',
+          email: 'valtailubereats@gmail.com',
+          displayName: 'Valtair Santos (Admin)',
+          role: 'admin',
+          phone: '+351 912 345 678'
+        }
+      : {
+          uid: 'utilizador-demo-uid',
+          email: 'visitante@mercadoluso.pt',
+          displayName: 'Utilizador de Teste',
+          role: 'user',
+          phone: '+351 922 111 222'
+        };
+
+    localStorage.setItem('demo_user', JSON.stringify(demoProfile));
+    navigate('/');
+    window.location.reload();
+  };
 
   const handleGoogleLogin = async () => {
     if (!acceptedTerms) {
@@ -290,24 +316,6 @@ const Login = () => {
 
         {mode !== 'forgot' && (
           <>
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-100"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
-                <span className="bg-white px-4 text-slate-400">Ou continuar com</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-50 hover:border-indigo-200 transition-all disabled:opacity-50 mb-8"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-              <span>Google</span>
-            </button>
-
             <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
               <input
                 type="checkbox"
@@ -319,6 +327,57 @@ const Login = () => {
               <label htmlFor="terms" className="text-xs text-slate-600 cursor-pointer leading-relaxed font-medium">
                 Li e concordo com os <Link to="/terms" className="text-indigo-600 font-bold hover:underline">Termos de Uso</Link> e reconheço que a plataforma é apenas intermediária.
               </label>
+            </div>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-100"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+                <span className="bg-white px-4 text-slate-400">Aceder com Chave Google</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-50 hover:border-indigo-200 transition-all disabled:opacity-50 mb-6"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+              <span>Google</span>
+            </button>
+
+            {/* SECCÃO AMIGÁVEL DO MODO DE DEMONSTRAÇÃO DO PREVIEW */}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6 text-left">
+              <div className="flex items-start gap-2.5 mb-3">
+                <Info size={16} className="text-emerald-700 mt-0.5 shrink-0" />
+                <div>
+                  <h4 className="text-xs font-extrabold text-emerald-900">Restrições de Cookies ou Pop-ups?</h4>
+                  <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed font-medium">
+                    Se estiver de visita ou se o login do Google/E-mail estiver com problemas de bloqueio pelo navegador nesta Sandbox, use os acessos rápidos abaixo para testar instantaneamente:
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin('admin')}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 rounded-xl text-xs font-black shadow-sm transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles size={14} />
+                  <span>Entrar como Administrador (Valtair)</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin('user')}
+                  className="w-full bg-white hover:bg-slate-50 text-slate-700 py-2.5 px-4 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <UserIcon size={14} />
+                  <span>Entrar como Utilizador de Teste</span>
+                </button>
+              </div>
             </div>
           </>
         )}

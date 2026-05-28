@@ -135,8 +135,10 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('demo_user');
     await signOut(auth);
     navigate('/');
+    window.location.reload();
   };
 
   const handleShare = async () => {
