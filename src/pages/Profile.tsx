@@ -270,17 +270,20 @@ const Profile = () => {
             <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cidade</label>
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-              <select
+              <input
+                type="text"
+                list="profile-cities-list"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
+                placeholder="Escreva ou escolha a sua cidade"
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium"
                 required
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none"
-              >
-                <option value="">Selecione uma cidade</option>
+              />
+              <datalist id="profile-cities-list">
                 {CITIES.map((c, index) => (
-                  <option key={`city-${c}-${index}`} value={c}>{c}</option>
+                  <option key={`profile-city-datalist-${c}-${index}`} value={c} />
                 ))}
-              </select>
+              </datalist>
             </div>
           </div>
           <div className="md:col-span-2">

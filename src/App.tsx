@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, PlusCircle, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle } from 'lucide-react';
+import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle } from 'lucide-react';
 import { auth, db } from './firebase';
 import { signOut } from 'firebase/auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -153,6 +153,14 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
     } catch (err) { console.error('Error sharing:', err); }
   };
 
+  const handlePublishClick = () => {
+    if (user) {
+      navigate('/create-ad');
+    } else {
+      navigate('/login?mode=register');
+    }
+  };
+
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -186,6 +194,9 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
+            <button onClick={handlePublishClick} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 cursor-pointer transition-colors">
+              <Plus size={20} /> <span>Publicar</span>
+            </button>
             <button onClick={handleShare} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1">
               <Share2 size={20} /> <span>Partilhar</span>
             </button>
@@ -272,6 +283,9 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
 
           {/* Mobile Menu */}
           <div className="md:hidden flex items-center gap-2">
+            <button onClick={handlePublishClick} title="Publicar" className="text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center">
+              <Plus size={24}/>
+            </button>
             <button onClick={handleShare} className="text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors"><Share2 size={24}/></button>
             <button onClick={() => setIsOpen(!isOpen)} className="text-slate-600 p-2">{isOpen ? <X size={28}/> : <Menu size={28}/>}</button>
           </div>

@@ -3,6 +3,10 @@ import { motion } from 'motion/react';
 import { Shield, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const Terms = () => {
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <motion.div

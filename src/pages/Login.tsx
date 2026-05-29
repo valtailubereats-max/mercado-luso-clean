@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   signInWithPopup, 
   GoogleAuthProvider, 
@@ -15,10 +15,21 @@ import { ShoppingBag, ShieldCheck, Mail, Lock, User as UserIcon, ArrowRight, Git
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  
+  const queryMode = searchParams.get('mode');
+  const initialMode = (queryMode === 'register' || queryMode === 'login' || queryMode === 'forgot') ? queryMode : 'login';
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
+
+  useEffect(() => {
+    const qm = searchParams.get('mode');
+    if (qm === 'register' || qm === 'login' || qm === 'forgot') {
+      setMode(qm);
+    }
+  }, [searchParams]);
   
   // Email/Password states
   const [email, setEmail] = useState('');
@@ -254,7 +265,7 @@ const Login = () => {
                 placeholder="Nome completo"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium"
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
               />
             </div>
           )}
@@ -265,7 +276,7 @@ const Login = () => {
               placeholder="E-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium"
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
             />
           </div>
           {mode !== 'forgot' && (
@@ -276,7 +287,7 @@ const Login = () => {
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium"
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
               />
               <button
                 type="button"
