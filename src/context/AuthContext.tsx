@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, withTimeout } from '../firebase';
 import { UserProfile } from '../types';
 
@@ -9,7 +9,9 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  favorites: string[]; // Novo: Lista global de IDs favoritos
   refreshProfile: () => Promise<void>;
+  toggleFavoriteGlobal: (adId: string) => void; // Novo: Função para atualizar a lista localmente
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,88 +19,77 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  favorites: [],
   refreshProfile: async () => {},
+  toggleFavoriteGlobal: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [favorites, setFavorites] = useState<string[]>([]); // Estado global dos favoritos
   const [loading, setLoading] = useState(true);
+
+  // Função para buscar os favoritos do usuário (carrega tudo de uma vez)
+  const fetchFavorites = async (uid: string) => {
+    try {
+      const q = query(collection(db, 'favorites'), where('userId', '==', uid));
+      const snap = await getDocs(q);
+      const favIds = snap.docs.map(doc => doc.data().adId);
+      setFavorites(favIds);
+    } catch (err) {
+      console.error("Error fetching favorites:", err);
+    }
+  };
 
   const fetchProfile = async (uid: string) => {
     try {
       const docRef = doc(db, 'users', uid);
-      // Fetch with threshold timeout (45 seconds) to prevent infinite hang if offline
       const docSnap = await withTimeout(getDoc(docRef), 45000);
       if (docSnap.exists()) {
         setProfile(docSnap.data() as UserProfile);
-      } else {
-        setProfile(null);
       }
     } catch (err) {
-      console.error("Error fetching profile from Firestore:", err);
-      setProfile(null);
+      console.error("Error fetching profile:", err);
     }
   };
 
-  useEffect(() => {
-    const checkDemoUser = () => {
-      const stored = localStorage.getItem('demo_user');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setUser({
-            uid: parsed.uid,
-            email: parsed.email,
-            displayName: parsed.displayName,
-            emailVerified: true,
-            isAnonymous: false,
-            providerData: [],
-          } as any);
-          setProfile({
-            uid: parsed.uid,
-            name: parsed.displayName,
-            email: parsed.email,
-            phone: parsed.phone || '',
-            role: parsed.role || 'user',
-            acceptedTerms: true,
-          } as any);
-          setLoading(false);
-          return true;
-        } catch (e) {
-          console.error("Error parsing demo user session:", e);
-        }
-      }
-      return false;
-    };
+  // Função para adicionar/remover da lista local (evita nova leitura após o clique)
+  const toggleFavoriteGlobal = (adId: string) => {
+    setFavorites(prev => 
+      prev.includes(adId) ? prev.filter(id => id !== adId) : [...prev, adId]
+    );
+  };
 
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
-        // Use finally to guarantee loading is unset even if Firestore is completely offline/timed out
-        fetchProfile(u.uid).finally(() => {
+        // Carrega Perfil e Favoritos em paralelo para ganhar tempo
+        Promise.all([
+          fetchProfile(u.uid),
+          fetchFavorites(u.uid)
+        ]).finally(() => {
           setLoading(false);
         });
-        // Non-blocking background login update
+
         updateDoc(doc(db, 'users', u.uid), {
           lastLoginAt: serverTimestamp()
-        }).catch((err) => {
-          console.error("Error updating last login in Firestore:", err);
-        });
+        }).catch(() => {});
       } else {
-        const hasDemo = checkDemoUser();
-        if (!hasDemo) {
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-        }
+        setUser(null);
+        setProfile(null);
+        setFavorites([]);
+        setLoading(false);
       }
     });
     return unsubscribe;
   }, []);
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.uid);
+    if (user) {
+      await Promise.all([fetchProfile(user.uid), fetchFavorites(user.uid)]);
+    }
   };
 
   const isAdmin = profile?.role === 'admin' || 
@@ -110,8 +101,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading,
     isAdmin,
-    refreshProfile
-  }), [user, profile, loading, isAdmin]);
+    favorites, // Expõe os favoritos para todo o app
+    refreshProfile,
+    toggleFavoriteGlobal // Expõe a função de atualização
+  }), [user, profile, loading, isAdmin, favorites]);
 
   return (
     <AuthContext.Provider value={value}>
