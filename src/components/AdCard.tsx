@@ -249,9 +249,6 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                 </span>
               )}
             </div>
-            <div className="text-[10px] md:text-xs text-indigo-600 font-bold hover:underline font-mono">
-              Ver {ad.category === 'Imigração' ? 'Página' : 'mais'}
-            </div>
           </div>
         </div>
       </motion.div>
