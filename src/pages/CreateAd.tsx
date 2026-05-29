@@ -38,7 +38,8 @@ const CreateAd = () => {
     plan: 'free' as 'free' | 'intermediate' | 'premium',
     duration: 30, // Default for free
     contactEmail: '',
-    externalUrl: ''
+    externalUrl: '',
+    sellerPhone: prefill?.sellerPhone || ''
   });
   const [settings, setSettings] = useState<MarketplaceSettings | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -86,7 +87,8 @@ const CreateAd = () => {
           plan: data.plan || 'free',
           duration: 30, // Duration is only used for calculation on submit
           contactEmail: data.contactEmail || '',
-          externalUrl: data.externalUrl || ''
+          externalUrl: data.externalUrl || '',
+          sellerPhone: data.sellerPhone || ''
         });
       }
     } catch (err) {
@@ -222,9 +224,14 @@ const CreateAd = () => {
       return;
     }
 
-    if (!profile.phone) {
+    if (formData.category !== 'Imigração' && !profile.phone) {
       alert('Por favor, adicione seu telemóvel no perfil antes de criar um anúncio.');
       navigate('/profile');
+      return;
+    }
+
+    if (formData.category === 'Imigração' && !formData.sellerPhone.trim()) {
+      alert('Por favor, insira o número de telemóvel / WhatsApp do contacto.');
       return;
     }
 
@@ -272,7 +279,7 @@ const CreateAd = () => {
         city: formData.city,
         category: formData.category,
         sellerId: id && originalAd ? originalAd.sellerId : user.uid,
-        sellerPhone: id && originalAd ? originalAd.sellerPhone : profile.phone,
+        sellerPhone: formData.category === 'Imigração' ? formData.sellerPhone.trim() : (id && originalAd ? originalAd.sellerPhone : profile.phone),
         sellerName: id && originalAd ? originalAd.sellerName : profile.name,
         status: isAdmin && id ? (originalAd?.status || 'pending') : 'pending',
         adStatus: id && originalAd ? originalAd.adStatus : 'active',
@@ -453,6 +460,17 @@ const CreateAd = () => {
               </div>
             ) : (
               <>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Telemóvel / WhatsApp (Obrigatório)</label>
+                  <input
+                    type="tel"
+                    value={formData.sellerPhone}
+                    onChange={(e) => setFormData({ ...formData, sellerPhone: e.target.value })}
+                    required={formData.category === 'Imigração'}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="Ex: +351 912 345 678"
+                  />
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">E-mail de Contacto (Opcional)</label>
                   <input
