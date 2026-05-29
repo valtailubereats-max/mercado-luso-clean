@@ -127,7 +127,7 @@ const Home = () => {
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 placeholder="O que procura hoje?"
-                className="flex-1 px-3 py-2 outline-none text-slate-700 text-sm font-medium placeholder:text-slate-300"
+                className="flex-1 px-3 py-2 outline-none text-pt-green text-sm font-semibold placeholder:text-pt-green/45"
               />
               <button className="bg-pt-green text-white p-2 rounded-lg hover:bg-pt-green/90 transition-all flex items-center justify-center">
                 <Search size={20} className="md:hidden" />
