@@ -95,7 +95,7 @@ const Login = () => {
           await setDoc(docRef, {
             uid: user.uid,
             name: user.displayName || 'Utilizador',
-            email: user.email,
+            email: user.email || '',
             phone: '', 
             role: isAdminEmail ? 'admin' : 'user',
             acceptedTerms: true,
@@ -158,7 +158,7 @@ const Login = () => {
           await setDoc(docRef, {
             uid: user.uid,
             name: name,
-            email: user.email,
+            email: user.email || '',
             phone: '',
             role: isAdminEmail ? 'admin' : 'user',
             acceptedTerms: true,

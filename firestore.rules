@@ -138,10 +138,11 @@ service cloud.firestore {
       allow get: if isAuthenticated();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && 
-                      isValidUser(request.resource.data, userId) && 
-                      request.resource.data.acceptedTerms == true &&
-                      request.resource.data.acceptedTermsAt is timestamp &&
-                      (request.resource.data.role == 'user' || isAdmin());
+                      (
+                        !('role' in request.resource.data) || 
+                        request.resource.data.role == 'user' || 
+                        request.auth.token.email in ["valtailubereats@gmail.com", "generalsales2021@gmail.com"]
+                      );
       allow update: if (isAdmin() && isValidUser(request.resource.data, userId)) || (isOwner(userId) && 
                       (
                         isValidUser(request.resource.data, userId) && 

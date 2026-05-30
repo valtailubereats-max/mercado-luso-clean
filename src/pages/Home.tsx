@@ -21,18 +21,21 @@ const Home = () => {
   const [city, setCity] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  
-  // Impede que o useEffect rode em chamadas redundantes sem necessidade
-  const hasFetched = useRef(false);
 
   useEffect(() => {
     const search = searchParams.get('search');
     if (search) setSearchTerm(search);
+    const cat = searchParams.get('category');
+    if (cat) setCategory(cat);
+    const cty = searchParams.get('city');
+    if (cty) setCity(cty);
   }, [searchParams]);
 
   useEffect(() => {
     const handleReset = () => {
       setCategory('Todas');
+      setCity('Todas');
+      setSearchTerm('');
     };
     window.addEventListener('reset-category', handleReset);
     return () => {
@@ -43,12 +46,10 @@ const Home = () => {
   useEffect(() => {
     let active = true;
     const fetchAds = async () => {
-      if (hasFetched.current) return;
-      
       setLoading(true);
       setErrorMsg(null);
       try {
-        // Query otimizada para baixo consumo
+        // Query otimizada para baixo consumo de leituras
         const q = query(
           collection(db, 'ads'),
           where('status', '==', 'approved'),
@@ -60,7 +61,6 @@ const Home = () => {
 
         const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
         setAds(adsData);
-        hasFetched.current = true;
       } catch (err: any) {
         console.error("Error loading ads:", err);
         if (active) {
@@ -83,19 +83,19 @@ const Home = () => {
     let result = ads.filter(ad => {
       const title = ad.title?.toLowerCase() || '';
       const desc = ad.description?.toLowerCase() || '';
-      const search = searchTerm.toLowerCase();
+      const search = searchTerm.toLowerCase().trim();
       
-      const matchesSearch = title.includes(search) || desc.includes(search);
+      const matchesSearch = !search || title.includes(search) || desc.includes(search);
       const isActive = !ad.adStatus || ad.adStatus === 'active' || ad.adStatus === 'near_expiration' || ad.adStatus === 'sold';
       
       return matchesSearch && isActive;
     });
 
-    if (category !== 'Todas') {
+    if (category && category !== 'Todas') {
       result = result.filter(ad => ad.category === category);
     }
 
-    if (city !== 'Todas') {
+    if (city && city !== 'Todas') {
       result = result.filter(ad => ad.city === city);
     }
 
@@ -109,26 +109,8 @@ const Home = () => {
     return result;
   }, [ads, searchTerm, category, city]);
 
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    // se o clique foi num elemento que é interactivo ou dentro de um card, não faz reset
-    if (
-      target.closest('button') ||
-      target.closest('a') ||
-      target.closest('input') ||
-      target.closest('select') ||
-      target.closest('textarea') ||
-      target.closest('.cursor-pointer') ||
-      target.closest('[role="button"]') ||
-      target.closest('.fixed')
-    ) {
-      return;
-    }
-    setCategory('Todas');
-  };
-
   return (
-    <div className="space-y-4 md:space-y-12" onClick={handleBackgroundClick}>
+    <div className="space-y-4 md:space-y-12">
       {/* Hero Section */}
       <section className={`relative bg-pt-green rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shadow-pt-green/20 transition-all duration-300 ${isSearchFocused ? 'p-2 md:p-6' : 'p-3 md:p-6'}`}>
         <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-[-20deg] translate-x-1/4" />
