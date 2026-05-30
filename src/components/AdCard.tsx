@@ -42,6 +42,31 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
 
   const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
 
+  const isDetailsOpenRef = useRef(false);
+
+  React.useEffect(() => {
+    if (showDetails) {
+      isDetailsOpenRef.current = true;
+      window.history.pushState({ modalOpen: true }, '', '');
+
+      const handlePopState = (event: PopStateEvent) => {
+        if (showDetails) {
+          setShowDetails(false);
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    } else {
+      if (isDetailsOpenRef.current && window.history.state?.modalOpen) {
+        window.history.back();
+      }
+      isDetailsOpenRef.current = false;
+    }
+  }, [showDetails]);
+
   React.useEffect(() => {
     // Só verifica se é favorito se o user estiver logado E se ainda não verificámos este card
     if (user && ad.id && !hasCheckedFavorite.current) {
