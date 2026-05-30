@@ -35,6 +35,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
   const [sellerReviews, setSellerReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewsSection, setShowReviewsSection] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   // --- TRAVA DE SEGURANÇA CONTRA LOOP ---
   const hasCheckedFavorite = useRef(false);
@@ -55,9 +56,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
 
   const fetchSellerProfile = async () => {
     try {
+      let profileData: any = {};
       const docSnap = await getDoc(doc(db, 'users', ad.sellerId));
       if (docSnap.exists()) {
-        setSellerProfile(docSnap.data());
+        profileData = docSnap.data();
       }
       setReviewsLoading(true);
       const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId));
@@ -69,6 +71,22 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
         return timeB - timeA;
       });
       setSellerReviews(reviewsData);
+
+      // Calc fallback
+      let ratingCount = profileData.ratingCount !== undefined ? profileData.ratingCount : 0;
+      let ratingAverage = profileData.ratingAverage !== undefined ? profileData.ratingAverage : (profileData.rating !== undefined ? profileData.rating : 0);
+
+      if (reviewsData.length > 0 && (ratingCount === 0 || ratingAverage === 0)) {
+        ratingCount = reviewsData.length;
+        const totalStars = reviewsData.reduce((sum: number, rev: any) => sum + (rev.rating || 0), 0);
+        ratingAverage = parseFloat((totalStars / ratingCount).toFixed(1));
+      }
+
+      setSellerProfile({
+        ...profileData,
+        ratingAverage,
+        ratingCount
+      });
     } catch (err) {
       console.error('Error fetching seller profile or reviews:', err);
     } finally {
@@ -349,7 +367,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                   )}
                 </div>
 
-                <div className="p-4 md:p-6">
+                <div className="p-4 md:p-6 pb-12 md:pb-16 font-sans">
                   <div className="mb-3 flex gap-2">
                     <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100">
                       {ad.category}
@@ -378,8 +396,18 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                     <div>
                       <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Descrição</h4>
                       <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
-                        {ad.description}
+                        {ad.description.length > 200 && !descriptionExpanded
+                          ? `${ad.description.substring(0, 200).trim()}...`
+                          : ad.description}
                       </p>
+                      {ad.description.length > 200 && (
+                        <button
+                          onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors mt-1 active:scale-95 duration-200"
+                        >
+                          {descriptionExpanded ? 'Ver menos' : 'Ver mais'}
+                        </button>
+                      )}
                     </div>
 
                     <div className="bg-slate-50 rounded-xl p-4 md:p-6 space-y-4 border border-slate-100">
@@ -391,23 +419,22 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vendedor</p>
                           <div className="flex flex-wrap items-center gap-2 mt-0.5">
                             <span className="text-base font-bold text-slate-900">{ad.sellerName}</span>
-                            {sellerProfile && sellerProfile.ratingAverage !== undefined && (
-                              <div className="flex items-center gap-0.5 text-amber-500" title={`${sellerProfile.ratingAverage} / 5`}>
-                                {[1, 2, 3, 4, 5].map((star) => {
-                                  const isFilled = star <= Math.round(sellerProfile.ratingAverage);
-                                  return (
-                                    <Star
-                                      key={star}
-                                      size={12}
-                                      className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-200"}
-                                    />
-                                  );
-                                })}
-                                <span className="text-[10px] text-slate-500 font-bold ml-1">
-                                  ({sellerProfile.ratingCount || 0})
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-0.5 text-amber-500" title={`${sellerProfile?.ratingAverage || sellerProfile?.rating || 0} / 5`}>
+                              {[1, 2, 3, 4, 5].map((star) => {
+                                const ratingVal = sellerProfile?.ratingAverage || sellerProfile?.rating || 0;
+                                const isFilled = star <= Math.round(ratingVal);
+                                return (
+                                  <Star
+                                    key={star}
+                                    size={12}
+                                    className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-200"}
+                                  />
+                                );
+                              })}
+                              <span className="text-[10px] text-slate-500 font-bold ml-1">
+                                ({sellerProfile?.ratingCount || 0})
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -421,6 +448,43 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                           <span>Contactar via WhatsApp</span>
                         </button>
                       </div>
+
+                      {sellerReviews.length > 0 && (
+                        <div className="pt-4 border-t border-slate-200">
+                          <button
+                            onClick={() => setShowReviewsSection(!showReviewsSection)}
+                            className="flex items-center justify-between w-full text-xs font-bold text-indigo-600 uppercase tracking-wider"
+                          >
+                            <span>Avaliações do Vendedor ({sellerReviews.length})</span>
+                            <span className="text-slate-400">{showReviewsSection ? 'Ocultar' : 'Mostrar'}</span>
+                          </button>
+                          
+                          {showReviewsSection && (
+                            <div className="mt-3 space-y-3 max-h-48 overflow-y-auto pr-1">
+                              {sellerReviews.map((rev) => (
+                                <div key={rev.id} className="bg-white p-3 rounded-xl border border-slate-100 text-xs shadow-sm">
+                                  <div className="flex justify-between items-start mb-1">
+                                    <span className="font-bold text-slate-800">{rev.buyerName}</span>
+                                    <div className="flex gap-0.5">
+                                      {[1, 2, 3, 4, 5].map((s) => (
+                                        <Star key={s} size={10} className={`${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-100'}`} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {rev.comment ? (
+                                    <p className="text-slate-600 italic">"{rev.comment}"</p>
+                                  ) : (
+                                    <p className="text-slate-400 italic">Sem comentário escrito.</p>
+                                  )}
+                                  <div className="text-[9px] text-slate-400 mt-1">
+                                    {rev.createdAt?.toDate ? formatDistanceToNow(rev.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
