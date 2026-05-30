@@ -389,7 +389,26 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                         </div>
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vendedor</p>
-                          <p className="text-base font-bold text-slate-900">{ad.sellerName}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <span className="text-base font-bold text-slate-900">{ad.sellerName}</span>
+                            {sellerProfile && sellerProfile.ratingAverage !== undefined && (
+                              <div className="flex items-center gap-0.5 text-amber-500" title={`${sellerProfile.ratingAverage} / 5`}>
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const isFilled = star <= Math.round(sellerProfile.ratingAverage);
+                                  return (
+                                    <Star
+                                      key={star}
+                                      size={12}
+                                      className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-200"}
+                                    />
+                                  );
+                                })}
+                                <span className="text-[10px] text-slate-500 font-bold ml-1">
+                                  ({sellerProfile.ratingCount || 0})
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -468,6 +487,34 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                   Confirmar e Abrir WhatsApp
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Full Image Modal */}
+      <AnimatePresence>
+        {showFullImage && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 md:p-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative w-full h-full flex items-center justify-center"
+              onClick={() => setShowFullImage(false)}
+            >
+              <button
+                onClick={() => setShowFullImage(false)}
+                className="absolute top-4 right-4 p-3 text-white/70 hover:text-white transition-colors z-10 bg-black/40 rounded-full"
+              >
+                <X size={24} />
+              </button>
+              <img
+                src={images[currentImageIndex]}
+                alt={ad.title}
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                referrerPolicy="no-referrer"
+              />
             </motion.div>
           </div>
         )}
