@@ -26,7 +26,7 @@ import { Ad } from './types';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
-const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, setQuotaExceeded: (v: boolean) => void }) => {
+const Navbar = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -92,7 +92,6 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
         setAdminPendingAds(adsData.slice(0, 10));
       }, (error) => {
         console.error('Admin notification error:', error);
-        if (error.code === 'resource-exhausted') setQuotaExceeded(true);
       });
       return () => unsubscribe();
     }
@@ -115,7 +114,6 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
         setUserNotificationCount(unnotifiedCount);
       }, (error) => {
         console.error('User notification error:', error);
-        if (error.code === 'resource-exhausted') setQuotaExceeded(true);
       });
       return () => unsubscribe();
     }
@@ -317,7 +315,6 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
 
 export default function App() {
   const mainRef = React.useRef<HTMLDivElement>(null);
-  const [quotaExceeded, setQuotaExceeded] = React.useState(false);
 
   React.useEffect(() => {
     const slider = mainRef.current;
@@ -370,36 +367,7 @@ export default function App() {
       <AuthProvider>
         <Router>
         <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
-          <Navbar quotaExceeded={quotaExceeded} setQuotaExceeded={setQuotaExceeded} />
-          
-          <AnimatePresence>
-            {quotaExceeded && (
-              <div key="quota-alert" className="fixed bottom-4 left-4 right-4 z-[9999]">
-                <motion.div 
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 50, opacity: 0 }}
-                  className="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-lg mx-auto"
-                >
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 shrink-0">
-                    <AlertTriangle size={20} />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-amber-900 font-bold text-sm">Limite Diário Atingido</p>
-                    <p className="text-amber-700 text-xs mt-0.5">
-                      O marketplace atingiu o limite de consultas gratuitas do dia. Algumas informações podem estar desatualizadas.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setQuotaExceeded(false)}
-                    className="p-2 text-amber-400 hover:text-amber-600"
-                  >
-                    <X size={20} />
-                  </button>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
+          <Navbar />
 
           <main ref={mainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 cursor-grab active:cursor-grabbing">
             <Routes>

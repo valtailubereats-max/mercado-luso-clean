@@ -117,9 +117,14 @@ const Login = () => {
       } else if (err.code === 'auth/operation-not-allowed') {
         setError('Este método de login não está ativado no Firebase Console.');
       } else if (err.message && err.message.startsWith('{')) {
-        setError('Erro de permissões ao criar perfil. Verifique se aceitou os termos.');
+        try {
+          const parsed = JSON.parse(err.message);
+          setError(`Erro ao criar perfil (${parsed.operationType}): ${parsed.error}`);
+        } catch {
+          setError('Erro de permissões ao criar perfil. Verifique se aceitou os termos.');
+        }
       } else {
-        setError('Erro ao entrar com Google. Tente novamente.');
+        setError(err.message || 'Erro ao entrar com Google. Tente novamente.');
       }
     } finally {
       setLoading(false);
@@ -179,8 +184,15 @@ const Login = () => {
         setError('O login por e-mail/senha não está ativado no Firebase Console.');
       } else if (err.code === 'auth/network-request-failed') {
         setError('Erro de rede. Verifique a sua ligação à internet.');
+      } else if (err.message && err.message.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(err.message);
+          setError(`Erro no banco de dados (${parsed.operationType}): ${parsed.error}`);
+        } catch {
+          setError('Erro de permissão ou de rede ao comunicar com o servidor.');
+        }
       } else {
-        setError('Ocorreu um erro. Tente novamente.');
+        setError(err.message || 'Ocorreu um erro. Tente novamente.');
       }
     } finally {
       setLoading(false);

@@ -5,7 +5,7 @@ import { db, withTimeout } from '../firebase';
 import { Ad, CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import AdCard from '../components/AdCard';
-import { Search, Tag, MapPin, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Baixamos para 60 para economizar cota (múltiplo de 2, 3, 4 e 5 para o grid ficar bonito)
@@ -22,7 +22,7 @@ const Home = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   
-  // Impede que o useEffect rode duas vezes seguidas em StrictMode (comum no desenvolvimento)
+  // Impede que o useEffect rode em chamadas redundantes sem necessidade
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -41,6 +41,7 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
+    let active = true;
     const fetchAds = async () => {
       if (hasFetched.current) return;
       
@@ -55,18 +56,27 @@ const Home = () => {
         );
 
         const snapshot = await withTimeout(getDocs(q), 30000);
+        if (!active) return;
+
         const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
         setAds(adsData);
         hasFetched.current = true;
       } catch (err: any) {
         console.error("Error loading ads:", err);
-        setErrorMsg("O site está com tráfego intenso. Tente recarregar em instantes.");
+        if (active) {
+          setErrorMsg("Não foi possível carregar os anúncios neste momento. Tente recarregar a página.");
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
     fetchAds();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filteredAds = useMemo(() => {
@@ -185,6 +195,20 @@ const Home = () => {
           {[...Array(10)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl h-[300px] animate-pulse border border-slate-100" />
           ))}
+        </div>
+      ) : errorMsg ? (
+        <div className="text-center py-16 bg-white rounded-[3rem] border border-red-100 max-w-md mx-auto px-6">
+          <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={24} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">Erro ao carregar os anúncios</h3>
+          <p className="text-slate-500 text-xs mt-2 leading-relaxed">{errorMsg}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 mx-auto active:scale-95"
+          >
+            <RefreshCcw size={14} /> Tentar Novamente
+          </button>
         </div>
       ) : filteredAds.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100">
