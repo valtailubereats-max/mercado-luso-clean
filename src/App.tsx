@@ -161,11 +161,15 @@ const Navbar = ({ quotaExceeded, setQuotaExceeded }: { quotaExceeded: boolean, s
     }
   };
 
+  const handleLogoClick = () => {
+    window.dispatchEvent(new CustomEvent('reset-category'));
+  };
+
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 group">
             <div className="w-9 h-9 bg-pt-green rounded-xl flex items-center justify-center text-white group-hover:bg-pt-green/90 transition-colors shadow-sm">
               <ShoppingBag size={20} />
             </div>

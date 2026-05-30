@@ -31,6 +31,16 @@ const Home = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    const handleReset = () => {
+      setCategory('Todas');
+    };
+    window.addEventListener('reset-category', handleReset);
+    return () => {
+      window.removeEventListener('reset-category', handleReset);
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchAds = async () => {
       if (hasFetched.current) return;
       
@@ -89,8 +99,26 @@ const Home = () => {
     return result;
   }, [ads, searchTerm, category, city]);
 
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // se o clique foi num elemento que é interactivo ou dentro de um card, não faz reset
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('select') ||
+      target.closest('textarea') ||
+      target.closest('.cursor-pointer') ||
+      target.closest('[role="button"]') ||
+      target.closest('.fixed')
+    ) {
+      return;
+    }
+    setCategory('Todas');
+  };
+
   return (
-    <div className="space-y-4 md:space-y-12">
+    <div className="space-y-4 md:space-y-12" onClick={handleBackgroundClick}>
       {/* Hero Section */}
       <section className={`relative bg-pt-green rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shadow-pt-green/20 transition-all duration-300 ${isSearchFocused ? 'p-2 md:p-6' : 'p-3 md:p-6'}`}>
         <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-[-20deg] translate-x-1/4" />
