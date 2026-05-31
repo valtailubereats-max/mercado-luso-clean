@@ -305,7 +305,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                       exit={{ opacity: 0, x: -20 }}
                       className="w-full h-full"
                     >
-                      <OptimizedImage
+                      <img
                         src={images[currentImageIndex]}
                         alt={ad.title}
                         className="w-full h-full object-cover cursor-grab active:cursor-grabbing"
