@@ -37,7 +37,11 @@ const AdminImport = () => {
     setError(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('A chave de API do Gemini (VITE_GEMINI_API_KEY) não está configurada no seu ficheiro .env.');
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       const base64Data = image.split(',')[1];
       
@@ -86,9 +90,18 @@ Retorne APENAS um objeto JSON com as seguintes chaves:
 
       const extractedData = JSON.parse(response.text);
       setResult(extractedData);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro na análise do Gemini:', err);
-      setError('Não foi possível analisar a imagem. Verifique se é um print claro de um anúncio.');
+      const errMsg = err?.message || '';
+      let friendlyMessage = 'Não foi possível analisar a imagem. Verifique se é um print claro de um anúncio.';
+      
+      if (err?.status === 403 || err?.status === 400 || errMsg.toLowerCase().includes('key') || errMsg.toLowerCase().includes('api')) {
+        friendlyMessage = `⚠️ Erro com a Chave de API do Gemini: ${errMsg || 'Chave inválida, expirada ou não autorizada'}. Por favor configure-a corretamente no ficheiro .env.`;
+      } else if (errMsg) {
+        friendlyMessage = `⚠️ Não conseguimos processar o print: ${errMsg}`;
+      }
+      
+      setError(friendlyMessage);
     } finally {
       setAnalyzing(false);
     }

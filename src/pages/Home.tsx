@@ -11,6 +11,10 @@ import { motion, AnimatePresence } from 'motion/react';
 // Baixamos para 60 para economizar cota (múltiplo de 2, 3, 4 e 5 para o grid ficar bonito)
 const INITIAL_LIMIT = 60; 
 
+// Trava de segurança contra leituras excessivas (30s)
+let lastFetchTime = 0;
+let cachedAds: Ad[] = [];
+
 const Home = () => {
   const { categories } = useSettings();
   const [searchParams] = useSearchParams();
@@ -46,6 +50,14 @@ const Home = () => {
   useEffect(() => {
     let active = true;
     const fetchAds = async () => {
+      const now = Date.now();
+      if (now - lastFetchTime < 30000 && cachedAds.length > 0) {
+        setAds(cachedAds);
+        setLoading(false);
+        return;
+      }
+
+      console.log('🔥 CHAMADA AO FIREBASE DETECTADA');
       setLoading(true);
       setErrorMsg(null);
       try {
@@ -61,6 +73,8 @@ const Home = () => {
 
         const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
         setAds(adsData);
+        cachedAds = adsData;
+        lastFetchTime = now;
       } catch (err: any) {
         console.error("Error loading ads:", err);
         if (active) {

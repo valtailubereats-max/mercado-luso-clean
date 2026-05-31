@@ -95,6 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      console.log('🔥 CHAMADA AO FIREBASE DETECTADA');
       const docRef = doc(db, 'users', uid);
       const docSnap = await withTimeout(getDoc(docRef), 45000);
       if (docSnap.exists()) {
