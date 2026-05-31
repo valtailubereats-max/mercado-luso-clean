@@ -18,11 +18,9 @@ interface AdCardProps {
 }
 
 const AdCard: React.FC<AdCardProps> = ({ ad }) => {
-  const { user } = useAuth();
+  const { user, favorites, toggleFavoriteGlobal } = useAuth();
   const [showDetails, setShowDetails] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const [showContactWarning, setShowContactWarning] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -37,12 +35,12 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
   const [showReviewsSection, setShowReviewsSection] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
-  // --- TRAVA DE SEGURANÇA CONTRA LOOP ---
-  const hasCheckedFavorite = useRef(false);
+  const isFavorite = favorites.includes(ad.id);
 
   const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
 
   const isDetailsOpenRef = useRef(false);
+  const isPopStateChange = useRef(false);
 
   React.useEffect(() => {
     if (showDetails) {
@@ -50,9 +48,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
       window.history.pushState({ modalOpen: true }, '', '');
 
       const handlePopState = (event: PopStateEvent) => {
-        if (showDetails) {
-          setShowDetails(false);
-        }
+        isPopStateChange.current = true;
+        setShowDetails(false);
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -60,24 +57,21 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
         window.removeEventListener('popstate', handlePopState);
       };
     } else {
-      if (isDetailsOpenRef.current && window.history.state?.modalOpen) {
-        window.history.back();
+      if (isDetailsOpenRef.current && !isPopStateChange.current) {
+        if (window.history.state?.modalOpen) {
+          window.history.back();
+        }
       }
       isDetailsOpenRef.current = false;
+      isPopStateChange.current = false;
     }
   }, [showDetails]);
 
   React.useEffect(() => {
-    // Só verifica se é favorito se o user estiver logado E se ainda não verificámos este card
-    if (user && ad.id && !hasCheckedFavorite.current) {
-      checkIfFavorite();
-      hasCheckedFavorite.current = true; // Bloqueia novas consultas deste card nesta sessão
-    }
-    
     if (showDetails && ad.sellerId) {
       fetchSellerProfile();
     }
-  }, [user, ad.id, showDetails]);
+  }, [ad.sellerId, showDetails]);
 
   const fetchSellerProfile = async () => {
     try {
@@ -119,48 +113,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
     }
   };
 
-  const checkIfFavorite = async () => {
-    try {
-      // Adicionamos um limite de 1 para ser mais rápido e barato
-      const q = query(
-        collection(db, 'favorites'), 
-        where('userId', '==', user?.uid), 
-        where('adId', '==', ad.id)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        setIsFavorite(true);
-        setFavoriteId(snap.docs[0].id);
-      }
-    } catch (err) {
-      console.error('Error checking favorite:', err);
-    }
-  };
-
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) {
-      alert('Faça login para salvar favoritos!');
-      return;
-    }
-
     try {
-      if (isFavorite && favoriteId) {
-        await deleteDoc(doc(db, 'favorites', favoriteId));
-        setIsFavorite(false);
-        setFavoriteId(null);
-      } else {
-        const newFavId = `fav_${Date.now()}_${user.uid}`;
-        await setDoc(doc(db, 'favorites', newFavId), {
-          id: newFavId,
-          userId: user.uid,
-          adId: ad.id,
-          createdAt: new Date()
-        });
-        setIsFavorite(true);
-        setFavoriteId(newFavId);
-      }
+      await toggleFavoriteGlobal(ad.id);
     } catch (err) {
       console.error('Error toggling favorite:', err);
     }

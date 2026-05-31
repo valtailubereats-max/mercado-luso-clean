@@ -31,6 +31,12 @@ const Profile = () => {
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
+    if (!highlightAdId) {
+      window.scrollTo(0, 0);
+    }
+  }, [highlightAdId]);
+
+  useEffect(() => {
     if (!adsLoading && ads.length > 0 && highlightAdId) {
       const timer = setTimeout(() => {
         const element = document.getElementById(`ad-profile-${highlightAdId}`);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle } from 'lucide-react';
 import { auth, db } from './firebase';
 import { signOut } from 'firebase/auth';
@@ -313,6 +313,16 @@ const Navbar = () => {
   );
 };
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 export default function App() {
   const mainRef = React.useRef<HTMLDivElement>(null);
 
@@ -366,7 +376,8 @@ export default function App() {
     <SettingsProvider>
       <AuthProvider>
         <Router>
-        <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
+          <ScrollToTop />
+          <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
           <Navbar />
 
           <main ref={mainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 cursor-grab active:cursor-grabbing">

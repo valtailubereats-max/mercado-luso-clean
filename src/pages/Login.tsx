@@ -12,9 +12,11 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, ShieldCheck, Mail, Lock, User as UserIcon, ArrowRight, Github, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -104,8 +106,10 @@ const Login = () => {
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
+        await refreshProfile();
         navigate('/profile');
       } else {
+        await refreshProfile();
         navigate('/');
       }
     } catch (err: any) {
@@ -167,9 +171,11 @@ const Login = () => {
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
+        await refreshProfile();
         navigate('/profile');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        await refreshProfile();
         navigate('/');
       }
     } catch (err: any) {
