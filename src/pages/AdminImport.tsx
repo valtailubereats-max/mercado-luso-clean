@@ -37,7 +37,8 @@ const AdminImport = () => {
     setError(null);
 
     try {
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || 'AIzaSyBewRCSZ-nNqXiaVCRzgpfI1ieWf5QEyq4';
+      console.log('Chave Gemini detetada:', !!apiKey);
       if (!apiKey) {
         throw new Error('A chave de API do Gemini (VITE_GEMINI_API_KEY) não está configurada no seu ficheiro .env.');
       }
