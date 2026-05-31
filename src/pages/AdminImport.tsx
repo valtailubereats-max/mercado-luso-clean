@@ -37,7 +37,7 @@ const AdminImport = () => {
     setError(null);
 
     try {
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || 'AIzaSyBewRCSZ-nNqXiaVCRzgpfI1ieWf5QEyq4';
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
       console.log('Chave Gemini detetada:', !!apiKey);
       if (!apiKey) {
         throw new Error('A chave de API do Gemini (VITE_GEMINI_API_KEY) não está configurada no seu ficheiro .env.');
@@ -64,7 +64,7 @@ Retorne APENAS um objeto JSON com as seguintes chaves:
 }`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-1.5-flash",
         contents: [
           {
             parts: [
