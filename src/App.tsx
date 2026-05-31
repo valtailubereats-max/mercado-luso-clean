@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle } from 'lucide-react';
-import { auth, db } from './firebase';
+import { auth, db, getDocsWithCacheFallback } from './firebase';
 import { signOut } from 'firebase/auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, updateDoc, limit } from 'firebase/firestore';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -46,77 +46,106 @@ const Navbar = () => {
     }
   };
 
-  // Notificações do usuário (limitadas para reduzir leitura)
+  // Notificações do usuário (one-time fallback-cached fetch)
   React.useEffect(() => {
+    let active = true;
     if (!loading && user) {
-      const q = query(
-        collection(db, 'notifications'),
-        where('userId', '==', user.uid),
-        limit(100)
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Filtrar e ordenar em memória para não precisar de Índices Compostos
-        const filtered = notifs
-          .filter(n => (n as any).read === false)
-          .sort((a: any, b: any) => {
+      const fetchUserNotifications = async () => {
+        try {
+          const q = query(
+            collection(db, 'notifications'),
+            where('userId', '==', user.uid),
+            limit(100)
+          );
+          const snapshot = await getDocsWithCacheFallback(q, `notifications/userId-${user.uid}`);
+          if (!active) return;
+          const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Filtrar e ordenar em memória para não precisar de Índices Compostos
+          const filtered = notifs
+            .filter(n => (n as any).read === false)
+            .sort((a: any, b: any) => {
+              const dateA = a.createdAt ? (typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+              const dateB = b.createdAt ? (typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+              return dateB - dateA;
+            });
+          setNotifications(filtered.slice(0, 20));
+        } catch (error) {
+          console.error('Notifications fetch error:', error);
+        }
+      };
+      
+      fetchUserNotifications();
+    }
+    return () => {
+      active = false;
+    };
+  }, [loading, user]);
+
+  // Pending ads do admin (one-time fetch)
+  React.useEffect(() => {
+    let active = true;
+    if (!loading && isAdmin) {
+      const fetchAdminPendingAds = async () => {
+        try {
+          const q = query(
+            collection(db, 'ads'),
+            where('status', '==', 'pending'),
+            limit(50)
+          );
+          const snapshot = await getDocsWithCacheFallback(q, 'admin/pending-ads');
+          if (!active) return;
+          const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+          
+          // Ordenar em memória para evitar Índice Composto
+          adsData.sort((a, b) => {
             const dateA = a.createdAt ? (typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
             const dateB = b.createdAt ? (typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
             return dateB - dateA;
           });
-        setNotifications(filtered.slice(0, 20));
-      }, (error) => console.error('Notifications error:', error));
-      return () => unsubscribe();
-    }
-  }, [loading, user]);
 
-  // Pending ads do admin (limitadas)
-  React.useEffect(() => {
-    if (!loading && isAdmin) {
-      const q = query(
-        collection(db, 'ads'),
-        where('status', '==', 'pending'),
-        limit(50)
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
-        
-        // Ordenar em memória para evitar Índice Composto
-        adsData.sort((a, b) => {
-          const dateA = a.createdAt ? (typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
-          const dateB = b.createdAt ? (typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
-          return dateB - dateA;
-        });
+          setAdminNotificationCount(adsData.length);
+          setAdminPendingAds(adsData.slice(0, 10));
+        } catch (error) {
+          console.error('Admin pending ads fetch error:', error);
+        }
+      };
 
-        setAdminNotificationCount(adsData.length);
-        setAdminPendingAds(adsData.slice(0, 10));
-      }, (error) => {
-        console.error('Admin notification error:', error);
-      });
-      return () => unsubscribe();
+      fetchAdminPendingAds();
     }
+    return () => {
+      active = false;
+    };
   }, [loading, isAdmin]);
 
-  // Contagem de ads do usuário (limitadas)
+  // Contagem de ads do usuário (one-time fetch)
   React.useEffect(() => {
+    let active = true;
     if (!loading && user) {
-      const q = query(
-        collection(db, 'ads'),
-        where('sellerId', '==', user.uid),
-        limit(100)
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const userAds = snapshot.docs.map(doc => doc.data());
-        const unnotifiedCount = userAds.filter(ad => 
-          ['approved', 'rejected'].includes(ad.status) && 
-          ad.userNotified === false
-        ).length;
-        setUserNotificationCount(unnotifiedCount);
-      }, (error) => {
-        console.error('User notification error:', error);
-      });
-      return () => unsubscribe();
+      const fetchUserNotificationCount = async () => {
+        try {
+          const q = query(
+            collection(db, 'ads'),
+            where('sellerId', '==', user.uid),
+            limit(100)
+          );
+          const snapshot = await getDocsWithCacheFallback(q, `ads/sellerId-${user.uid}`);
+          if (!active) return;
+          const userAds = snapshot.docs.map(doc => doc.data());
+          const unnotifiedCount = userAds.filter(ad => 
+            ['approved', 'rejected'].includes(ad.status) && 
+            ad.userNotified === false
+          ).length;
+          setUserNotificationCount(unnotifiedCount);
+        } catch (error) {
+          console.error('User notification count fetch error:', error);
+        }
+      };
+
+      fetchUserNotificationCount();
     }
+    return () => {
+      active = false;
+    };
   }, [loading, user]);
 
   const handleMarkAsRead = async (id: string, adId?: string) => {

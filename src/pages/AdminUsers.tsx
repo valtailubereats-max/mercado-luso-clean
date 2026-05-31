@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, parseFirestoreDate } from '../firebase';
+import { collection, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, parseFirestoreDate, getDocsWithCacheFallback } from '../firebase';
 import { UserProfile } from '../types';
 import { motion } from 'motion/react';
 import { 
@@ -33,8 +33,8 @@ const AdminUsers = () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const q = query(collection(db, 'users'), limit(100));
-      const querySnapshot = await getDocs(q);
+      const q = query(collection(db, 'users'), limit(50));
+      const querySnapshot = await getDocsWithCacheFallback(q, 'admin/users');
       const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as UserProfile));
       
       // Sort client-side to be robust against missing indexes and missing fields

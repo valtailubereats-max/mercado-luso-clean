@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { Ad, DailyMetric } from '../types';
 import { motion } from 'motion/react';
@@ -115,9 +115,9 @@ const AdminDashboard = () => {
 
   const fetchPendingAds = async () => {
     try {
-      // Simple query that does not require any composite indexes!
-      const q = query(collection(db, 'ads'), where('status', '==', 'pending'), limit(100));
-      const snap = await getDocs(q);
+      // Simple query that does not require any composite indexes! Set limit to 50
+      const q = query(collection(db, 'ads'), where('status', '==', 'pending'), limit(50));
+      const snap = await getDocsWithCacheFallback(q, 'admin/pending-ads-dashboard');
       const adsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       
       // Sort client-side by createdAt desc
@@ -137,7 +137,7 @@ const AdminDashboard = () => {
     if (!isAdmin) return;
     setLoading(true);
     try {
-      let q = query(collection(db, 'metrics'), orderBy('date', 'desc'));
+      let q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(50));
       
       if (timeRange === '7d') {
         q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(7));
@@ -145,7 +145,7 @@ const AdminDashboard = () => {
         q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(30));
       }
 
-      const snap = await getDocs(q);
+      const snap = await getDocsWithCacheFallback(q, `admin/metrics-${timeRange}`);
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyMetric));
       
       // Ensure unique IDs in data to avoid React key issues

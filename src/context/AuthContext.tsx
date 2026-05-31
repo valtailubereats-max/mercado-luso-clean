@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db, withTimeout } from '../firebase';
+import { doc, setDoc, deleteDoc, updateDoc, serverTimestamp, collection, query, where, limit } from 'firebase/firestore';
+import { auth, db, withTimeout, getDocWithCacheFallback, getDocsWithCacheFallback } from '../firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -46,8 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const localIds = JSON.parse(localRaw);
       if (Array.isArray(localIds) && localIds.length > 0) {
         // Busca favoritos existentes no Firestore para evitar duplicados
-        const q = query(collection(db, 'favorites'), where('userId', '==', uid));
-        const snap = await getDocs(q);
+        const q = query(collection(db, 'favorites'), where('userId', '==', uid), limit(100));
+        const snap = await getDocsWithCacheFallback(q, `favorites/sync-${uid}`);
         const existingAdIds = new Set(snap.docs.map(doc => doc.data().adId));
 
         const promises = localIds
@@ -74,8 +74,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchFavorites = async (uid: string) => {
     try {
-      const q = query(collection(db, 'favorites'), where('userId', '==', uid));
-      const snap = await getDocs(q);
+      const q = query(collection(db, 'favorites'), where('userId', '==', uid), limit(100));
+      const snap = await getDocsWithCacheFallback(q, `favorites/userId-${uid}`);
       const favIds = snap.docs.map(doc => doc.data().adId);
       setFavorites(favIds);
     } catch (err) {
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('🔥 CHAMADA AO FIREBASE DETECTADA');
       const docRef = doc(db, 'users', uid);
-      const docSnap = await withTimeout(getDoc(docRef), 45000);
+      const docSnap = await withTimeout(getDocWithCacheFallback(docRef, `users/${uid}`), 45000);
       if (docSnap.exists()) {
         const data = docSnap.data() as UserProfile;
         setProfile(data);
@@ -143,9 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const q = query(
             collection(db, 'favorites'), 
             where('userId', '==', user.uid), 
-            where('adId', '==', adId)
+            where('adId', '==', adId),
+            limit(10)
           );
-          const snap = await getDocs(q);
+          const snap = await getDocsWithCacheFallback(q, `favorites/delete-${user.uid}-${adId}`);
           const deletePromises = snap.docs.map(docSnapshot => deleteDoc(docSnapshot.ref));
           await Promise.all(deletePromises);
         } else {

@@ -9,8 +9,8 @@ import { formatPrice } from '../utils';
 import OptimizedImage from './OptimizedImage';
 import ReviewModal from './ReviewModal';
 
-import { doc, updateDoc, increment, setDoc, deleteDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, updateDoc, increment, setDoc, deleteDoc, collection, query, where, limit } from 'firebase/firestore';
+import { db, getDocWithCacheFallback, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 interface AdCardProps {
@@ -76,13 +76,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
   const fetchSellerProfile = async () => {
     try {
       let profileData: any = {};
-      const docSnap = await getDoc(doc(db, 'users', ad.sellerId));
+      const docSnap = await getDocWithCacheFallback(doc(db, 'users', ad.sellerId), `users/${ad.sellerId}`);
       if (docSnap.exists()) {
         profileData = docSnap.data();
       }
       setReviewsLoading(true);
-      const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId));
-      const snap = await getDocs(q);
+      const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId), limit(20));
+      const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${ad.sellerId}`);
       const reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       reviewsData.sort((a: any, b: any) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
@@ -290,25 +290,30 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
             >
               <button
                 onClick={() => setShowDetails(false)}
-                className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-md rounded-full text-slate-900 hover:bg-white transition-colors shadow-sm"
+                className="absolute top-4 right-4 z-20 p-2 bg-white/80 backdrop-blur-md rounded-full text-slate-900 hover:bg-white transition-colors shadow-sm"
               >
                 <X size={24} />
               </button>
 
               <div className="overflow-y-auto">
-                <div className="h-64 md:h-80 bg-slate-100 relative group/img overflow-hidden touch-none">
+                <div className="h-72 md:h-96 bg-slate-950 relative group/img overflow-hidden touch-none flex items-center justify-center">
+                  {/* Backdrop com desfoque ambiente premium para fotos verticais/horizontais se integrarem sem cortes */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center blur-xl opacity-35 select-none pointer-events-none scale-110"
+                    style={{ backgroundImage: `url(${images[currentImageIndex]})` }}
+                  />
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={currentImageIndex}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="w-full h-full"
+                      className="w-full h-full relative z-10 flex items-center justify-center"
                     >
                       <img
                         src={images[currentImageIndex]}
                         alt={ad.title}
-                        className="w-full h-full object-cover cursor-grab active:cursor-grabbing"
+                        className="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"
                         onClick={() => setShowFullImage(true)}
                         referrerPolicy="no-referrer"
                       />

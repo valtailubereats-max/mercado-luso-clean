@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage, handleFirestoreError, OperationType } from '../firebase';
+import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { CITIES, Ad, MarketplaceSettings } from '../types';
@@ -56,7 +56,7 @@ const CreateAd = () => {
 
   const fetchSettings = async () => {
     try {
-      const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
+      const settingsSnap = await getDocWithCacheFallback(doc(db, 'settings', 'global'), 'settings/global');
       if (settingsSnap.exists()) {
         setSettings(settingsSnap.data());
       }
@@ -69,7 +69,7 @@ const CreateAd = () => {
     setFetching(true);
     try {
       const docRef = doc(db, 'ads', id!);
-      const docSnap = await getDoc(docRef);
+      const docSnap = await getDocWithCacheFallback(docRef, `ads/${id}`);
       if (docSnap.exists()) {
         const data = docSnap.data() as Ad;
         if (data.sellerId !== user?.uid && !isAdmin) {

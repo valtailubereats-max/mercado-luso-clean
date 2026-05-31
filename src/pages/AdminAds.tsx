@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, limit, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { Ad } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import OptimizedImage from '../components/OptimizedImage';
@@ -43,7 +43,7 @@ const AdminAds = () => {
   const fetchAds = async () => {
     try {
       const q = query(collection(db, 'ads'), orderBy('createdAt', 'desc'), limit(20));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocsWithCacheFallback(q, 'admin/ads');
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       setAds(adsData);
     } catch (err) {

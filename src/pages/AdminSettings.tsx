@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { MarketplaceSettings, CATEGORIES } from '../types';
 import { motion } from 'motion/react';
 import { 
@@ -26,7 +26,7 @@ const AdminSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const settingsSnap = await getDoc(doc(db, 'settings', 'global'));
+      const settingsSnap = await getDocWithCacheFallback(doc(db, 'settings', 'global'), 'settings/global');
       if (settingsSnap.exists()) {
         const data = settingsSnap.data() as MarketplaceSettings;
         setSettings({

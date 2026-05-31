@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, getDocWithCacheFallback } from '../firebase';
 import { MarketplaceSettings, CATEGORIES } from '../types';
 
 interface SettingsContextType {
@@ -20,42 +20,49 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Safety timer: if Firebase subscription doesn't load within 45000ms, set loading to false to unlock UI
+    // Safety timer to ensure UI isn't locked if there's any problem
     const safetyTimer = setTimeout(() => {
-      console.warn("Settings subscription took too long, fallback loading initiated.");
+      console.warn("Settings fetch took too long, fallback loading initiated.");
       setLoading(false);
     }, 45000);
 
-    const unsubscribe = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-      clearTimeout(safetyTimer);
-      if (docSnap.exists()) {
-        const data = docSnap.data() as MarketplaceSettings;
-        setSettings(data);
-      } else {
-        // Initialize if doesn't exist
-        const defaultSettings: MarketplaceSettings = {
-          id: 'global',
-          planDurations: { free: 30, intermediate: 180, premium: 365 },
-          maxImages: { free: 1, intermediate: 3, premium: 5 },
-          expirationAction: 'archive',
-          warningDays: 3,
-          categories: CATEGORIES
-        };
-        setDoc(doc(db, 'settings', 'global'), defaultSettings).catch((err) => {
-          console.error("Error initializing default settings:", err);
-        });
-        setSettings(defaultSettings);
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'global');
+        const docSnap = await getDocWithCacheFallback(docRef, 'settings/global');
+        
+        clearTimeout(safetyTimer);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data() as MarketplaceSettings;
+          setSettings(data);
+        } else {
+          // Initialize if doesn't exist
+          const defaultSettings: MarketplaceSettings = {
+            id: 'global',
+            planDurations: { free: 30, intermediate: 180, premium: 365 },
+            maxImages: { free: 1, intermediate: 3, premium: 5 },
+            expirationAction: 'archive',
+            warningDays: 3,
+            categories: CATEGORIES
+          };
+          setDoc(doc(db, 'settings', 'global'), defaultSettings).catch((err) => {
+            console.error("Error initializing default settings:", err);
+          });
+          setSettings(defaultSettings);
+        }
+      } catch (error) {
+        clearTimeout(safetyTimer);
+        console.error("Settings fetch error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      clearTimeout(safetyTimer);
-      console.error("Settings subscription error:", error);
-      setLoading(false);
-    });
+    };
+
+    fetchSettings();
 
     return () => {
       clearTimeout(safetyTimer);
-      unsubscribe();
     };
   }, []);
 

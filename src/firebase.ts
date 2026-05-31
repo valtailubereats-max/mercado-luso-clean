@@ -1,6 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore } from 'firebase/firestore';
+import { 
+  initializeFirestore, 
+  enableIndexedDbPersistence,
+  getDocsFromCache,
+  getDocsFromServer,
+  getDocFromCache,
+  getDocFromServer,
+  Query,
+  QuerySnapshot,
+  DocumentReference,
+  DocumentSnapshot
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -11,6 +22,55 @@ const dbId = firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : fi
 export const db = dbId 
   ? initializeFirestore(app, { experimentalForceLongPolling: true }, dbId)
   : initializeFirestore(app, { experimentalForceLongPolling: true });
+
+// Ativação de Persistência Offline (Cache) via IndexedDb conforme pedido
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('[Firebase] A persistência de dados falhou (múltiplas tabs abertas)');
+    } else if (err.code === 'unimplemented') {
+      console.warn('[Firebase] O browser atual não suporta persistência offline.');
+    } else {
+      console.warn('[Firebase] Erro ao ativar persistência offline:', err);
+    }
+  });
+}
+
+// Configura as buscas para tentarem ler primeiro do Cache e apenas depois do Server se necessário
+export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'unknown'): Promise<QuerySnapshot> {
+  console.log(`[Firestore Cache Attempt] Tentando ler do Cache para: ${pathLabel}`);
+  try {
+    const snap = await getDocsFromCache(q);
+    if (!snap.empty) {
+      console.log(`[Firestore Cache HIT] Recuperado com sucesso do Cache (${snap.size} docs) para: ${pathLabel}`);
+      return snap;
+    }
+  } catch (err) {
+    // Silently ignore or log cache miss/error in dev
+  }
+  
+  console.log(`[Firestore SERVER FETCH] 🌍 Realizando busca real no servidor para: ${pathLabel}`);
+  const snap = await getDocsFromServer(q);
+  return snap;
+}
+
+export async function getDocWithCacheFallback(docRef: DocumentReference, pathLabel: string = 'unknown'): Promise<DocumentSnapshot> {
+  console.log(`[Firestore Cache Attempt] Tentando ler do Cache para o documento: ${pathLabel}`);
+  try {
+    const snap = await getDocFromCache(docRef);
+    if (snap.exists()) {
+      console.log(`[Firestore Cache HIT] Documento recuperado com sucesso do Cache para: ${pathLabel}`);
+      return snap;
+    }
+  } catch (err) {
+    // Silently ignore or log cache miss/error in dev
+  }
+  
+  console.log(`[Firestore SERVER FETCH] 🌍 Realizando busca real no servidor para o documento: ${pathLabel}`);
+  const snap = await getDocFromServer(docRef);
+  return snap;
+}
+
 export const auth = getAuth(app);
 console.log('[Firebase] Initializing Storage with bucket url:', firebaseConfig.storageBucket || "gs://navlink-489413.firebasestorage.app");
 export const storage = getStorage(app, "gs://navlink-489413.firebasestorage.app");

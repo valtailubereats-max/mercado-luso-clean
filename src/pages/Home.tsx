@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, limit } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
-import { db, withTimeout } from '../firebase';
+import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-// Baixamos para 60 para economizar cota (múltiplo de 2, 3, 4 e 5 para o grid ficar bonito)
-const INITIAL_LIMIT = 60; 
+// Baixamos para 50 para economizar cota (conforme solicitado e bonito para grids)
+const INITIAL_LIMIT = 50; 
 
 // Trava de segurança contra leituras excessivas (30s)
 let lastFetchTime = 0;
@@ -68,7 +68,7 @@ const Home = () => {
           limit(INITIAL_LIMIT) 
         );
 
-        const snapshot = await withTimeout(getDocs(q), 30000);
+        const snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads'), 30000);
         if (!active) return;
 
         const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
@@ -134,12 +134,18 @@ const Home = () => {
               <motion.div
                 initial={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                className="hidden md:block"
+                className="block cursor-pointer select-none group/title transition-all duration-200 active:scale-95 hover:opacity-95"
+                onClick={() => {
+                  setCategory('Todas');
+                  setCity('Todas');
+                  setSearchTerm('');
+                }}
+                title="Resetar filtros"
               >
-                <motion.h1 className="text-[19px] md:text-4xl font-black leading-tight tracking-wide text-center text-white">
-                  Compre e venda em <span className="text-amber-300">Portugal</span>.
+                <motion.h1 className="text-[19px] md:text-4xl font-black leading-tight tracking-wide text-center text-white group-hover/title:text-slate-100 transition-colors">
+                  Compre e venda em <span className="text-amber-300 group-hover/title:text-amber-400 transition-colors">Portugal</span>.
                 </motion.h1>
-                <motion.p className="mt-1 md:mt-2 text-xs md:text-base font-medium max-w-md mx-auto text-center text-emerald-100">
+                <motion.p className="mt-1 md:mt-2 text-[10px] md:text-base font-medium max-w-md mx-auto text-center text-emerald-100/90 group-hover/title:text-white transition-colors">
                   Um jeito simples de comprar e vender na sua região.
                 </motion.p>
               </motion.div>

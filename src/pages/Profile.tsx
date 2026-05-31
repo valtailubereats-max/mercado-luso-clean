@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc, writeBatch, increment } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { Ad, UserProfile, COUNTRY_CODES, CITIES } from '../types';
 import { motion } from 'motion/react';
@@ -70,8 +70,8 @@ const Profile = () => {
     if (!sellerId) return;
     setReviewsLoading(true);
     try {
-      const q = query(collection(db, 'reviews'), where('sellerId', '==', sellerId));
-      const snap = await getDocs(q);
+      const q = query(collection(db, 'reviews'), where('sellerId', '==', sellerId), limit(50));
+      const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${sellerId}`);
       const reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       reviewsData.sort((a: any, b: any) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
@@ -90,8 +90,8 @@ const Profile = () => {
     if (!user) return;
     setAdsLoading(true);
     try {
-      const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid));
-      const querySnapshot = await getDocs(q);
+      const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid), limit(50));
+      const querySnapshot = await getDocsWithCacheFallback(q, `ads/sellerId-${user.uid}`);
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       setAds(adsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
 

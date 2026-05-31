@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '../firebase';
+import { auth, db, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, ShieldCheck, Mail, Lock, User as UserIcon, ArrowRight, Github, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -85,7 +85,7 @@ const Login = () => {
       const docRef = doc(db, 'users', user.uid);
       let docSnap;
       try {
-        docSnap = await getDoc(docRef);
+        docSnap = await getDocWithCacheFallback(docRef, `users/${user.uid}`);
       } catch (err) {
         handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
       }
