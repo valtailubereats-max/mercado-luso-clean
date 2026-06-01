@@ -8,7 +8,7 @@ import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
-import ptRibbon from '../assets/images/pt_ribbon_banner_1780254768257.png';
+import cplpCollage from '../assets/images/cplp_flags_collage_1780303992447.png';
 
 // Baixamos temporariamente para 5 itens para teste severo de consumo de cotas
 const INITIAL_LIMIT = 5; 
@@ -132,44 +132,42 @@ const Home = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Título Principal Fora do Banner */}
-      <AnimatePresence>
-        {!isSearchFocused && (
-          <motion.div
-            initial={{ opacity: 0, y: -15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="block text-center cursor-pointer select-none group/title transition-all duration-200 active:scale-95 hover:opacity-95 pt-2"
-            onClick={() => {
-              setCategory('Todas');
-              setCity('Todas');
-              setSearchTerm('');
-            }}
-            title="Resetar filtros"
-          >
-            <h1 className="text-2xl md:text-4xl font-black leading-tight tracking-wide text-slate-900 group-hover/title:text-slate-800 transition-colors">
-              Compre e venda em <span className="text-emerald-600 group-hover/title:text-emerald-700 transition-colors">Portugal</span>
-            </h1>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Hero Section */}
-      <section className={`relative bg-transparent rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 ${isSearchFocused ? 'p-2 md:p-6' : 'p-3 md:p-6'}`}>
-        {/* Faixa da Bandeira de Portugal Sem Transparência */}
-        <div className="absolute inset-0 pointer-events-none select-none opacity-100 z-0 flex items-center justify-center overflow-hidden">
+      <section className={`relative rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 ${isSearchFocused ? 'p-4 md:p-8' : 'p-6 md:p-12'}`}>
+        {/* Colagem de Bandeiras da CPLP (Fundo do Banner) */}
+        <div className="absolute inset-0 pointer-events-none select-none z-0">
           <img 
-            src={ptRibbon} 
-            alt="Bandeira Oficial de Portugal em fita" 
-            className="w-full h-auto max-h-none object-cover mix-blend-multiply transition-all duration-300 pointer-events-none select-none"
-            style={{ transform: `scale(${(settings?.ptRibbonScale ?? 150) / 100})` }}
+            src={cplpCollage} 
+            alt="Colagem de Bandeiras da Comunidade de Língua Portuguesa" 
+            className="w-full h-full object-cover object-center transition-all duration-300 pointer-events-none select-none"
             referrerPolicy="no-referrer"
           />
+          {/* Capa translúcida vibrante: aumenta saturação, aumenta com brilho e mantém transparência pura */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/30 via-transparent to-slate-950/25 backdrop-brightness-[1.10] backdrop-saturate-[1.40]" />
         </div>
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-500/5 skew-x-[-20deg] translate-x-1/4" />
+        
         <div className="relative z-10 max-w-2xl mx-auto text-center py-4">
-          <motion.div layout className="flex flex-col items-center gap-3">
-            <div className="bg-white/30 backdrop-blur-xl p-1 md:p-1.5 rounded-xl flex items-center shadow-lg w-full max-w-md border border-white/30 focus-within:bg-white/60 focus-within:border-emerald-300 focus-within:shadow-emerald-500/10 transition-all">
+          <motion.div layout className="flex flex-col items-center gap-4">
+            
+            {/* Título e Subtítulo Legíveis no Banner */}
+            {!isSearchFocused && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-2"
+              >
+                <h1 className="text-3xl md:text-5xl font-black leading-tight tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
+                  Mercado da Língua Portuguesa
+                </h1>
+                <h2 className="mt-2 text-sm md:text-lg font-bold text-slate-50 tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                  Conectando o Mundo Lusófono
+                </h2>
+              </motion.div>
+            )}
+
+            {/* Caixas de Interface com Vidro Fosco de Alta Intensidade */}
+            <div className="bg-white/45 backdrop-blur-3xl p-1 md:p-1.5 rounded-xl flex items-center shadow-2xl w-full max-w-md border border-white/40 focus-within:bg-white/70 focus-within:border-emerald-400 focus-within:shadow-emerald-500/10 transition-all">
               <Search className="text-slate-900 ml-2" size={18} />
               <input
                 id="home-search-input"
@@ -179,27 +177,27 @@ const Home = () => {
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 placeholder="O que procura hoje?"
-                className="flex-1 px-3 py-2 outline-none bg-transparent text-slate-900 text-sm font-black placeholder:text-slate-800"
+                className="flex-1 px-3 py-2 outline-none bg-transparent text-slate-950 text-sm font-black placeholder:text-slate-800/80"
               />
             </div>
 
             {!isSearchFocused && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
-                <div className="flex items-center gap-2 bg-white/30 backdrop-blur-xl shadow-md px-3 h-8 rounded-lg border border-white/30 hover:bg-white/40 hover:border-white/40 transition-all">
+                <div className="flex items-center gap-2 bg-white/45 backdrop-blur-3xl shadow-xl px-3 h-8 rounded-lg border border-white/40 hover:bg-white/60 hover:border-white/50 transition-all">
                   <Tag size={14} className="text-slate-900" />
-                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent outline-none text-sm font-extrabold text-slate-900 appearance-none cursor-pointer">
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent outline-none text-sm font-black text-slate-950 appearance-none cursor-pointer">
                     <option value="Todas" className="bg-white text-slate-900">Categorias</option>
                     {categories.map((c, i) => <option key={i} value={c} className="bg-white text-slate-900">{c}</option>)}
                   </select>
                 </div>
-                <div className="flex items-center gap-2 bg-white/30 backdrop-blur-xl shadow-md px-3 h-8 rounded-lg border border-white/30 hover:bg-white/40 hover:border-white/40 transition-all">
+                <div className="flex items-center gap-2 bg-white/45 backdrop-blur-3xl shadow-xl px-3 h-8 rounded-lg border border-white/40 hover:bg-white/60 hover:border-white/50 transition-all">
                   <MapPin size={14} className="text-slate-900" />
-                  <select value={city} onChange={(e) => setCity(e.target.value)} className="bg-transparent outline-none text-sm font-extrabold text-slate-900 appearance-none cursor-pointer">
+                  <select value={city} onChange={(e) => setCity(e.target.value)} className="bg-transparent outline-none text-sm font-black text-slate-950 appearance-none cursor-pointer">
                     <option value="Todas" className="bg-white text-slate-900">Localização</option>
                     {CITIES.map((c, i) => <option key={i} value={c} className="bg-white text-slate-900">{c}</option>)}
                   </select>
                 </div>
-                <div className="flex items-center gap-1.5 bg-slate-950/30 backdrop-blur-xl px-3 h-8 rounded-lg border border-white/10 text-white shadow-md text-xs font-black">
+                <div className="flex items-center gap-1.5 bg-slate-950/50 backdrop-blur-2xl px-3 h-8 rounded-lg border border-white/20 text-white shadow-xl text-xs font-black">
                   <span className="text-sm font-black text-white">{filteredAds.length}</span> anúncios
                 </div>
               </motion.div>
