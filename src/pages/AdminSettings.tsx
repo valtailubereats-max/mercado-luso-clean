@@ -11,7 +11,8 @@ import {
   Clock,
   Image as ImageIcon,
   AlertTriangle,
-  Tag
+  Tag,
+  Sliders
 } from 'lucide-react';
 
 const AdminSettings = () => {
@@ -32,7 +33,8 @@ const AdminSettings = () => {
         setSettings({
           ...data,
           maxImages: data.maxImages || { free: 1, intermediate: 3, premium: 5 },
-          categories: data.categories || CATEGORIES
+          categories: data.categories || CATEGORIES,
+          ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -41,7 +43,8 @@ const AdminSettings = () => {
           maxImages: { free: 1, intermediate: 3, premium: 5 },
           expirationAction: 'archive',
           warningDays: 3,
-          categories: CATEGORIES
+          categories: CATEGORIES,
+          ptRibbonScale: 150
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -193,6 +196,44 @@ const AdminSettings = () => {
                 onChange={(e) => setSettings({ ...settings, warningDays: parseInt(e.target.value) || 0 })}
                 className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold"
               />
+            </div>
+          </div>
+        </section>
+
+        {/* Ribbon Scale Configuration */}
+        <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+              <Sliders size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">Fita de Portugal (Hero da Home)</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <p className="text-slate-500 font-medium text-sm leading-relaxed">
+              Ajuste o fator de escala (tamanho) da fita de Portugal renderizada como plano de fundo no banner principal da página inicial.
+            </p>
+            <div className="flex items-center gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between font-bold text-xs text-slate-400 uppercase tracking-wider">
+                  <span>Ajustar Escala</span>
+                  <span className="text-indigo-600 text-sm font-black">{settings.ptRibbonScale ?? 150}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="250"
+                  step="5"
+                  value={settings.ptRibbonScale ?? 150}
+                  onChange={(e) => setSettings({ ...settings, ptRibbonScale: parseInt(e.target.value) || 150 })}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                  <span>50% (Mínimo)</span>
+                  <span>150% (Padrão Otimizado)</span>
+                  <span>250% (Máximo)</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>

@@ -81,7 +81,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
         profileData = docSnap.data();
       }
       setReviewsLoading(true);
-      const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId), limit(20));
+      const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId), limit(5));
       const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${ad.sellerId}`);
       const reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       reviewsData.sort((a: any, b: any) => {

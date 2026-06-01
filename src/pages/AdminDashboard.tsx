@@ -115,8 +115,8 @@ const AdminDashboard = () => {
 
   const fetchPendingAds = async () => {
     try {
-      // Simple query that does not require any composite indexes! Set limit to 50
-      const q = query(collection(db, 'ads'), where('status', '==', 'pending'), limit(50));
+      // Simple query that does not require any composite indexes! Set limit to 5
+      const q = query(collection(db, 'ads'), where('status', '==', 'pending'), limit(5));
       const snap = await getDocsWithCacheFallback(q, 'admin/pending-ads-dashboard');
       const adsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       
@@ -137,12 +137,12 @@ const AdminDashboard = () => {
     if (!isAdmin) return;
     setLoading(true);
     try {
-      let q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(50));
+      let q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(5));
       
       if (timeRange === '7d') {
-        q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(7));
+        q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(5));
       } else if (timeRange === '30d') {
-        q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(30));
+        q = query(collection(db, 'metrics'), orderBy('date', 'desc'), limit(5));
       }
 
       const snap = await getDocsWithCacheFallback(q, `admin/metrics-${timeRange}`);

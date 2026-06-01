@@ -39,6 +39,7 @@ export interface MarketplaceSettings {
   expirationAction: 'archive' | 'delete';
   warningDays: number;
   categories?: string[];
+  ptRibbonScale?: number;
 }
 
 export interface UserProfile {

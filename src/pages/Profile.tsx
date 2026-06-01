@@ -70,7 +70,7 @@ const Profile = () => {
     if (!sellerId) return;
     setReviewsLoading(true);
     try {
-      const q = query(collection(db, 'reviews'), where('sellerId', '==', sellerId), limit(50));
+      const q = query(collection(db, 'reviews'), where('sellerId', '==', sellerId), limit(5));
       const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${sellerId}`);
       const reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       reviewsData.sort((a: any, b: any) => {
@@ -90,7 +90,7 @@ const Profile = () => {
     if (!user) return;
     setAdsLoading(true);
     try {
-      const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid), limit(50));
+      const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid), limit(5));
       const querySnapshot = await getDocsWithCacheFallback(q, `ads/sellerId-${user.uid}`);
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       setAds(adsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));

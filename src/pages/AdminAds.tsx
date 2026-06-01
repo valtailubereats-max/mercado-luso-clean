@@ -42,7 +42,7 @@ const AdminAds = () => {
 
   const fetchAds = async () => {
     try {
-      const q = query(collection(db, 'ads'), orderBy('createdAt', 'desc'), limit(20));
+      const q = query(collection(db, 'ads'), orderBy('createdAt', 'desc'), limit(5));
       const querySnapshot = await getDocsWithCacheFallback(q, 'admin/ads');
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       setAds(adsData);

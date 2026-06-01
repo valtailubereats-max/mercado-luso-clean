@@ -7,16 +7,18 @@ import { useSettings } from '../context/SettingsContext';
 import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+// @ts-ignore
+import ptRibbon from '../assets/images/pt_ribbon_banner_1780254768257.png';
 
-// Baixamos para 50 para economizar cota (conforme solicitado e bonito para grids)
-const INITIAL_LIMIT = 50; 
+// Baixamos temporariamente para 5 itens para teste severo de consumo de cotas
+const INITIAL_LIMIT = 5; 
 
 // Trava de segurança contra leituras excessivas (30s)
 let lastFetchTime = 0;
 let cachedAds: Ad[] = [];
 
 const Home = () => {
-  const { categories } = useSettings();
+  const { categories, settings } = useSettings();
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,13 @@ const Home = () => {
   useEffect(() => {
     let active = true;
     const fetchAds = async () => {
+      setLoading(true);
+      setErrorMsg(null);
+
+      // Delay de Segurança: 2 segundos antes de efetuar qualquer consulta do Firestore
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!active) return;
+
       const now = Date.now();
       if (now - lastFetchTime < 30000 && cachedAds.length > 0) {
         setAds(cachedAds);
@@ -58,8 +67,6 @@ const Home = () => {
       }
 
       console.log('🔥 CHAMADA AO FIREBASE DETECTADA');
-      setLoading(true);
-      setErrorMsg(null);
       try {
         // Query otimizada para baixo consumo de leituras
         const q = query(
@@ -124,66 +131,76 @@ const Home = () => {
   }, [ads, searchTerm, category, city]);
 
   return (
-    <div className="space-y-4 md:space-y-12">
-      {/* Hero Section */}
-      <section className={`relative bg-pt-green rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shadow-pt-green/20 transition-all duration-300 ${isSearchFocused ? 'p-2 md:p-6' : 'p-3 md:p-6'}`}>
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-[-20deg] translate-x-1/4" />
-        <div className="relative z-10 max-w-2xl mx-auto text-center">
-          <AnimatePresence>
-            {!isSearchFocused && (
-              <motion.div
-                initial={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                className="block cursor-pointer select-none group/title transition-all duration-200 active:scale-95 hover:opacity-95"
-                onClick={() => {
-                  setCategory('Todas');
-                  setCity('Todas');
-                  setSearchTerm('');
-                }}
-                title="Resetar filtros"
-              >
-                <motion.h1 className="text-[19px] md:text-4xl font-black leading-tight tracking-wide text-center text-white group-hover/title:text-slate-100 transition-colors">
-                  Compre e venda em <span className="text-amber-300 group-hover/title:text-amber-400 transition-colors">Portugal</span>.
-                </motion.h1>
-                <motion.p className="mt-1 md:mt-2 text-[10px] md:text-base font-medium max-w-md mx-auto text-center text-emerald-100/90 group-hover/title:text-white transition-colors">
-                  Um jeito simples de comprar e vender na sua região.
-                </motion.p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+    <div className="space-y-4 md:space-y-6">
+      {/* Título Principal Fora do Banner */}
+      <AnimatePresence>
+        {!isSearchFocused && (
+          <motion.div
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="block text-center cursor-pointer select-none group/title transition-all duration-200 active:scale-95 hover:opacity-95 pt-2"
+            onClick={() => {
+              setCategory('Todas');
+              setCity('Todas');
+              setSearchTerm('');
+            }}
+            title="Resetar filtros"
+          >
+            <h1 className="text-2xl md:text-4xl font-black leading-tight tracking-wide text-slate-900 group-hover/title:text-slate-800 transition-colors">
+              Compre e venda em <span className="text-emerald-600 group-hover/title:text-emerald-700 transition-colors">Portugal</span>
+            </h1>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          <motion.div layout className={`flex flex-col items-center gap-3 ${isSearchFocused ? 'mt-0' : 'mt-4 md:mt-6'}`}>
-            <div className="bg-white p-1 md:p-1.5 rounded-xl flex items-center shadow-md w-full max-w-md">
-              <Search className="text-slate-400 ml-2" size={18} />
+      {/* Hero Section */}
+      <section className={`relative bg-transparent rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 ${isSearchFocused ? 'p-2 md:p-6' : 'p-3 md:p-6'}`}>
+        {/* Faixa da Bandeira de Portugal Sem Transparência */}
+        <div className="absolute inset-0 pointer-events-none select-none opacity-100 z-0 flex items-center justify-center overflow-hidden">
+          <img 
+            src={ptRibbon} 
+            alt="Bandeira Oficial de Portugal em fita" 
+            className="w-full h-auto max-h-none object-cover mix-blend-multiply transition-all duration-300 pointer-events-none select-none"
+            style={{ transform: `scale(${(settings?.ptRibbonScale ?? 150) / 100})` }}
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-500/5 skew-x-[-20deg] translate-x-1/4" />
+        <div className="relative z-10 max-w-2xl mx-auto text-center py-4">
+          <motion.div layout className="flex flex-col items-center gap-3">
+            <div className="bg-white/30 backdrop-blur-xl p-1 md:p-1.5 rounded-xl flex items-center shadow-lg w-full max-w-md border border-white/30 focus-within:bg-white/60 focus-within:border-emerald-300 focus-within:shadow-emerald-500/10 transition-all">
+              <Search className="text-slate-900 ml-2" size={18} />
               <input
+                id="home-search-input"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 placeholder="O que procura hoje?"
-                className="flex-1 px-3 py-2 outline-none text-pt-green text-sm font-semibold placeholder:text-pt-green/45"
+                className="flex-1 px-3 py-2 outline-none bg-transparent text-slate-900 text-sm font-black placeholder:text-slate-800"
               />
             </div>
 
             {!isSearchFocused && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 h-8 rounded-lg border border-white/20">
-                  <Tag size={14} className="text-white" />
-                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent outline-none text-sm font-bold text-white appearance-none">
-                    <option value="Todas" className="text-slate-900">Categorias</option>
-                    {categories.map((c, i) => <option key={i} value={c} className="text-slate-900">{c}</option>)}
+                <div className="flex items-center gap-2 bg-white/30 backdrop-blur-xl shadow-md px-3 h-8 rounded-lg border border-white/30 hover:bg-white/40 hover:border-white/40 transition-all">
+                  <Tag size={14} className="text-slate-900" />
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent outline-none text-sm font-extrabold text-slate-900 appearance-none cursor-pointer">
+                    <option value="Todas" className="bg-white text-slate-900">Categorias</option>
+                    {categories.map((c, i) => <option key={i} value={c} className="bg-white text-slate-900">{c}</option>)}
                   </select>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 h-8 rounded-lg border border-white/20">
-                  <MapPin size={14} className="text-white" />
-                  <select value={city} onChange={(e) => setCity(e.target.value)} className="bg-transparent outline-none text-sm font-bold text-white appearance-none">
-                    <option value="Todas" className="text-slate-900">Localização</option>
-                    {CITIES.map((c, i) => <option key={i} value={c} className="text-slate-900">{c}</option>)}
+                <div className="flex items-center gap-2 bg-white/30 backdrop-blur-xl shadow-md px-3 h-8 rounded-lg border border-white/30 hover:bg-white/40 hover:border-white/40 transition-all">
+                  <MapPin size={14} className="text-slate-900" />
+                  <select value={city} onChange={(e) => setCity(e.target.value)} className="bg-transparent outline-none text-sm font-extrabold text-slate-900 appearance-none cursor-pointer">
+                    <option value="Todas" className="bg-white text-slate-900">Localização</option>
+                    {CITIES.map((c, i) => <option key={i} value={c} className="bg-white text-slate-900">{c}</option>)}
                   </select>
                 </div>
-                <div className="text-[10px] md:text-sm font-medium text-emerald-100">
-                  <span className="font-bold text-white text-lg">{filteredAds.length}</span> anúncios
+                <div className="flex items-center gap-1.5 bg-slate-950/30 backdrop-blur-xl px-3 h-8 rounded-lg border border-white/10 text-white shadow-md text-xs font-black">
+                  <span className="text-sm font-black text-white">{filteredAds.length}</span> anúncios
                 </div>
               </motion.div>
             )}

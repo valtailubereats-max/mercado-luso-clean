@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const localIds = JSON.parse(localRaw);
       if (Array.isArray(localIds) && localIds.length > 0) {
         // Busca favoritos existentes no Firestore para evitar duplicados
-        const q = query(collection(db, 'favorites'), where('userId', '==', uid), limit(100));
+        const q = query(collection(db, 'favorites'), where('userId', '==', uid), limit(5));
         const snap = await getDocsWithCacheFallback(q, `favorites/sync-${uid}`);
         const existingAdIds = new Set(snap.docs.map(doc => doc.data().adId));
 
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchFavorites = async (uid: string) => {
     try {
-      const q = query(collection(db, 'favorites'), where('userId', '==', uid), limit(100));
+      const q = query(collection(db, 'favorites'), where('userId', '==', uid), limit(5));
       const snap = await getDocsWithCacheFallback(q, `favorites/userId-${uid}`);
       const favIds = snap.docs.map(doc => doc.data().adId);
       setFavorites(favIds);
@@ -144,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             collection(db, 'favorites'), 
             where('userId', '==', user.uid), 
             where('adId', '==', adId),
-            limit(10)
+            limit(5)
           );
           const snap = await getDocsWithCacheFallback(q, `favorites/delete-${user.uid}-${adId}`);
           const deletePromises = snap.docs.map(docSnapshot => deleteDoc(docSnapshot.ref));

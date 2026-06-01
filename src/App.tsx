@@ -18,6 +18,8 @@ import AdminSettings from './pages/AdminSettings';
 import AdminUsers from './pages/AdminUsers';
 import AdminTeam from './pages/AdminTeam';
 import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import Report from './pages/Report';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
@@ -46,107 +48,8 @@ const Navbar = () => {
     }
   };
 
-  // Notificações do usuário (one-time fallback-cached fetch)
-  React.useEffect(() => {
-    let active = true;
-    if (!loading && user) {
-      const fetchUserNotifications = async () => {
-        try {
-          const q = query(
-            collection(db, 'notifications'),
-            where('userId', '==', user.uid),
-            limit(100)
-          );
-          const snapshot = await getDocsWithCacheFallback(q, `notifications/userId-${user.uid}`);
-          if (!active) return;
-          const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          // Filtrar e ordenar em memória para não precisar de Índices Compostos
-          const filtered = notifs
-            .filter(n => (n as any).read === false)
-            .sort((a: any, b: any) => {
-              const dateA = a.createdAt ? (typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
-              const dateB = b.createdAt ? (typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
-              return dateB - dateA;
-            });
-          setNotifications(filtered.slice(0, 20));
-        } catch (error) {
-          console.error('Notifications fetch error:', error);
-        }
-      };
-      
-      fetchUserNotifications();
-    }
-    return () => {
-      active = false;
-    };
-  }, [loading, user]);
-
-  // Pending ads do admin (one-time fetch)
-  React.useEffect(() => {
-    let active = true;
-    if (!loading && isAdmin) {
-      const fetchAdminPendingAds = async () => {
-        try {
-          const q = query(
-            collection(db, 'ads'),
-            where('status', '==', 'pending'),
-            limit(50)
-          );
-          const snapshot = await getDocsWithCacheFallback(q, 'admin/pending-ads');
-          if (!active) return;
-          const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
-          
-          // Ordenar em memória para evitar Índice Composto
-          adsData.sort((a, b) => {
-            const dateA = a.createdAt ? (typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
-            const dateB = b.createdAt ? (typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
-            return dateB - dateA;
-          });
-
-          setAdminNotificationCount(adsData.length);
-          setAdminPendingAds(adsData.slice(0, 10));
-        } catch (error) {
-          console.error('Admin pending ads fetch error:', error);
-        }
-      };
-
-      fetchAdminPendingAds();
-    }
-    return () => {
-      active = false;
-    };
-  }, [loading, isAdmin]);
-
-  // Contagem de ads do usuário (one-time fetch)
-  React.useEffect(() => {
-    let active = true;
-    if (!loading && user) {
-      const fetchUserNotificationCount = async () => {
-        try {
-          const q = query(
-            collection(db, 'ads'),
-            where('sellerId', '==', user.uid),
-            limit(100)
-          );
-          const snapshot = await getDocsWithCacheFallback(q, `ads/sellerId-${user.uid}`);
-          if (!active) return;
-          const userAds = snapshot.docs.map(doc => doc.data());
-          const unnotifiedCount = userAds.filter(ad => 
-            ['approved', 'rejected'].includes(ad.status) && 
-            ad.userNotified === false
-          ).length;
-          setUserNotificationCount(unnotifiedCount);
-        } catch (error) {
-          console.error('User notification count fetch error:', error);
-        }
-      };
-
-      fetchUserNotificationCount();
-    }
-    return () => {
-      active = false;
-    };
-  }, [loading, user]);
+  // Notificações do usuário, pending ads do admin e contagem de ads desativados do Firestore globais
+  // para blindagem total contra consumo excessivo de leituras. O Navbar agora é 100% estático.
 
   const handleMarkAsRead = async (id: string, adId?: string) => {
     try { 
@@ -425,14 +328,17 @@ export default function App() {
               <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
               <Route path="/admin/team" element={<AdminLayout><AdminTeam /></AdminLayout>} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/denuncia" element={<Report />} />
             </Routes>
           </main>
           <footer className="bg-white border-t border-slate-200 py-12 mt-20">
             <div className="max-w-7xl mx-auto px-4 text-center">
               <p className="text-slate-500 text-sm">© 2026 Mercado Luso. Simples, rápido e seguro.</p>
-              <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold">
+              <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap">
                 <Link to="/terms" className="hover:text-indigo-600">Termos de Uso</Link>
-                <Link to="/terms" className="hover:text-indigo-600">Privacidade</Link>
+                <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
+                <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
                 <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>
               </div>
             </div>
