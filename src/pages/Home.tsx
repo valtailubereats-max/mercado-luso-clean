@@ -133,7 +133,7 @@ const Home = () => {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Hero Section */}
-      <section className={`relative -mt-6 md:-mt-8 rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 shadow-lg ${isSearchFocused ? 'p-2 md:p-4' : 'p-3 md:p-6'}`}>
+      <section className="relative -mt-6 md:-mt-8 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg p-3 md:p-6 transition-all duration-300">
         {/* Colagem de Bandeiras da CPLP (Fundo do Banner) */}
         <div className="absolute inset-0 pointer-events-none select-none z-0">
           <img 
@@ -143,32 +143,29 @@ const Home = () => {
             referrerPolicy="no-referrer"
           />
           {/* Capa translúcida vibrante: aumenta saturação, aumenta com brilho e mantém transparência pura */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/30 via-transparent to-slate-950/25 backdrop-brightness-[1.10] backdrop-saturate-[1.40]" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/35 via-transparent to-slate-950/25 backdrop-brightness-[1.10] backdrop-saturate-[1.40]" />
         </div>
         
         <div className="relative z-10 max-w-2xl mx-auto text-center py-1">
           <motion.div layout className="flex flex-col items-center gap-2 md:gap-3">
             
             {/* Título e Subtítulo Legíveis no Banner */}
-            {!isSearchFocused && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mb-1"
-              >
-                <h1 className="text-xl md:text-3xl font-black leading-tight tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
-                  Mercado da Língua Portuguesa
-                </h1>
-                <h2 className="mt-1 text-[10px] md:text-xs font-bold text-slate-50 tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
-                  Conectando o Mundo Lusófono
-                </h2>
-              </motion.div>
-            )}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-1"
+            >
+              <h1 className="text-xl md:text-3xl font-black leading-tight tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
+                Mercado da Língua Portuguesa
+              </h1>
+              <h2 className="mt-1 text-[10px] md:text-xs font-bold text-slate-50 tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                Conectando o Mundo Lusófono
+              </h2>
+            </motion.div>
 
-            {/* Caixas de Interface com Vidro Fosco de Alta Intensidade */}
-            <div className="bg-white/45 backdrop-blur-3xl p-1 rounded-xl flex items-center shadow-2xl w-full max-w-md border border-white/40 focus-within:bg-white/70 focus-within:border-emerald-400 focus-within:shadow-emerald-500/10 transition-all">
-              <Search className="text-slate-900 ml-2" size={16} />
+            {/* Caixas de Interface com Vidro Fosco de Alta Intensidade e Transparência Elevada */}
+            <div className="bg-white/20 backdrop-blur-3xl p-1 rounded-xl flex items-center shadow-2xl w-full max-w-md border border-white/30 focus-within:bg-white/35 focus-within:border-emerald-300/60 focus-within:shadow-emerald-500/10 transition-all">
+              <Search className="text-white/95 ml-2" size={16} />
               <input
                 id="home-search-input"
                 type="text"
@@ -177,31 +174,29 @@ const Home = () => {
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 placeholder="O que procura hoje?"
-                className="flex-1 px-3 py-1.5 outline-none bg-transparent text-slate-950 text-xs md:text-sm font-black placeholder:text-slate-800/80"
+                className="flex-1 px-3 py-1.5 outline-none bg-transparent text-white text-xs md:text-sm font-bold placeholder:text-white/70"
               />
             </div>
 
-            {!isSearchFocused && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-wrap gap-2 items-center justify-center">
-                <div className="flex items-center gap-1.5 bg-white/45 backdrop-blur-3xl shadow-xl px-2.5 h-7 rounded-lg border border-white/40 hover:bg-white/60 hover:border-white/50 transition-all">
-                  <Tag size={12} className="text-slate-900" />
-                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent outline-none text-xs font-black text-slate-950 appearance-none cursor-pointer">
-                    <option value="Todas" className="bg-white text-slate-900">Categorias</option>
-                    {categories.map((c, i) => <option key={i} value={c} className="bg-white text-slate-900">{c}</option>)}
-                  </select>
-                </div>
-                <div className="flex items-center gap-1.5 bg-white/45 backdrop-blur-3xl shadow-xl px-2.5 h-7 rounded-lg border border-white/40 hover:bg-white/60 hover:border-white/50 transition-all">
-                  <MapPin size={12} className="text-slate-900" />
-                  <select value={city} onChange={(e) => setCity(e.target.value)} className="bg-transparent outline-none text-xs font-black text-slate-950 appearance-none cursor-pointer">
-                    <option value="Todas" className="bg-white text-slate-900">Localização</option>
-                    {CITIES.map((c, i) => <option key={i} value={c} className="bg-white text-slate-900">{c}</option>)}
-                  </select>
-                </div>
-                <div className="flex items-center gap-1.5 bg-slate-950/50 backdrop-blur-2xl px-2.5 h-7 rounded-lg border border-white/20 text-white shadow-xl text-[10px] font-black">
-                  <span className="text-xs font-black text-white">{filteredAds.length}</span> anúncios
-                </div>
-              </motion.div>
-            )}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-wrap gap-2 items-center justify-center">
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-3xl shadow-xl px-2.5 h-7 rounded-lg border border-white/30 hover:bg-white/30 hover:border-white/40 transition-all">
+                <Tag size={12} className="text-white/95" />
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-transparent outline-none text-xs font-bold text-white appearance-none cursor-pointer">
+                  <option value="Todas" className="bg-slate-900 text-white">Categorias</option>
+                  {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900 text-white">{c}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-3xl shadow-xl px-2.5 h-7 rounded-lg border border-white/30 hover:bg-white/30 hover:border-white/40 transition-all">
+                <MapPin size={12} className="text-white/95" />
+                <select value={city} onChange={(e) => setCity(e.target.value)} className="bg-transparent outline-none text-xs font-bold text-white appearance-none cursor-pointer">
+                  <option value="Todas" className="bg-slate-900 text-white">Localização</option>
+                  {CITIES.map((c, i) => <option key={i} value={c} className="bg-slate-900 text-white">{c}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-950/35 backdrop-blur-2xl px-2.5 h-7 rounded-lg border border-white/15 text-white/95 shadow-xl text-[10px] font-bold">
+                <span className="text-xs font-black text-white">{filteredAds.length}</span> anúncios
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
