@@ -61,21 +61,17 @@ const AdminImport = () => {
       console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
       
              // Puxa a chave e o modelo diretamente conforme instrução
-  try {
-      // Forma padrão e segura para Vite + Vercel
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
 
-      // Verifica se a chave existe antes de prosseguir
-      if (!apiKey) {
-        throw new Error("A chave de API (VITE_GEMINI_API_KEY) não foi encontrada nas configurações da Vercel.");
-      }
+console.log("API KEY existe?", !!apiKey);
+console.log("MODELO:", modelName);
 
-      // Inicialização oficial do Google Gemini
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ 
-        model: modelName 
-      });
+const genAI = new GoogleGenerativeAI(apiKey);
+
+const model = genAI.getGenerativeModel({
+  model: modelName
+});
         
         const base64Data = image.split(',')[1];
         
