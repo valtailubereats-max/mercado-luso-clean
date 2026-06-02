@@ -38,26 +38,46 @@ const AdminImport = () => {
     setError(null);
 
     try {
-      // Puxa a chave e o modelo do .env (ou usa o padrão)
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-3.5-flash";
-      
-      if (!apiKey) {
-        throw new Error('A chave de API do Gemini não foi encontrada no ficheiro .env.');
+      // Chamamos o nosso endpoint do servidor, que possui a API KEY real configurada no backend
+      const response = await fetch('/api/gemini/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image, categories })
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha de rede ao conectar com o serviço de IA.');
       }
 
-      // Inicialização correta seguindo a documentação atual do Google
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        generationConfig: {
-            responseMimeType: "application/json",
+      const serverResult = await response.json();
+      if (serverResult.success && serverResult.data) {
+        setResult(serverResult.data);
+      } else {
+        throw new Error(serverResult.error || 'Não foi possível extrair os dados do print.');
+      }
+    } catch (err: any) {
+      console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
+      
+      try {
+        // Puxa a chave e o modelo diretamente conforme instrução
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
+       
+        if (!apiKey) {
+          throw new Error('A chave de API do Gemini não foi encontrada no ficheiro .env.');
         }
-      });
-      
-      const base64Data = image.split(',')[1];
-      
-      const prompt = `Você é um assistente especializado em extrair informações de anúncios de classificados.
+
+        // Inicialização correta seguindo a documentação atual do Google
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+          model: modelName
+        });
+        
+        const base64Data = image.split(',')[1];
+        
+        const prompt = `Você é um assistente especializado em extrair informações de anúncios de classificados.
 Extraia as seguintes informações da imagem fornecida e retorne APENAS um objeto JSON válido:
 - title: Título do produto
 - price: Preço (apenas o número)
@@ -74,27 +94,29 @@ Estrutura JSON esperada:
   "category": "string"
 }`;
 
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            mimeType: "image/jpeg",
-            data: base64Data
-          }
-        }
-      ]);
+        // Ordem dos Dados: Objeto da imagem colocado antes do prompt de texto
+        const result = await model.generateContent([
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: base64Data
+            }
+          },
+          prompt
+        ]);
 
-      const response = await result.response;
-      const text = response.text();
-      
-      // Limpeza simples caso a IA retorne markdown
-      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const extractedData = JSON.parse(cleanJson);
-      
-      setResult(extractedData);
-    } catch (err: any) {
-      console.error('Erro na análise do Gemini:', err);
-      setError(`⚠️ Falha na IA: ${err.message || 'Verifique sua chave de API e conexão.'}`);
+        const response = await result.response;
+        const text = response.text();
+        
+        // Limpeza de blocos markdown ```json ... ```
+        const cleanJson = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
+        const extractedData = JSON.parse(cleanJson);
+        
+        setResult(extractedData);
+      } catch (clientErr: any) {
+        console.error('Erro na análise local do Gemini:', clientErr);
+        setError(`⚠️ Falha na IA: ${clientErr.message || err.message || 'Verifique sua chave de API e conexão.'}`);
+      }
     } finally {
       setAnalyzing(false);
     }
