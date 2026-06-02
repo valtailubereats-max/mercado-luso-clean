@@ -60,8 +60,7 @@ const AdminImport = () => {
     } catch (err: any) {
       console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
       
-      try {
-        // Puxa a chave e o modelo diretamente conforme instrução
+             // Puxa a chave e o modelo diretamente conforme instrução
         try {
       // Tenta ler do import.meta (Vite/ESM) ou do process.env (Node/CJS)
       const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || 
