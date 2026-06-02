@@ -58,12 +58,13 @@ const AdminImport = () => {
         throw new Error(serverResult.error || 'Não foi possível extrair os dados do print.');
       }
     } catch (err: any) {
-      console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
-      
-             // Puxa a chave e o modelo diretamente conforme instrução
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
+  console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
 
+  try {
+
+    // Puxa a chave e o modelo diretamente conforme instrução
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
 console.log("API KEY existe?", !!apiKey);
 console.log("MODELO:", modelName);
 
