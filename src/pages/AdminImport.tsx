@@ -62,8 +62,8 @@ const AdminImport = () => {
       
       try {
         // Puxa a chave e o modelo diretamente conforme instrução
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (window as any)._env_?.VITE_GEMINI_API_KEY;
-const modelName = (import.meta as any).env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
+        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+        const modelName = (import.meta as any).env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
        
         if (!apiKey) {
           throw new Error('A chave de API do Gemini não foi encontrada no ficheiro .env.');
