@@ -10,7 +10,7 @@ import { motion } from 'motion/react';
 // @ts-ignore
 import cplpCollage from '../assets/images/cplp_flags_collage_1780303992447.png';
 
-const INITIAL_LIMIT = 20; 
+const INITIAL_LIMIT = 15; 
 
 let lastFetchTime = 0;
 let cachedAds: Ad[] = [];
