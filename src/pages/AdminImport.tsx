@@ -62,7 +62,7 @@ const AdminImport = () => {
       
       try {
         // Puxa a chave e o modelo diretamente conforme instrução
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        onst apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
        
         if (!apiKey) {
