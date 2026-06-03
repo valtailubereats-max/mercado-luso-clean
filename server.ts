@@ -343,19 +343,19 @@ Estrutura JSON esperada:
       let response;
       try {
         response = await ai.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: { parts: [imagePart, textPart] },
-  config: {
-    responseMimeType: "application/json"
-  }
-});
+          model: "gemini-3.5-flash",
+          contents: { parts: [imagePart, textPart] },
+          config: {
+            responseMimeType: "application/json"
+          }
+        });
       } catch (err: any) {
         console.warn("Generating content with gemini-3.5-flash failed, attempting fallback:", err.message);
         // Fallback model
         response = await ai.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: { parts: [imagePart, textPart] }
-});
+          model: "gemini-2.5-flash-image",
+          contents: { parts: [imagePart, textPart] }
+        });
       }
 
       const text = response.text;

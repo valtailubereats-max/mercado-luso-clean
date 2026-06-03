@@ -58,21 +58,22 @@ const AdminImport = () => {
         throw new Error(serverResult.error || 'Não foi possível extrair os dados do print.');
       }
     } catch (err: any) {
-  console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
+      console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
+      
+      try {
+        // Puxa a chave e o modelo diretamente conforme instrução
+        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+        const modelName = (import.meta as any).env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
+       
+        if (!apiKey) {
+          throw new Error('A chave de API do Gemini não foi encontrada. Configure a variável VITE_GEMINI_API_KEY nas definições de ambiente da Vercel.');
+        }
 
-  try {
-
-    // Puxa a chave e o modelo diretamente conforme instrução
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    const modelName = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
-console.log("API KEY existe?", !!apiKey);
-console.log("MODELO:", modelName);
-
-const genAI = new GoogleGenerativeAI(apiKey);
-
-const model = genAI.getGenerativeModel({
-  model: modelName
-});
+        // Inicialização correta seguindo a documentação atual do Google
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+          model: modelName
+        });
         
         const base64Data = image.split(',')[1];
         
@@ -114,7 +115,11 @@ Estrutura JSON esperada:
         setResult(extractedData);
       } catch (clientErr: any) {
         console.error('Erro na análise local do Gemini:', clientErr);
-        setError(`⚠️ Falha na IA: ${clientErr.message || err.message || 'Verifique sua chave de API e conexão.'}`);
+        let msg = clientErr.message || err.message || 'Verifique sua chave de API e conexão.';
+        if (msg.includes('not found for API version') || msg.includes('Requested entity was not found') || msg.includes('404')) {
+          msg = `A chave de API do Gemini (VITE_GEMINI_API_KEY) está correta mas o Google retornou erro (404/Not Found). \n💡 Como resolver: Se a sua chave foi criada no projeto customizado "NavLink", certifique-se de ativar a "Generative Language API" na consola do Google Cloud desse projeto. Caso contrário, crie uma chave nova no Google AI Studio selecionando o "Default Gemini Project" (que já vem pré-configurado por padrão e funciona de imediato).`;
+        }
+        setError(`⚠️ Falha na IA: ${msg}`);
       }
     } finally {
       setAnalyzing(false);
