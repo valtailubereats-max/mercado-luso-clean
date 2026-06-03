@@ -210,14 +210,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -5, scale: 1.02 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
         onClick={() => {
           setShowDetails(true);
           incrementViews();
         }}
-        className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:border-indigo-200 transition-shadow group flex flex-col h-full cursor-pointer"
+        className="card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer"
       >
         <div className="relative aspect-square overflow-hidden bg-slate-50">
           <OptimizedImage
