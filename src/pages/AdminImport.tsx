@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Alteramos para a biblioteca oficial do Google
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Sparkles, Check, AlertCircle, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -38,7 +36,7 @@ const AdminImport = () => {
     setError(null);
 
     try {
-      // Chamamos o nosso endpoint do servidor, que possui a API KEY real configurada no backend
+      // Chamamos o nosso endpoint do servidor robusto e compatível com Vercel
       const response = await fetch('/api/gemini/analyze', {
         method: 'POST',
         headers: {
@@ -48,7 +46,7 @@ const AdminImport = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Falha de rede ao conectar com o serviço de IA.');
+        throw new Error('Falha de rede ao conectar com o serviço de IA na Vercel.');
       }
 
       const serverResult = await response.json();
@@ -58,69 +56,8 @@ const AdminImport = () => {
         throw new Error(serverResult.error || 'Não foi possível extrair os dados do print.');
       }
     } catch (err: any) {
-      console.warn('Servidor indisponível ou erro no endpoint, a tentar processar localmente no cliente:', err);
-      
-      try {
-        // Puxa a chave e o modelo diretamente conforme instrução
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-        const modelName = (import.meta as any).env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
-       
-        if (!apiKey) {
-          throw new Error('A chave de API do Gemini não foi encontrada. Configure a variável VITE_GEMINI_API_KEY nas definições de ambiente da Vercel.');
-        }
-
-        // Inicialização correta seguindo a documentação atual do Google
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-          model: modelName
-        });
-        
-        const base64Data = image.split(',')[1];
-        
-        const prompt = `Você é um assistente especializado em extrair informações de anúncios de classificados.
-Extraia as seguintes informações da imagem fornecida e retorne APENAS um objeto JSON válido:
-- title: Título do produto
-- price: Preço (apenas o número)
-- description: Descrição detalhada
-- city: Escolha a mais próxima de: ${CITIES.join(', ')}
-- category: Escolha a mais próxima de: ${categories.join(', ')}
-
-Estrutura JSON esperada:
-{
-  "title": "string",
-  "price": number,
-  "description": "string",
-  "city": "string",
-  "category": "string"
-}`;
-
-        // Ordem dos Dados: Objeto da imagem colocado antes do prompt de texto
-        const result = await model.generateContent([
-          {
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: base64Data
-            }
-          },
-          prompt
-        ]);
-
-        const response = await result.response;
-        const text = response.text();
-        
-        // Limpeza de blocos markdown ```json ... ```
-        const cleanJson = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
-        const extractedData = JSON.parse(cleanJson);
-        
-        setResult(extractedData);
-      } catch (clientErr: any) {
-        console.error('Erro na análise local do Gemini:', clientErr);
-        let msg = clientErr.message || err.message || 'Verifique sua chave de API e conexão.';
-        if (msg.includes('not found for API version') || msg.includes('Requested entity was not found') || msg.includes('404')) {
-          msg = `A chave de API do Gemini (VITE_GEMINI_API_KEY) está correta mas o Google retornou erro (404/Not Found). \n💡 Como resolver: Se a sua chave foi criada no projeto customizado "NavLink", certifique-se de ativar a "Generative Language API" na consola do Google Cloud desse projeto. Caso contrário, crie uma chave nova no Google AI Studio selecionando o "Default Gemini Project" (que já vem pré-configurado por padrão e funciona de imediato).`;
-        }
-        setError(`⚠️ Falha na IA: ${msg}`);
-      }
+      console.error('Erro no processamento do Gemini no servidor:', err);
+      setError(`⚠️ Falha na IA: ${err.message || 'Erro inesperado'}`);
     } finally {
       setAnalyzing(false);
     }
