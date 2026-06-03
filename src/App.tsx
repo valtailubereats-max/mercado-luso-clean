@@ -334,9 +334,9 @@ export default function App() {
           </main>
           <footer className="bg-white border-t border-slate-200 py-12 mt-20">
             <div className="max-w-7xl mx-auto px-4 text-center">
-              <p className="text-slate-500 text-sm">© 2026 Mercado Luso. Simples, rápido e seguro.</p>
+              <p className="text-sm font-extrabold transition-colors" style={{ color: '#52b64d' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
               <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap">
-                <Link to="/terms" className="hover:text-indigo-600">Termos de Uso</Link>
+                <Link to="/terms" className="hover:text-indigo-600" style={{ color: '#ff2056' }}>Termos de Uso</Link>
                 <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
                 <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
                 <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>

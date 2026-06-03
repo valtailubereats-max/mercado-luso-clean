@@ -100,7 +100,7 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 backdrop-saturate-[1.4]" />
         </div>
         
-        <div className="relative z-10 max-w-4xl mx-auto text-center py-7 md:py-16 px-6">
+        <div className="relative z-10 max-w-4xl mx-auto text-center py-5 md:py-12 px-6">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             
             {/* Título com Tipografia Premium */}
@@ -115,12 +115,12 @@ const Home = () => {
             >
               Mercado da Língua Portuguesa
             </h1>
-            <p className="text-xs md:text-lg font-medium text-white/90 mb-5 md:mb-8 tracking-widest uppercase drop-shadow-md">
+            <p className="text-xs md:text-lg font-medium text-white/90 mb-4 md:mb-6 tracking-widest uppercase drop-shadow-md">
               Conectando o Mundo Lusófono
             </p>
 
             {/* Barra de Pesquisa Minimalista */}
-            <div className="relative max-w-lg mx-auto mb-4 md:mb-6 group">
+            <div className="relative max-w-lg mx-auto mb-3 md:mb-4.5 group">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <Search size={18} className="text-white/60 group-focus-within:text-white transition-colors" />
               </div>
