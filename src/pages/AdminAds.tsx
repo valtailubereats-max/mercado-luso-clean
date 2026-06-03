@@ -61,8 +61,10 @@ const AdminAds = () => {
       });
       setAds(prevAds => prevAds.map(ad => ad.id === adId ? { ...ad, status } as Ad : ad));
       setSelectedAd(prev => prev && prev.id === adId ? { ...prev, status: status as any } : prev);
+      return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `ads/${adId}`);
+      return false;
     }
   };
 
@@ -493,12 +495,26 @@ const AdminAds = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedAd(null);
+                      navigate(`/edit-ad/${selectedAd.id}`);
+                    }}
+                    className="h-10 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs rounded-xl transition-all flex items-center gap-2"
+                    title="Editar Anúncio"
+                  >
+                    <Edit size={16} />
+                    <span>Editar</span>
+                  </button>
                   {selectedAd.status === 'pending' && (
                     <>
                       <button
                         onClick={async () => {
-                          await handleAdAction(selectedAd.id, 'approved');
-                          alert('Anúncio aprovado com sucesso!');
+                          const success = await handleAdAction(selectedAd.id, 'approved');
+                          if (success) {
+                            setSelectedAd(null);
+                            alert('Anúncio aprovado com sucesso!');
+                          }
                         }}
                         className="h-10 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shadow-sm shadow-emerald-100"
                       >
@@ -507,10 +523,13 @@ const AdminAds = () => {
                       </button>
                       <button
                         onClick={async () => {
-                          await handleAdAction(selectedAd.id, 'rejected');
-                          alert('Anúncio rejeitado com sucesso!');
+                          const success = await handleAdAction(selectedAd.id, 'rejected');
+                          if (success) {
+                            setSelectedAd(null);
+                            alert('Anúncio rejeitado com sucesso!');
+                          }
                         }}
-                        className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-all flex items-center gap-2"
+                        className="h-10 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
                       >
                         <XCircle size={16} />
                         <span>Rejeitar</span>

@@ -6,6 +6,7 @@ import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallba
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { CITIES, Ad, MarketplaceSettings } from '../types';
+import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
 import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw } from 'lucide-react';
 import { compressImage } from '../lib/imageUtils';
@@ -497,21 +498,12 @@ const CreateAd = () => {
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cidade / Região</label>
               <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  type="text"
-                  list="cities-list"
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={20} />
+                <SearchableCitySelect
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(val) => setFormData({ ...formData, city: val })}
                   placeholder="Escreva ou escolha a sua cidade"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium"
-                  required
                 />
-                <datalist id="cities-list">
-                  {CITIES.map((c, index) => (
-                    <option key={`city-datalist-${c}-${index}`} value={c} />
-                  ))}
-                </datalist>
               </div>
             </div>
 
