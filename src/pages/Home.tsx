@@ -178,9 +178,9 @@ const Home = () => {
       </section>
 
       {/* Grid de Anúncios */}
-      <div className="px-4 md:px-0">
+      <div className="px-0">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="bg-slate-100 rounded-3xl h-64 animate-pulse" />
             ))}
@@ -191,7 +191,7 @@ const Home = () => {
             <h3 className="text-xl font-bold text-slate-400">Nenhum tesouro encontrado</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
             {filteredAds.map((ad) => (
               <AdCard key={ad.id} ad={ad} />
             ))}

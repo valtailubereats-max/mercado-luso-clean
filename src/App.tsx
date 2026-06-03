@@ -96,7 +96,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <nav className="bg-[#bfead0] border-b border-[#a8dec0] sticky top-0 z-50 shadow-sm/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 group">
@@ -108,7 +108,7 @@ const Navbar = () => {
                 <span className="text-pt-green">Mercado</span>
                 <span className="text-pt-red">Luso</span>
               </span>
-              <span className="text-[10px] font-medium text-slate-500 tracking-wide leading-none mt-1">Compre, Venda e Negocie</span>
+              <span className="text-[10px] font-medium text-slate-600 tracking-wide leading-none mt-1">Compre, Venda e Negocie</span>
             </div>
           </Link>
 
@@ -120,9 +120,9 @@ const Navbar = () => {
                 placeholder="O que procura?"
                 value={navSearch}
                 onChange={(e) => setNavSearch(e.target.value)}
-                className="w-full bg-slate-100 border-none rounded-xl py-2 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-white/90 border border-[#a8dec0]/60 rounded-xl py-2 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pt-green/50 focus:bg-white transition-all shadow-sm"
               />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             </form>
           </div>
 
