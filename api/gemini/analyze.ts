@@ -64,19 +64,16 @@ Estrutura JSON esperada:
     let response;
     try {
       response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: { parts: [imagePart, textPart] },
         config: {
           responseMimeType: "application/json"
         }
       });
-    } catch (err: any) {
-      console.warn("Generativa com gemini-3.5-flash falhou, tentando fallback gemini-2.5-flash-image:", err.message);
-      response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
-        contents: { parts: [imagePart, textPart] }
-      });
-    }
+} catch (err: any) {
+  console.warn("Gemini falhou:", err.message);
+  throw err;
+}
 
     const text = response.text;
     if (!text) {
