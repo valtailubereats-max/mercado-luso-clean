@@ -202,11 +202,35 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     ((adDataEx.description || '').length > 160 ? '...' : '')
   );
   
-  let adImage = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80';
-  if (adDataEx.images && Array.isArray(adDataEx.images) && adDataEx.images.length > 0 && adDataEx.images[0]) {
-    adImage = adDataEx.images[0];
-  } else if (adDataEx.imageUrl) {
-    adImage = adDataEx.imageUrl;
+  let adImage = '';
+  const fallbackUrl = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80';
+
+  // Helper to validate and return string only if it is a public URL and not base64
+  const isValidUrl = (urlStr: any): boolean => {
+    if (!urlStr || typeof urlStr !== 'string') return false;
+    const s = urlStr.trim();
+    return (s.startsWith('http://') || s.startsWith('https://')) && !s.startsWith('data:') && !s.includes(';base64,');
+  };
+
+  // 1. Procurar no array de imagens pelo primeiro link público válido (não-Base64)
+  if (adDataEx.images && Array.isArray(adDataEx.images)) {
+    for (const img of adDataEx.images) {
+      if (isValidUrl(img)) {
+        adImage = img.trim();
+        break;
+      }
+    }
+  }
+
+  // 2. Procurar na propriedade imageUrl individual caso o array não tenha trazido nenhum válido
+  if (!adImage && isValidUrl(adDataEx.imageUrl)) {
+    adImage = adDataEx.imageUrl!.trim();
+  }
+
+  // 3. Fallback definitivo se não houver nenhuma imagem pública válida do anúncio
+  if (!adImage) {
+    adImage = fallbackUrl;
+    console.log(`[SEO SERVERLESS] Nenhuma imagem pública válida encontrada (provável Base64 ou nula). Usando imagem padrão: ${adImage}`);
   }
 
   const host = req.headers.host || 'mercadoluso.vercel.app';
@@ -223,12 +247,12 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
   <meta property="og:url" content="${adUrl}" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
-  <meta property="og:image" content="${adImage}" />
+  <meta property="og:image" content="${escapeHtml(adImage)}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${adImage}" />
+  <meta name="twitter:image" content="${escapeHtml(adImage)}" />
 `;
 
   // Remover tags antigas no HTML original (como títulos duplicados ou tags default de templates) para evitar poluição visual e meta conflitos
