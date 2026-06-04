@@ -468,7 +468,7 @@ const AdminAds = () => {
                 {/* Description */}
                 <div className="space-y-2">
                   <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Descrição Completa</h4>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm text-slate-700 font-medium whitespace-pre-wrap break-words overflow-hidden leading-relaxed">
                     {selectedAd.description || 'Sem descrição fornecida.'}
                   </div>
                 </div>

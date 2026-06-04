@@ -17,11 +17,23 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Use initializeFirestore with experimentalForceLongPolling and useFetchStreams: false to ensure connectivity in sandboxed iframes and proxy servers
+// Enable long polling only in sandboxed environments (such as localhost or Google Cloud Run dev URL)
+// to bypass sandboxed iframe restrictions. In production (mercado-luso.com), use the default transport
+// (WebSockets / streaming) to prevent reverse proxies/CDNs from buffering long-polling chunks and timing out.
+const isSandboxEnv = typeof window !== 'undefined' && (
+  window.location.hostname.includes('localhost') ||
+  window.location.hostname.includes('127.0.0.1') ||
+  window.location.hostname.includes('run.app')
+);
+
+console.log('[Firebase] Initializing client-side app. Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'Server-side', '| Sandbox Env (Force Long-Polling):', isSandboxEnv);
+
+const firestoreOptions = isSandboxEnv ? { experimentalForceLongPolling: true } : {};
+
 const dbId = firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId;
 export const db = dbId 
-  ? initializeFirestore(app, { experimentalForceLongPolling: true }, dbId)
-  : initializeFirestore(app, { experimentalForceLongPolling: true });
+  ? initializeFirestore(app, firestoreOptions, dbId)
+  : initializeFirestore(app, firestoreOptions);
 
 // Ativação de Persistência Offline (Cache) via IndexedDb conforme pedido
 if (typeof window !== 'undefined') {

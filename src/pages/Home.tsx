@@ -64,6 +64,7 @@ const Home = () => {
         cachedAds = adsData;
         lastFetchTime = now;
       } catch (err: any) {
+        console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
         if (active) setErrorMsg("Erro ao carregar anúncios.");
       } finally {
         if (active) setLoading(false);

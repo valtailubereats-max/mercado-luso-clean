@@ -371,7 +371,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                 <X size={24} />
               </button>
 
-              <div className="overflow-y-auto">
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="h-72 md:h-96 bg-slate-950 relative group/img overflow-hidden touch-none flex items-center justify-center">
                   {/* Backdrop com desfoque ambiente premium para fotos verticais/horizontais se integrarem sem cortes */}
                   <div 
@@ -464,7 +464,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                   <div className="space-y-4">
                     <div>
                       <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Descrição</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
+                      <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
                         {ad.description.length > 200 && !descriptionExpanded
                           ? `${ad.description.substring(0, 200).trim()}...`
                           : ad.description}

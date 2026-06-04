@@ -430,7 +430,7 @@ const AdDetails = () => {
             {/* Descrição */}
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Descrição detalhada</h3>
-              <p className="text-slate-600 text-[15px] leading-relaxed whitespace-pre-line bg-slate-50/40 p-4 rounded-2xl border border-slate-50">
+              <p className="text-slate-600 text-[15px] leading-relaxed whitespace-pre-line break-words overflow-hidden bg-slate-50/40 p-4 rounded-2xl border border-slate-50">
                 {ad.description.length > 400 && !descriptionExpanded
                   ? `${ad.description.substring(0, 400).trim()}...`
                   : ad.description}
