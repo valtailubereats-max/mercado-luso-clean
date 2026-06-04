@@ -1,8 +1,21 @@
 {
   "rewrites": [
     {
+      "source": "/anuncio/:id",
+      "destination": "/api/seo"
+    },
+    {
+      "source": "/anuncio/:slugAndId",
+      "destination": "/api/seo"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/seo.ts": {
+      "includeFiles": "dist/index.html"
+    }
+  }
 }
