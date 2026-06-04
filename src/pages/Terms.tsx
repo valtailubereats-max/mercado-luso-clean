@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Shield, Info, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Shield, Info, AlertTriangle, CheckCircle, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Terms = () => {
   React.useEffect(() => {
@@ -12,10 +13,19 @@ const Terms = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-slate-100"
+        className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-slate-100 relative"
       >
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+        {/* Botão fechar no topo */}
+        <Link
+          to="/"
+          className="absolute top-6 right-6 md:top-8 md:right-8 text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-50 rounded-full border border-slate-100 shadow-sm"
+          title="Fechar e voltar à página principal"
+        >
+          <X size={20} />
+        </Link>
+
+        <div className="flex items-center gap-4 mb-8 pr-12">
+          <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
             <Shield size={28} />
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900">Termos de Uso</h1>
@@ -96,6 +106,16 @@ const Terms = () => {
               Última atualização: 23 de Março de 2026.
             </p>
           </section>
+
+          <div className="pt-6 border-t border-slate-100 flex justify-center">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center bg-[#52b64d] hover:bg-[#459d41] text-white font-extrabold px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all gap-2"
+            >
+              <X size={18} />
+              Fechar e Voltar ao Início
+            </Link>
+          </div>
         </div>
       </motion.div>
     </div>
