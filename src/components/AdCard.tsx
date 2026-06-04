@@ -140,12 +140,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
 
     const url = `${window.location.origin}${getAdUrl(ad)}`;
     const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
-    const shareText = `Veja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
+    const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
 
     const shareData = {
       title: ad.title,
       text: shareText,
-      url: url,
     };
 
     try {
