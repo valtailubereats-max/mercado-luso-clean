@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, setDoc, deleteDoc, updateDoc, serverTimestamp, collection, query, where, limit } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, updateDoc, serverTimestamp, collection, query, where, limit, getDocs } from 'firebase/firestore';
 import { auth, db, withTimeout, getDocWithCacheFallback, getDocsWithCacheFallback } from '../firebase';
 import { UserProfile } from '../types';
 
@@ -83,6 +83,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const registerReferralIfNeeded = async (uid: string, userProfile: UserProfile) => {
+    const refCode = localStorage.getItem('referred_by_code');
+    if (!refCode) return;
+
+    if (userProfile.referredBy) {
+      localStorage.removeItem('referred_by_code');
+      return;
+    }
+
+    if (userProfile.referralCode === refCode) {
+      localStorage.removeItem('referred_by_code');
+      return;
+    }
+
+    try {
+      const q = query(collection(db, 'users'), where('referralCode', '==', refCode), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const inviterDoc = snap.docs[0];
+        const inviterId = inviterDoc.id;
+
+        const referralId = uid;
+        await setDoc(doc(db, 'referrals', referralId), {
+          id: referralId,
+          inviterId: inviterId,
+          inviterCode: refCode,
+          referredUserId: uid,
+          referredName: userProfile.name || 'Utilizador',
+          createdAt: new Date()
+        });
+
+        await updateDoc(doc(db, 'users', uid), {
+          referredBy: refCode
+        });
+
+        console.log(`Successfully registered referral in Firestore! Inviter: ${inviterId}, Referred: ${uid}`);
+        localStorage.removeItem('referred_by_code');
+        
+        // Dynamic reload
+        await fetchProfile(uid, true);
+      }
+    } catch (err) {
+      console.error("Error registering referral:", err);
+    }
+  };
+
   // Carrega e atualiza o Cache de Perfil no sessionStorage
   const fetchProfile = async (uid: string, forceRefresh = false) => {
     try {
@@ -100,8 +146,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const docSnap = await withTimeout(getDocWithCacheFallback(docRef, `users/${uid}`), 45000);
       if (docSnap.exists()) {
         const data = docSnap.data() as UserProfile;
-        setProfile(data);
-        sessionStorage.setItem(`profile_cache_${uid}`, JSON.stringify(data));
+        
+        if (!data.referralCode) {
+          const generatedCode = `REF${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          const updatedFields = {
+            referralCode: generatedCode,
+            referredUsersCount: data.referredUsersCount || 0,
+            referralCredits: data.referralCredits || 0
+          };
+          
+          await updateDoc(docRef, updatedFields).catch(err => {
+            console.error("Error setting initial referral code:", err);
+          });
+          
+          const enrichedProfile = { ...data, ...updatedFields };
+          setProfile(enrichedProfile);
+          sessionStorage.setItem(`profile_cache_${uid}`, JSON.stringify(enrichedProfile));
+          registerReferralIfNeeded(uid, enrichedProfile);
+        } else {
+          setProfile(data);
+          sessionStorage.setItem(`profile_cache_${uid}`, JSON.stringify(data));
+          registerReferralIfNeeded(uid, data);
+        }
       }
     } catch (err) {
       console.error("Error fetching profile:", err);

@@ -38,6 +38,12 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
 
   const isFavorite = favorites.includes(ad.id);
 
+  const isAdFeatured = ad.isFeatured && ad.featuredUntil && (
+    ad.featuredUntil.seconds 
+      ? ad.featuredUntil.toDate() > new Date() 
+      : new Date(ad.featuredUntil) > new Date()
+  );
+
   const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
 
   const hasPrice =
@@ -242,9 +248,19 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
         onClick={() => {
           navigate(getAdUrl(ad));
         }}
-        className="card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer"
+        className={`card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer relative transition-all duration-300 ${
+          isAdFeatured 
+            ? 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
+            : ''
+        }`}
       >
         <div className="relative aspect-square overflow-hidden bg-slate-50">
+          {isAdFeatured && (
+            <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase">
+              <span>✨</span>
+              <span>Destacado</span>
+            </div>
+          )}
           <OptimizedImage
             src={ad.imageUrl}
             alt={ad.title}
@@ -415,7 +431,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
                 </div>
 
                 <div className="p-4 md:p-6 pb-12 md:pb-16 font-sans">
-                  <div className="mb-3 flex gap-2">
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {isAdFeatured && (
+                      <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse">
+                        <span>✨</span>
+                        <span>Anúncio Destacado</span>
+                      </span>
+                    )}
                     <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100">
                       {ad.category}
                     </span>

@@ -13,7 +13,11 @@
         "acceptedTerms": { "type": "boolean" },
         "acceptedTermsAt": { "type": "string", "format": "date-time" },
         "ratingAverage": { "type": "number" },
-        "ratingCount": { "type": "number" }
+        "ratingCount": { "type": "number" },
+        "referralCode": { "type": "string" },
+        "referredUsersCount": { "type": "number" },
+        "referredBy": { "type": "string" },
+        "referralCredits": { "type": "number" }
       },
       "required": ["uid", "name", "email", "phone", "role", "acceptedTerms", "acceptedTermsAt"]
     },
@@ -40,7 +44,9 @@
         "renewalHistory": { "type": "array" },
         "views": { "type": "number" },
         "whatsappClicks": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isFeatured": { "type": "boolean" },
+        "featuredUntil": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "title", "description", "imageUrl", "city", "category", "sellerId", "sellerPhone", "sellerName", "status", "createdAt"]
     },
@@ -131,6 +137,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "adId", "adTitle", "sellerId", "buyerName", "rating", "comment", "success", "createdAt"]
+    },
+    "Referral": {
+      "title": "Referral",
+      "description": "User referral tracking record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "inviterId": { "type": "string" },
+        "inviterCode": { "type": "string" },
+        "referredUserId": { "type": "string" },
+        "referredName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "inviterId", "inviterCode", "referredUserId", "referredName", "createdAt"]
     }
   },
   "firestore": {
@@ -165,6 +185,10 @@
     "/reviews/{reviewId}": {
       "schema": "Review",
       "description": "User reviews"
+    },
+    "/referrals/{referralId}": {
+      "schema": "Referral",
+      "description": "User referral trackings"
     }
   }
 }

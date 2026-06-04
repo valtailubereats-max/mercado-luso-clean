@@ -30,6 +30,74 @@ const Profile = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [referralsCount, setReferralsCount] = useState(0);
+  const [referralsLoading, setReferralsLoading] = useState(true);
+  const [copiedReferral, setCopiedReferral] = useState(false);
+
+  const updateReferralStatsAndCredits = async () => {
+    if (!user || !profile) return;
+    try {
+      const q = query(collection(db, 'referrals'), where('inviterId', '==', user.uid));
+      const snap = await getDocsWithCacheFallback(q, `referrals/inviterId-${user.uid}`);
+      const realCount = snap.size;
+      setReferralsCount(realCount);
+      setReferralsLoading(false);
+
+      if (realCount !== (profile.referredUsersCount ?? 0)) {
+        console.log(`Updating user referral stats. DB Count: ${realCount}, Profile Count: ${profile.referredUsersCount}`);
+        const profileCount = profile.referredUsersCount || 0;
+        const currentCredits = profile.referralCredits || 0;
+        
+        const newCreditsEarned = Math.floor(realCount / 3) - Math.floor(profileCount / 3);
+        const nextCredits = currentCredits + Math.max(0, newCreditsEarned);
+
+        await updateDoc(doc(db, 'users', user.uid), {
+          referredUsersCount: realCount,
+          referralCredits: nextCredits
+        });
+
+        await refreshProfile();
+      }
+    } catch (err) {
+      console.error("Error updating referral stats:", err);
+      setReferralsLoading(false);
+    }
+  };
+
+  const handleFeatureAd = async (ad: Ad) => {
+    if (!user || !profile) return;
+    
+    const credits = profile.referralCredits || 0;
+    if (credits <= 0) {
+      alert("Não possui Créditos de Destaque disponíveis. Convide mais amigos para ganhar!");
+      return;
+    }
+    
+    if (!window.confirm("Deseja utilizar 1 Crédito de Destaque para destacar este anúncio por 24 horas? Ele receberá destaque e uma moldura premium dourada no Mercado Luso!")) {
+      return;
+    }
+    
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      await updateDoc(doc(db, 'ads', ad.id), {
+        isFeatured: true,
+        featuredUntil: tomorrow
+      });
+      
+      await updateDoc(doc(db, 'users', user.uid), {
+        referralCredits: credits - 1
+      });
+      
+      alert("Anúncio destacado com sucesso por 24 horas!");
+      
+      await refreshProfile();
+      await fetchUserAds();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `ads/${ad.id}`);
+    }
+  };
 
   useEffect(() => {
     if (!highlightAdId) {
@@ -64,6 +132,7 @@ const Profile = () => {
       setCity(profile.city || '');
       fetchUserAds();
       fetchUserReviews(user?.uid || '');
+      updateReferralStatsAndCredits();
     }
   }, [profile]);
 
@@ -296,6 +365,77 @@ const Profile = () => {
         </form>
       </motion.div>
 
+      {/* Secção de Convites / Ganhe Destaque */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-emerald-50 via-teal-50/20 to-indigo-50/10 p-8 rounded-3xl shadow-lg border border-emerald-100 space-y-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+            <span className="text-2xl">🎁</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Ganhe Destaque ao Partilhar</h2>
+            <p className="text-slate-500 mt-1">Consegue novos amigos recomendados para entrarem no Mercado Luso! Receba 24 horas de Destaque Gratuito para qualquer anúncio à sua escolha a cada 3 novos registos recomendados por si.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-slate-100">
+          <div className="space-y-2">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">O Seu Link de Convite</h4>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`${window.location.origin}/?ref=${profile?.referralCode || ''}`}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold font-mono text-slate-700 focus:outline-none select-all"
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(`${window.location.origin}/?ref=${profile?.referralCode || ''}`);
+                    setCopiedReferral(true);
+                    setTimeout(() => setCopiedReferral(false), 2000);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className={`px-5 py-3 rounded-xl font-bold text-sm shrink-0 transition-all ${
+                  copiedReferral 
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' 
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100'
+                }`}
+              >
+                {copiedReferral ? 'Copiado!' : 'Copiar Link'}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-around gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+            <div className="text-center">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Convidados Válidos</span>
+              <span className="text-4xl font-brand font-black text-emerald-600 block mt-1">{referralsLoading ? '...' : referralsCount}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Créditos de Destaque</span>
+              <span className="text-4xl font-brand font-black text-indigo-600 block mt-1">{profile?.referralCredits || 0}</span>
+            </div>
+          </div>
+        </div>
+
+        {!referralsLoading && (
+          <div className="bg-white/50 px-4 py-3 rounded-xl flex items-center justify-between border border-slate-100/50">
+            <span className="text-xs font-medium text-slate-500">
+              {referralsCount % 3 === 0 
+                ? "Créditos devidamente sincronizados! Continue a partilhar e ganhe mais." 
+                : `Falta apenas ${3 - (referralsCount % 3)} amigo(s) registado(s) pelo seu link para receber mais um de destaque.`}
+            </span>
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{referralsCount % 3} / 3 progresso</span>
+          </div>
+        )}
+      </motion.div>
+
       {reviews.length > 0 && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -366,108 +506,136 @@ const Profile = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {ads.map((ad, idx) => (
-              <motion.div
-                key={`profile-ad-${ad.id}-${idx}`}
-                id={`ad-profile-${ad.id}`}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`bg-white p-4 rounded-3xl shadow-md border flex gap-4 transition-all duration-500 ${
-                  highlightAdId === ad.id 
-                    ? 'border-amber-400 ring-4 ring-amber-100 bg-amber-50/10 scale-[1.02]' 
-                    : 'border-slate-100'
-                }`}
-              >
-                <OptimizedImage 
-                  src={ad.imageUrl} 
-                  alt={ad.title} 
-                  className="w-full h-full object-contain" 
-                  containerClassName="w-24 h-24 rounded-2xl bg-slate-50 overflow-hidden"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-slate-900 truncate">{ad.title}</h3>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => {
-                          if (ad.status === 'approved') {
-                            alert('Atenção: Qualquer alteração fará com que o anúncio volte para a fila de aprovação do administrador.');
-                          }
-                          navigate(`/edit-ad/${ad.id}`);
-                        }} 
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button onClick={() => handleDeleteAd(ad.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                        <Trash2 size={18} />
-                      </button>
+            {ads.map((ad, idx) => {
+              const isAdFeatured = ad.isFeatured && ad.featuredUntil && (
+                ad.featuredUntil.seconds 
+                  ? ad.featuredUntil.toDate() > new Date() 
+                  : new Date(ad.featuredUntil) > new Date()
+              );
+
+              return (
+                <motion.div
+                  key={`profile-ad-${ad.id}-${idx}`}
+                  id={`ad-profile-${ad.id}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`bg-white p-4 rounded-3xl shadow-md border flex gap-4 transition-all duration-500 relative ${
+                    isAdFeatured
+                      ? 'border-amber-400 ring-4 ring-amber-300 bg-amber-50/5'
+                      : highlightAdId === ad.id 
+                      ? 'border-amber-400 ring-4 ring-amber-100 bg-amber-50/10 scale-[1.02]' 
+                      : 'border-slate-100'
+                  }`}
+                >
+                  <OptimizedImage 
+                    src={ad.imageUrl} 
+                    alt={ad.title} 
+                    className="w-full h-full object-contain" 
+                    containerClassName="w-24 h-24 rounded-2xl bg-slate-50 overflow-hidden"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-slate-900 truncate">{ad.title}</h3>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            if (ad.status === 'approved') {
+                              alert('Atenção: Qualquer alteração fará com que o anúncio volte para a fila de aprovação do administrador.');
+                            }
+                            navigate(`/edit-ad/${ad.id}`);
+                          }} 
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button onClick={() => handleDeleteAd(ad.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-indigo-600 font-bold mt-1">{formatPrice(ad.price)}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {ad.status === 'pending' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
-                        <Clock size={14} /> Pendente
-                      </span>
+                    <p className="text-indigo-600 font-bold mt-1">{formatPrice(ad.price)}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {isAdFeatured && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 shadow-sm animate-pulse">
+                          ✨ Destacado 24h
+                        </span>
+                      )}
+                      {ad.status === 'pending' && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
+                          <Clock size={14} /> Pendente
+                        </span>
+                      )}
+                      {ad.status === 'approved' && ad.adStatus === 'active' && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                          <CheckCircle size={14} /> Aprovado
+                        </span>
+                      )}
+                      {ad.adStatus === 'near_expiration' && ad.status === 'approved' && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
+                          <AlertTriangle size={14} /> Expira em breve
+                        </span>
+                      )}
+                      {(ad.status === 'expired' || ad.adStatus === 'expired') && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">
+                          <XCircle size={14} /> Expirado
+                        </span>
+                      )}
+                      {ad.status === 'archived' && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded-lg">
+                          <Archive size={14} /> Arquivado
+                        </span>
+                      )}
+                      {ad.status === 'rejected' && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">
+                          <XCircle size={14} /> Rejeitado
+                        </span>
+                      )}
+                      {(ad.status === 'sold' || ad.adStatus === 'sold') && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                          <ShoppingBag size={14} /> Vendido
+                        </span>
+                      )}
+                    </div>
+                    
+                    {ad.expirationDate && (
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wider">
+                        Expira em: {format(ad.expirationDate.toDate(), "dd 'de' MMMM", { locale: pt })}
+                      </p>
                     )}
-                    {ad.status === 'approved' && ad.adStatus === 'active' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
-                        <CheckCircle size={14} /> Aprovado
-                      </span>
-                    )}
-                    {ad.adStatus === 'near_expiration' && ad.status === 'approved' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
-                        <AlertTriangle size={14} /> Expira em breve
-                      </span>
-                    )}
-                    {(ad.status === 'expired' || ad.adStatus === 'expired') && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">
-                        <XCircle size={14} /> Expirado
-                      </span>
-                    )}
-                    {ad.status === 'archived' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded-lg">
-                        <Archive size={14} /> Arquivado
-                      </span>
-                    )}
-                    {ad.status === 'rejected' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">
-                        <XCircle size={14} /> Rejeitado
-                      </span>
-                    )}
-                    {(ad.status === 'sold' || ad.adStatus === 'sold') && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
-                        <ShoppingBag size={14} /> Vendido
-                      </span>
-                    )}
-                  </div>
-                  
-                  {ad.expirationDate && (
-                    <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wider">
-                      Expira em: {format(ad.expirationDate.toDate(), "dd 'de' MMMM", { locale: pt })}
-                    </p>
-                  )}
 
-                  <div className="mt-3 flex items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <span className="flex items-center gap-1"><Eye size={12} /> {ad.views || 0}</span>
-                    <span className="flex items-center gap-1"><MessageSquare size={12} /> {ad.whatsappClicks || 0}</span>
-                  </div>
+                    <div className="mt-3 flex items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <span className="flex items-center gap-1"><Eye size={12} /> {ad.views || 0}</span>
+                      <span className="flex items-center gap-1"><MessageSquare size={12} /> {ad.whatsappClicks || 0}</span>
+                    </div>
 
-                  {(ad.status === 'approved' || ad.adStatus === 'active' || ad.adStatus === 'near_expiration') && ad.adStatus !== 'sold' && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
-                    <button
-                      onClick={() => {
-                        setSelectedAdForReview(ad);
-                        setShowReviewModal(true);
-                      }}
-                      className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100"
-                    >
-                      <ShoppingBag size={14} /> Marcar como Vendido
-                    </button>
-                  )}
+                    {(ad.status === 'approved' || ad.adStatus === 'active' || ad.adStatus === 'near_expiration') && ad.adStatus !== 'sold' && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
+                      <button
+                        onClick={() => {
+                          setSelectedAdForReview(ad);
+                          setShowReviewModal(true);
+                        }}
+                        className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100"
+                      >
+                        <ShoppingBag size={14} /> Marcar como Vendido
+                      </button>
+                    )}
 
-                  {ad.adStatus === 'sold' && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
-                    <button
+                    {ad.status === 'approved' && ad.adStatus === 'active' && !isAdFeatured && (
+                      <button
+                        onClick={() => handleFeatureAd(ad)}
+                        className={`mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          (profile?.referralCredits || 0) > 0
+                            ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-sm'
+                            : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span>✨</span>
+                        <span>Destacar Anúncio (1 crédito)</span>
+                      </button>
+                    )}
+
+                    {ad.adStatus === 'sold' && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
+                      <button
                       onClick={() => handleMarkAsAvailable(ad.id)}
                       className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100"
                     >
@@ -490,7 +658,8 @@ const Profile = () => {
                   )}
                 </div>
               </motion.div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

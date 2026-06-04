@@ -262,6 +262,19 @@ export default function App() {
   const mainRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const refCode = searchParams.get('ref');
+      if (refCode) {
+        localStorage.setItem('referred_by_code', refCode.trim().toUpperCase());
+        console.log('Saved referral code to localStorage:', refCode);
+      }
+    } catch (e) {
+      console.error('Error parsing referral query:', e);
+    }
+  }, []);
+
+  React.useEffect(() => {
     const slider = mainRef.current;
     if (!slider) return;
 

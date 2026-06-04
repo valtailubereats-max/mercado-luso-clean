@@ -54,6 +54,10 @@ export interface UserProfile {
   lastLoginAt?: any; // Firestore Timestamp
   ratingAverage?: number;
   ratingCount?: number;
+  referralCode?: string;
+  referredUsersCount?: number;
+  referredBy?: string;
+  referralCredits?: number;
 }
 
 export interface Ad {
@@ -79,6 +83,8 @@ export interface Ad {
   createdAt: any; // Firestore Timestamp
   contactEmail?: string;
   externalUrl?: string;
+  isFeatured?: boolean;
+  featuredUntil?: any; // Firestore Timestamp
 }
 
 export interface Favorite {

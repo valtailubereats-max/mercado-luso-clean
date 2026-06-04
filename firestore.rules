@@ -175,7 +175,12 @@ service cloud.firestore {
       allow update: if (
         (resource.data.status == 'approved' && isValidAdCounterUpdate()) ||
         (isAuthenticated() && (
-          (resource.data.sellerId == request.auth.uid && isValidAd(request.resource.data) && request.resource.data.status == 'pending') ||
+          (resource.data.sellerId == request.auth.uid && 
+           (
+             (resource.data.status == 'pending' && isValidAd(request.resource.data)) ||
+             (isValidAd(request.resource.data) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFeatured', 'featuredUntil']))
+           )
+          ) ||
           isAdmin()
         ))
       );
@@ -196,6 +201,12 @@ service cloud.firestore {
     match /reports/{reportId} {
       allow read: if isAdmin();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /referrals/{referralId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.referredUserId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
