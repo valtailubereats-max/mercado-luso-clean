@@ -1,11 +1,20 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/anuncio/:id*",
       "destination": "/api/seo"
     },
     {
-      "source": "/(.*)",
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/((?!api/|robots\\.txt|sitemap\\.xml|assets/).*)",
       "destination": "/index.html"
     }
   ],

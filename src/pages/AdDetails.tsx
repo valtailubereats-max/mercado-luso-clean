@@ -303,6 +303,8 @@ const AdDetails = () => {
         <Helmet>
           <title>{ad.title} | Mercado Luso</title>
           <meta name="description" content={ad.description.substring(0, 160)} />
+          <link rel="canonical" href={`https://www.mercado-luso.com${getAdUrl(ad)}`} />
+          <meta property="og:url" content={`https://www.mercado-luso.com${getAdUrl(ad)}`} />
           <meta property="og:title" content={`${ad.title} | Mercado Luso`} />
           <meta property="og:description" content={ad.description.substring(0, 160)} />
           <meta property="og:image" content={ad.imageUrl} />

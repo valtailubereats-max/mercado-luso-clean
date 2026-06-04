@@ -22,7 +22,7 @@ import Privacy from './pages/Privacy';
 import Cookies from './pages/Cookies';
 import Report from './pages/Report';
 import AdDetails from './pages/AdDetails';
-import { HelmetProvider } from 'react-helmet-async';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
@@ -322,6 +322,16 @@ export default function App() {
 
   return (
     <HelmetProvider>
+      <Helmet>
+        <title>Mercado Luso - Classificados & IA Copilot</title>
+        <meta name="description" content="Marketplace moderno para Portugal, focado em simplicidade, conexão via WhatsApp e com copiloto de Inteligência Artificial." />
+        <link rel="canonical" href="https://www.mercado-luso.com" />
+        <meta property="og:url" content="https://www.mercado-luso.com" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Mercado Luso - Classificados & IA Copilot" />
+        <meta property="og:description" content="Marketplace moderno para Portugal, focado em simplicidade, conexão via WhatsApp e com copiloto de Inteligência Artificial." />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
       <SettingsProvider>
         <AuthProvider>
           <Router>
