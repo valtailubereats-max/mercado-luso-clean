@@ -12,7 +12,7 @@ import {
 import { db, getDocWithCacheFallback, getDocsWithCacheFallback, parseFirestoreDate } from '../firebase';
 import { Ad, UserProfile, Review } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { formatPrice } from '../utils';
+import { formatPrice, getAdUrl, extractIdFromSlug } from '../utils';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import ReviewModal from '../components/ReviewModal';
@@ -61,8 +61,9 @@ const AdDetails = () => {
         setLoading(true);
         setErrorMsg(null);
 
-        const adRef = doc(db, 'ads', id);
-        const adSnap = await getDocWithCacheFallback(adRef, `ads/${id}`);
+        const realId = extractIdFromSlug(id);
+        const adRef = doc(db, 'ads', realId);
+        const adSnap = await getDocWithCacheFallback(adRef, `ads/${realId}`);
 
         if (!active) return;
 
@@ -192,7 +193,7 @@ const AdDetails = () => {
   const handleShare = async () => {
     if (!ad) return;
 
-    const url = window.location.href;
+    const url = `${window.location.origin}${getAdUrl(ad)}`;
     const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
     const shareText = `Veja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
 
@@ -406,17 +407,17 @@ const AdDetails = () => {
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
                 {ad.title}
               </h1>
-              <div className="flex items-center justify-between wrap gap-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 text-slate-500 font-bold text-sm">
                   <MapPin size={16} className="text-indigo-600" />
                   <span>{ad.city}</span>
                 </div>
                 {hasPrice ? (
-                  <div className="text-3xl font-black text-indigo-600 bg-indigo-50/50 py-1 px-4 rounded-2xl border border-indigo-100/50">
+                  <div className="text-3.5xl font-black text-indigo-600 bg-indigo-50/50 py-1.5 px-4 rounded-2xl border border-indigo-100/50 flex items-center justify-center">
                     {formatPrice(ad.price)}
                   </div>
                 ) : (
-                  <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-100">
+                  <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-100 flex items-center justify-center">
                     Sob Consulta
                   </span>
                 )}
@@ -443,30 +444,32 @@ const AdDetails = () => {
 
             {/* Cartão do Vendedor e Avaliações */}
             <div className="bg-slate-50 rounded-2xl p-4 md:p-6 border border-slate-100 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-indigo-600/10 text-indigo-700 rounded-xl flex items-center justify-center font-black text-lg">
+                  <div className="w-12 h-12 bg-indigo-600/10 text-indigo-700 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0">
                     {ad.sellerName.slice(0, 2).toUpperCase()}
                   </div>
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 leading-tight flex items-center gap-1">
+                  <div className="min-w-0">
+                    <h4 className="font-extrabold text-slate-900 leading-tight flex items-center gap-1 truncate">
                       {ad.sellerName}
-                      <Award size={14} className="text-indigo-500" />
+                      <Award size={14} className="text-indigo-500 flex-shrink-0" />
                     </h4>
                     
                     {/* Estrelas */}
                     <div className="flex items-center gap-0.5 mt-1" title={`${sellerProfile?.ratingAverage || 0} / 5`}>
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const ratingVal = sellerProfile?.ratingAverage || 0;
-                        const isFilled = star <= Math.round(ratingVal);
-                        return (
-                          <Star
-                            key={star}
-                            size={12}
-                            className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-200"}
-                          />
-                        );
-                      })}
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const ratingVal = sellerProfile?.ratingAverage || 0;
+                          const isFilled = star <= Math.round(ratingVal);
+                          return (
+                            <Star
+                              key={star}
+                              size={12}
+                              className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-200"}
+                            />
+                          );
+                        })}
+                      </div>
                       <span className="text-[10px] text-slate-500 font-bold ml-1">
                         ({sellerProfile?.ratingCount || 0} avs.)
                       </span>
@@ -478,7 +481,7 @@ const AdDetails = () => {
                 {user && user.uid !== ad.sellerId && (
                   <button
                     onClick={() => setShowReviewModal(true)}
-                    className="text-[11px] font-black bg-indigo-50 text-indigo-600 py-1.5 px-3 rounded-lg border border-indigo-100 hover:bg-indigo-100 hover:text-indigo-700 font-bold transition-all text-center"
+                    className="text-[11px] font-black bg-indigo-50 text-indigo-600 py-1.5 px-3.5 rounded-xl border border-indigo-100 hover:bg-indigo-100/80 hover:text-indigo-700 font-bold transition-all text-center w-full sm:w-auto self-start sm:self-center flex-shrink-0"
                   >
                     Avaliar Vendedor
                   </button>
@@ -490,10 +493,10 @@ const AdDetails = () => {
                 {/* WhatsApp Button */}
                 <button
                   onClick={handleContactClick}
-                  className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 px-6 rounded-2xl font-black transition-all shadow-md active:scale-[0.98] w-full"
+                  className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 px-6 rounded-2xl font-black transition-all shadow-md active:scale-[0.98] w-full text-center"
                 >
-                  <MessageCircle size={20} />
-                  <span>Contactar via WhatsApp</span>
+                  <MessageCircle size={20} className="flex-shrink-0" />
+                  <span className="leading-tight">Contactar via WhatsApp</span>
                 </button>
 
                 <div className="flex gap-2">
