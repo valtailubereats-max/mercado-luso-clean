@@ -1,11 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/anuncio/:id",
-      "destination": "/api/seo"
-    },
-    {
-      "source": "/anuncio/:slugAndId",
+      "source": "/anuncio/:id*",
       "destination": "/api/seo"
     },
     {
