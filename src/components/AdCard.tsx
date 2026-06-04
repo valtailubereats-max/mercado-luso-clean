@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Ad } from '../types';
 import { MapPin, MessageCircle, Clock, X, User, Phone, AlertTriangle, Heart, Flag, Search, ChevronLeft, ChevronRight, Tag, Star, ShoppingBag, Mail, Globe } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,6 +19,7 @@ interface AdCardProps {
 
 const AdCard: React.FC<AdCardProps> = ({ ad }) => {
   const { user, favorites, toggleFavoriteGlobal } = useAuth();
+  const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
   const [showContactWarning, setShowContactWarning] = useState(false);
@@ -213,8 +214,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
         onClick={() => {
-          setShowDetails(true);
-          incrementViews();
+          navigate(`/anuncio/${ad.id}`);
         }}
         className="card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer"
       >

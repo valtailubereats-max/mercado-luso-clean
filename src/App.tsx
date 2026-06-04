@@ -21,6 +21,8 @@ import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Cookies from './pages/Cookies';
 import Report from './pages/Report';
+import AdDetails from './pages/AdDetails';
+import { HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
@@ -306,49 +308,52 @@ export default function App() {
   }, []);
 
   return (
-    <SettingsProvider>
-      <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
-          <Navbar />
+    <HelmetProvider>
+      <SettingsProvider>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
+            <Navbar />
 
-          <main ref={mainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 cursor-grab active:cursor-grabbing">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/create-ad" element={<CreateAd />} />
-              <Route path="/edit-ad/:id" element={<CreateAd />} />
-              <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-              <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-              <Route path="/admin/import" element={<AdminLayout><AdminImport /></AdminLayout>} />
-              <Route path="/admin/marketing" element={<AdminLayout><AdminMarketing /></AdminLayout>} />
-              <Route path="/admin/ads" element={<AdminLayout><AdminAds /></AdminLayout>} />
-              <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
-              <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
-              <Route path="/admin/team" element={<AdminLayout><AdminTeam /></AdminLayout>} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/cookies" element={<Cookies />} />
-              <Route path="/denuncia" element={<Report />} />
-            </Routes>
-          </main>
-          <footer className="bg-white border-t border-slate-200 py-12 mt-20">
-            <div className="max-w-7xl mx-auto px-4 text-center">
-              <p className="text-sm font-extrabold transition-colors" style={{ color: '#52b64d' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
-              <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap">
-                <Link to="/terms" className="hover:text-indigo-600" style={{ color: '#ff2056' }}>Termos de Uso</Link>
-                <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
-                <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>
-                <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
-                <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>
+            <main ref={mainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 cursor-grab active:cursor-grabbing">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/create-ad" element={<CreateAd />} />
+                <Route path="/edit-ad/:id" element={<CreateAd />} />
+                <Route path="/anuncio/:id" element={<AdDetails />} />
+                <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+                <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+                <Route path="/admin/import" element={<AdminLayout><AdminImport /></AdminLayout>} />
+                <Route path="/admin/marketing" element={<AdminLayout><AdminMarketing /></AdminLayout>} />
+                <Route path="/admin/ads" element={<AdminLayout><AdminAds /></AdminLayout>} />
+                <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
+                <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
+                <Route path="/admin/team" element={<AdminLayout><AdminTeam /></AdminLayout>} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/cookies" element={<Cookies />} />
+                <Route path="/denuncia" element={<Report />} />
+              </Routes>
+            </main>
+            <footer className="bg-white border-t border-slate-200 py-12 mt-20">
+              <div className="max-w-7xl mx-auto px-4 text-center">
+                <p className="text-sm font-extrabold transition-colors" style={{ color: '#52b64d' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
+                <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap">
+                  <Link to="/terms" className="hover:text-indigo-600" style={{ color: '#ff2056' }}>Termos de Uso</Link>
+                  <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
+                  <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>
+                  <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
+                  <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>
+                </div>
               </div>
-            </div>
-          </footer>
-        </div>
-      </Router>
-    </AuthProvider>
-  </SettingsProvider>
+            </footer>
+          </div>
+        </Router>
+      </AuthProvider>
+    </SettingsProvider>
+  </HelmetProvider>
 );
 }
