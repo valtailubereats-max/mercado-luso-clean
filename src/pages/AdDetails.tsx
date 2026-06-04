@@ -37,6 +37,7 @@ const AdDetails = () => {
   const [showReviewsSection, setShowReviewsSection] = useState(true);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Segurança de Contacto WhatsApp
   const [showContactWarning, setShowContactWarning] = useState(false);
@@ -190,18 +191,24 @@ const AdDetails = () => {
 
   const handleShare = async () => {
     if (!ad) return;
+
+    const url = window.location.href;
+    const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
+    const shareText = `Veja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
+
     const shareData = {
       title: ad.title,
-      text: `${ad.title} - Encontre no Mercado Luso!`,
-      url: window.location.href
+      text: shareText,
+      url: url,
     };
 
     try {
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(window.location.href);
-        alert('Link copiado para a área de transferência com sucesso!');
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2500);
       }
     } catch (err) {
       console.error('Erro ao partilhar:', err);
@@ -493,9 +500,14 @@ const AdDetails = () => {
                   {/* Share button */}
                   <button
                     onClick={handleShare}
-                    className="flex-1 flex items-center justify-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 py-3 px-3 rounded-xl font-bold text-xs transition"
+                    className={`flex-1 flex items-center justify-center gap-2 border py-3 px-3 rounded-xl font-bold text-xs transition-all ${
+                      shareCopied 
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    }`}
                   >
-                    <Share2 size={16} /> Partilhar
+                    <Share2 size={16} className={shareCopied ? 'text-emerald-500 animate-bounce' : ''} />
+                    <span>{shareCopied ? 'Link copiado!' : 'Partilhar'}</span>
                   </button>
 
                   {/* Report Button */}
