@@ -56,25 +56,56 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
 
   let ads: { id: string; title: string; lastmod: string }[] = [];
 
-  // --- METHOD 1: Fetch via public Firestore REST API ---
+  // --- METHOD 1: Fetch via public Firestore runQuery REST API (POST) ---
   try {
-    const firestoreRestUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${firestoreDatabaseId}/documents/ads?pageSize=1000`;
-    console.log(`[DYNAMIC SITEMAP] Fetching ads via REST API: ${firestoreRestUrl}`);
+    const firestoreRestUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${firestoreDatabaseId}/documents:runQuery`;
+    console.log(`[DYNAMIC SITEMAP] Fetching approved ads via runQuery (POST) REST API: ${firestoreRestUrl}`);
+
+    const runQueryBody = {
+      structuredQuery: {
+        from: [
+          {
+            collectionId: 'ads',
+            allDescendants: false
+          }
+        ],
+        where: {
+          fieldFilter: {
+            field: {
+              fieldPath: 'status'
+            },
+            op: 'EQUAL',
+            value: {
+              stringValue: 'approved'
+            }
+          }
+        },
+        limit: 1000
+      }
+    };
     
-    const restRes = await fetch(firestoreRestUrl);
+    const restRes = await fetch(firestoreRestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(runQueryBody)
+    });
+
     if (restRes.ok) {
       const data = await restRes.json();
-      if (data && Array.isArray(data.documents)) {
-        for (const doc of data.documents) {
-          const name = doc.name || '';
-          const fields = doc.fields || {};
-          const status = fields.status?.stringValue || '';
-          
-          if (status === 'approved') {
+      console.log(`[DYNAMIC SITEMAP] REST API response is array of size: ${Array.isArray(data) ? data.length : typeof data}`);
+      
+      if (Array.isArray(data)) {
+        for (const result of data) {
+          if (result && result.document) {
+            const doc = result.document;
+            const name = doc.name || '';
+            const fields = doc.fields || {};
             const adId = name.split('/').pop() || '';
             const title = fields.title?.stringValue || '';
             
-            // Get lastmod date from createdAt timestamp
+            // Get lastmod date from createdAt or updatedAt timestamp
             let adDate = currentDateStr;
             const timestampValue = fields.createdAt?.timestampValue || fields.updatedAt?.timestampValue;
             if (timestampValue && typeof timestampValue === 'string') {
@@ -89,7 +120,8 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
         console.log(`[DYNAMIC SITEMAP] Successfully parsed ${ads.length} approved ads from Firestore REST API.`);
       }
     } else {
-      console.warn(`[DYNAMIC SITEMAP] REST API returned status code ${restRes.status}, fallback to Firebase Admin SDK.`);
+      const errorText = await restRes.text().catch(() => '');
+      console.warn(`[DYNAMIC SITEMAP] REST API returned status code ${restRes.status}, error details: ${errorText}. Fallback to Firebase Admin SDK.`);
     }
   } catch (err) {
     console.error("[DYNAMIC SITEMAP] Error fetching from REST API:", err);
@@ -150,6 +182,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
   }
 
   // Process and append ads to items list
+  let adsCount = 0;
   for (const ad of ads) {
     const slug = generateSlug(ad.title);
     const loc = `https://www.mercado-luso.com/anuncio/${slug ? `${slug}-` : ''}${ad.id}`;
@@ -159,7 +192,9 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
       changefreq: 'weekly',
       priority: '0.7'
     });
+    adsCount++;
   }
+  console.log(`[DYNAMIC SITEMAP] Added ${adsCount} ad URLs to sitemap.`);
 
   // Construct XML response
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
