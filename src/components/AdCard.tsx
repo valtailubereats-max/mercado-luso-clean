@@ -141,21 +141,22 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
     const url = `${window.location.origin}${getAdUrl(ad)}`;
     const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
     const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
-
-    const shareData = {
-      title: ad.title,
-      text: shareText,
-    };
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
+      const opened = window.open(whatsappUrl, '_blank');
+      if (!opened) {
         await navigator.clipboard.writeText(url);
-        alert('Link copiado para a área de transferência com sucesso!');
+        alert('Link copiado para a área de transferência! (O WhatsApp não pôde ser aberto automaticamente)');
       }
     } catch (err) {
-      console.error('Erro ao partilhar:', err);
+      console.error('Erro ao abrir o WhatsApp:', err);
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Link copiado para a área de transferência com sucesso!');
+      } catch (clipErr) {
+        console.error('Erro de cópia alternativa:', clipErr);
+      }
     }
   };
 

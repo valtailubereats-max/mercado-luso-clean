@@ -196,22 +196,24 @@ const AdDetails = () => {
     const url = `${window.location.origin}${getAdUrl(ad)}`;
     const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
     const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
-
-    const shareData = {
-      title: ad.title,
-      text: shareText,
-    };
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
+      const opened = window.open(whatsappUrl, '_blank');
+      if (!opened) {
         await navigator.clipboard.writeText(url);
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2500);
       }
     } catch (err) {
-      console.error('Erro ao partilhar:', err);
+      console.error('Erro ao abrir o WhatsApp:', err);
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2500);
+      } catch (clipErr) {
+        console.error('Erro de cópia alternativa:', clipErr);
+      }
     }
   };
 
