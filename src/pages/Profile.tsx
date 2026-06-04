@@ -369,27 +369,49 @@ const Profile = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-emerald-50 via-teal-50/20 to-indigo-50/10 p-8 rounded-3xl shadow-lg border border-emerald-100 space-y-6"
+        className="bg-gradient-to-br from-emerald-50 via-teal-50/20 to-indigo-50/10 p-8 rounded-3xl shadow-lg border border-emerald-100 space-y-8"
       >
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+          <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0 shadow-sm">
             <span className="text-2xl">🎁</span>
           </div>
-          <div>
+          <div className="flex-1">
             <h2 className="text-2xl font-bold text-slate-900">Ganhe Destaque ao Partilhar</h2>
             <p className="text-slate-500 mt-1">Consegue novos amigos recomendados para entrarem no Mercado Luso! Receba 24 horas de Destaque Gratuito para qualquer anúncio à sua escolha a cada 3 novos registos recomendados por si.</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-slate-100">
-          <div className="space-y-2">
+        {/* Dynamic Reward Banner when user has unused credits */}
+        {!referralsLoading && profile?.referralCredits && profile.referralCredits > 0 ? (
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 100 }}
+            className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 p-6 rounded-2xl text-white shadow-lg border border-amber-300 relative overflow-hidden"
+          >
+            {/* Ambient shine decoration */}
+            <div className="absolute -right-12 -top-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-start gap-4">
+              <span className="text-3xl animate-pulse shrink-0 mt-1">🎉</span>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black tracking-tight uppercase">Parabéns!</h3>
+                <p className="font-bold text-sm">Recebeu 1 Crédito de Destaque.</p>
+                <p className="text-xs text-amber-50 font-medium">Escolha um anúncio para promover durante 24 horas.</p>
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="space-y-3">
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">O Seu Link de Convite</h4>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full">
               <input
                 type="text"
                 readOnly
                 value={`${window.location.origin}/?ref=${profile?.referralCode || ''}`}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold font-mono text-slate-700 focus:outline-none select-all"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold font-mono text-slate-700 focus:outline-none select-all col-span-3"
               />
               <button
                 onClick={async () => {
@@ -424,16 +446,54 @@ const Profile = () => {
           </div>
         </div>
 
-        {!referralsLoading && (
-          <div className="bg-white/50 px-4 py-3 rounded-xl flex items-center justify-between border border-slate-100/50">
-            <span className="text-xs font-medium text-slate-500">
-              {referralsCount % 3 === 0 
-                ? "Créditos devidamente sincronizados! Continue a partilhar e ganhe mais." 
-                : `Falta apenas ${3 - (referralsCount % 3)} amigo(s) registado(s) pelo seu link para receber mais um de destaque.`}
-            </span>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{referralsCount % 3} / 3 progresso</span>
+        {/* Visual Progress Section */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <div className="space-y-1">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Próximo Crédito</span>
+              <h4 className="text-sm font-bold text-slate-700">
+                {referralsLoading ? (
+                  "A carregar convidados..."
+                ) : (
+                  <>
+                    {(referralsCount % 3) === 2 && "Falta apenas 1 convidado para ganhar 1 crédito de destaque."}
+                    {(referralsCount % 3) === 1 && "Faltam 2 convidados para ganhar 1 crédito de destaque."}
+                    {(referralsCount % 3) === 0 && "Convide 3 pessoas para ganhar 1 crédito de destaque."}
+                  </>
+                )}
+              </h4>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block font-mono">Progresso</span>
+              <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 block mt-0.5">
+                {referralsLoading ? '...' : `${referralsCount % 3} / 3`}
+              </span>
+            </div>
           </div>
-        )}
+
+          {/* Progress Bar with rounded corners and animated fill */}
+          <div className="relative w-full bg-slate-100 rounded-full h-4 overflow-hidden border border-slate-200/60 shadow-inner">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: referralsLoading ? "0%" : `${(referralsCount % 3) === 2 ? 67 : (referralsCount % 3) === 1 ? 33 : 0}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-sm relative overflow-hidden"
+            >
+              {/* Animated gleam effect to feel premium */}
+              <div 
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"
+                style={{ width: '40%' }}
+              />
+            </motion.div>
+          </div>
+
+          <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+            <span>0%</span>
+            <span>33%</span>
+            <span>67%</span>
+            <span>100% 🎁</span>
+          </div>
+        </div>
       </motion.div>
 
       {reviews.length > 0 && (
