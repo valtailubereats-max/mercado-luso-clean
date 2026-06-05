@@ -259,13 +259,12 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       >
         <div className="relative aspect-square overflow-hidden bg-slate-50">
           {isAdFeatured && (
-            <div className={`absolute z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white font-black rounded-full shadow-md flex items-center uppercase ${
+            <div className={`absolute z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white font-black rounded-full shadow-md flex items-center justify-center ${
               isFeaturedVariant 
-                ? 'top-2 left-2 text-[8px] tracking-wider px-2 py-0.5 gap-0.5' 
-                : 'top-3 left-3 text-[9px] tracking-widest px-2.5 py-1 gap-1'
+                ? 'top-2 left-2 text-[10px] w-6 h-6' 
+                : 'top-3 left-3 text-xs w-7 h-7'
             }`}>
               <span>✨</span>
-              <span>Destaque</span>
             </div>
           )}
           <OptimizedImage
