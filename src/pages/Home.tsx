@@ -34,9 +34,8 @@ const Home = () => {
   const [hasMore, setHasMore] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Auto-scroll loop for the featured listing carousel
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const isHoveredRef = useRef(false);
+  // State to pause marquee on hover
+  const [isHovered, setIsHovered] = useState(false);
 
   // Buscar total de anúncios aprovados no banco de dados para estatísticas da Home
   useEffect(() => {
@@ -186,43 +185,7 @@ const Home = () => {
     }).slice(0, 20);
   }, [featuredAds, searchTerm, category, city]);
 
-  useEffect(() => {
-    const el = carouselRef.current;
-    if (!el || filteredFeaturedAds.length === 0) return;
 
-    let animationFrameId: number;
-    let scrollPos = el.scrollLeft;
-
-    const scrollLoop = () => {
-      if (el) {
-        const speedMultiplier = settings?.highlightSpeed !== undefined ? settings.highlightSpeed : 3;
-        const speed = speedMultiplier * 0.15; // Smooth slow scroll speed
-
-        if (!isHoveredRef.current && speed > 0) {
-          scrollPos += speed;
-          
-          // Infinite loop: if we scroll past the first duplicated block, reset to start
-          const halfWidth = el.scrollWidth / 2;
-          if (scrollPos >= halfWidth) {
-            scrollPos -= halfWidth;
-          }
-          el.scrollLeft = scrollPos;
-        } else {
-          // Sync scrollPos on manual user swipes/scrolls to resume seamlessly
-          scrollPos = el.scrollLeft;
-          const halfWidth = el.scrollWidth / 2;
-          if (scrollPos >= halfWidth) {
-            scrollPos -= halfWidth;
-            el.scrollLeft = scrollPos;
-          }
-        }
-      }
-      animationFrameId = requestAnimationFrame(scrollLoop);
-    };
-
-    animationFrameId = requestAnimationFrame(scrollLoop);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [filteredFeaturedAds, settings?.highlightSpeed]);
 
   const filteredAds = useMemo(() => {
     let result = ads.filter(ad => {
@@ -353,18 +316,24 @@ const Home = () => {
             </div>
           </div>
           
-          {/* Carrossel Horizontal Responsivo */}
-          <div className="relative">
+          {/* Carrossel Horizontal Responsivo (Esteira Contínua/Marquee) */}
+          <div className="relative w-full overflow-hidden py-1">
             <div 
-              ref={carouselRef}
-              onMouseEnter={() => { isHoveredRef.current = true; }}
-              onMouseLeave={() => { isHoveredRef.current = false; }}
-              onTouchStart={() => { isHoveredRef.current = true; }}
-              onTouchEnd={() => { isHoveredRef.current = false; }}
-              className="flex gap-4 md:gap-6 overflow-x-auto pb-4 pt-1 -mx-4 md:-mx-6 px-4 md:px-6 scrollbar-none scroll-smooth snap-x snap-mandatory"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onTouchStart={() => setIsHovered(true)}
+              onTouchEnd={() => setIsHovered(false)}
+              className="carouselTrack flex gap-4 md:gap-6"
+              style={{
+                animationName: (settings?.highlightSpeed !== 0) ? 'scrollCarousel' : 'none',
+                animationDuration: settings?.highlightSpeed ? `${105 / settings.highlightSpeed}s` : '35s',
+                animationTimingFunction: 'linear',
+                animationIterationCount: 'infinite',
+                animationPlayState: (isHovered || settings?.highlightSpeed === 0) ? 'paused' : 'running',
+              }}
             >
               {[...filteredFeaturedAds, ...filteredFeaturedAds].map((ad, idx) => (
-                <div key={`${ad.id}-${idx}`} className="w-[180px] md:w-[220px] shrink-0 snap-start">
+                <div key={`${ad.id}-${idx}`} className="w-[180px] md:w-[220px] shrink-0">
                   <AdCard ad={ad} />
                 </div>
               ))}

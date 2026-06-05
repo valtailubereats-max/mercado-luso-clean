@@ -50,4 +50,20 @@ html {
     0 60px 80px -25px rgba(82, 182, 77, 0.28); /* Sombra ainda mais profunda no hover */
 }
 
+@keyframes scrollCarousel {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.carouselTrack {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+
 
