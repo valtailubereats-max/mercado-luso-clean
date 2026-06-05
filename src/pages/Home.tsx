@@ -195,12 +195,8 @@ const Home = () => {
     });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
-    const sorted = result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-    // Deduplicate: Exclude any ad that is already shown as highlighted
-    const featuredIds = new Set(filteredFeaturedAds.map(f => f.id));
-    return sorted.filter(ad => !featuredIds.has(ad.id));
-  }, [ads, searchTerm, category, city, filteredFeaturedAds]);
+    return result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  }, [ads, searchTerm, category, city]);
 
   return (
     <div className="space-y-6">
@@ -333,8 +329,8 @@ const Home = () => {
               }}
             >
               {[...filteredFeaturedAds, ...filteredFeaturedAds].map((ad, idx) => (
-                <div key={`${ad.id}-${idx}`} className="w-[180px] md:w-[220px] shrink-0">
-                  <AdCard ad={ad} />
+                <div key={`${ad.id}-${idx}`} className="w-[140px] sm:w-[165px] md:w-[195px] shrink-0">
+                  <AdCard ad={ad} variant="featured" />
                 </div>
               ))}
             </div>

@@ -15,9 +15,10 @@ import { useAuth } from '../context/AuthContext';
 
 interface AdCardProps {
   ad: Ad;
+  variant?: 'normal' | 'featured';
 }
 
-const AdCard: React.FC<AdCardProps> = ({ ad }) => {
+const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const { user, favorites, toggleFavoriteGlobal } = useAuth();
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState(false);
@@ -238,6 +239,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
     }
   };
 
+  const isFeaturedVariant = variant === 'featured';
+
   return (
     <>
       <motion.div
@@ -256,9 +259,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
       >
         <div className="relative aspect-square overflow-hidden bg-slate-50">
           {isAdFeatured && (
-            <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase">
+            <div className={`absolute z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white font-black rounded-full shadow-md flex items-center uppercase ${
+              isFeaturedVariant 
+                ? 'top-2 left-2 text-[8px] tracking-wider px-2 py-0.5 gap-0.5' 
+                : 'top-3 left-3 text-[9px] tracking-widest px-2.5 py-1 gap-1'
+            }`}>
               <span>✨</span>
-              <span>Destacado</span>
+              <span>Destaque</span>
             </div>
           )}
           <OptimizedImage
@@ -269,56 +276,68 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
           />
         </div>
 
-        <div className="p-2.5 md:p-3.5 flex-1 flex flex-col">
+        <div className={isFeaturedVariant ? "p-2 md:p-3 flex-1 flex flex-col" : "p-2.5 md:p-3.5 flex-1 flex flex-col"}>
           <div className="flex justify-between items-start mb-1 md:mb-1.5">
-            <h3 className="text-sm md:text-[15px] font-extrabold text-slate-900 line-clamp-2 leading-snug group-hover:text-pt-green transition-colors tracking-tight">
+            <h3 className={`font-extrabold text-slate-900 line-clamp-2 leading-snug group-hover:text-pt-green transition-colors tracking-tight ${
+              isFeaturedVariant ? 'text-xs md:text-sm' : 'text-sm md:text-[15px]'
+            }`}>
               {ad.title}
             </h3>
           </div>
 
-          <div className="flex flex-col gap-1 text-slate-400 text-[10px] md:text-[11px] font-medium mb-2 md:mb-3">
+          <div className={`flex flex-col gap-0.5 text-slate-400 font-medium ${
+            isFeaturedVariant ? 'text-[9px] md:text-[10px] mb-1.5 md:mb-2' : 'text-[10px] md:text-[11px] mb-2 md:mb-3'
+          }`}>
             <div className="flex items-center gap-1 text-slate-600">
-              <MapPin size={12} className="text-indigo-500 shrink-0 md:w-3 md:h-3 opacity-75" />
+              <MapPin size={isFeaturedVariant ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
               <span className="truncate">{ad.city}</span>
             </div>
             <div className="flex items-center gap-1 text-slate-500">
-              <Tag size={12} className="text-teal-600 shrink-0 md:w-3 md:h-3 opacity-75" />
+              <Tag size={isFeaturedVariant ? 10 : 12} className="text-teal-600 shrink-0 opacity-75" />
               <span className="truncate">{ad.category}</span>
             </div>
           </div>
 
           {/* Linha horizontal de ações */}
-          <div className="flex items-center justify-center gap-5 py-1.5 mb-2 border-t border-b border-dashed border-slate-100">
+          <div className={`flex items-center justify-center border-t border-b border-dashed border-slate-100 ${
+            isFeaturedVariant ? 'gap-3 py-1 mb-1.5' : 'gap-5 py-1.5 mb-2'
+          }`}>
             {/* Favoritar */}
             <button
               onClick={toggleFavorite}
-              className={`p-2 rounded-full transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 ${
+              className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 ${
+                isFeaturedVariant ? 'p-1.5' : 'p-2'
+              } ${
                 isFavorite
                   ? 'bg-rose-50 border-rose-100 text-rose-600'
                   : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600'
               }`}
               title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
             >
-              <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} className={isFavorite ? "text-rose-500" : ""} />
+              <Heart size={isFeaturedVariant ? 12 : 14} fill={isFavorite ? 'currentColor' : 'none'} className={isFavorite ? "text-rose-500" : ""} />
             </button>
 
             {/* Partilhar */}
             <button
               onClick={handleShare}
-              className="p-2 rounded-full transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600"
+              className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600 ${
+                isFeaturedVariant ? 'p-1.5' : 'p-2'
+              }`}
               title="Partilhar Anúncio"
             >
-              <Share2 size={14} />
+              <Share2 size={isFeaturedVariant ? 12 : 14} />
             </button>
 
             {/* WhatsApp */}
             {ad.sellerPhone && ad.sellerPhone.trim() !== '' && (
               <button
                 onClick={handleContactClick}
-                className="p-2 rounded-full transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600"
+                className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600 ${
+                  isFeaturedVariant ? 'p-1.5' : 'p-2'
+                }`}
                 title="Contactar via WhatsApp"
               >
-                <MessageCircle size={14} className="text-[#25D366]" />
+                <MessageCircle size={isFeaturedVariant ? 12 : 14} className="text-[#25D366]" />
               </button>
             )}
           </div>
@@ -327,7 +346,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
           <div className="mt-auto pt-1 flex flex-col items-center justify-center text-center">
             {hasPrice ? (
               <div className="flex flex-col items-center justify-center">
-                <div className="text-base md:text-lg font-black text-indigo-600 tracking-tight leading-none">
+                <div className={`font-black text-indigo-600 tracking-tight leading-none ${
+                  isFeaturedVariant ? 'text-sm md:text-base' : 'text-base md:text-lg'
+                }`}>
                   {formatPrice(ad.price)}
                 </div>
                 {(ad.status === 'sold' || ad.adStatus === 'sold') && ad.price !== undefined && Number(ad.price) > 0 && (
@@ -338,7 +359,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad }) => {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center">
-                <div className="text-xs md:text-sm font-extrabold text-emerald-600 uppercase tracking-wide leading-none">
+                <div className={`font-extrabold text-emerald-600 uppercase tracking-wide leading-none ${
+                  isFeaturedVariant ? 'text-[10px] md:text-xs' : 'text-xs md:text-sm'
+                }`}>
                   Sob Consulta
                 </div>
               </div>
