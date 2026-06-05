@@ -10,10 +10,12 @@ import { motion } from 'motion/react';
 // @ts-ignore
 import cplpCollage from '../assets/images/cplp_flags_collage_1780303992447.png';
 
-const INITIAL_LIMIT = 15; 
+const PAGE_SIZE = 30; 
 
 let lastFetchTime = 0;
 let cachedAds: Ad[] = [];
+let cachedHasMore = false;
+let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
   const { categories } = useSettings();
@@ -24,6 +26,11 @@ const Home = () => {
   const [category, setCategory] = useState('Todas');
   const [city, setCity] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Estados de paginação de 30 em 30 itens
+  const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   useEffect(() => {
     const search = searchParams.get('search');
@@ -36,43 +43,76 @@ const Home = () => {
 
   useEffect(() => {
     let active = true;
-    const fetchAds = async () => {
-      setLoading(true);
+    const fetchAds = async (isMore = false) => {
+      if (isMore) {
+        setIsFetchingMore(true);
+      } else {
+        setLoading(true);
+      }
       setErrorMsg(null);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Delay visual rápido e subtil de carregamento inicial
+      if (!isMore) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
       if (!active) return;
 
       const now = Date.now();
-      if (now - lastFetchTime < 30000 && cachedAds.length > 0) {
+      // Reutiliza a cache local se o limite for idêntico e o intervalo for < 30s
+      if (!isMore && now - lastFetchTime < 30000 && cachedAds.length > 0 && cachedLimit === limitAmount) {
         setAds(cachedAds);
+        setHasMore(cachedHasMore);
         setLoading(false);
         return;
       }
 
       try {
+        // Pedimos limitAmount + 1 para validar se existem de facto mais anúncios (fetch-one-more strategy)
         const q = query(
           collection(db, 'ads'),
           where('status', '==', 'approved'),
-          limit(INITIAL_LIMIT) 
+          limit(limitAmount + 1)
         );
 
-        const snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads'), 30000);
+        const snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-limit-${limitAmount}`), 30000);
         if (!active) return;
 
-        const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+        const docs = snapshot.docs;
+        const gotMore = docs.length > limitAmount;
+
+        // Filtra a última linha de teste se existir
+        const visibleDocs = gotMore ? docs.slice(0, limitAmount) : docs;
+        const adsData = visibleDocs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+
         setAds(adsData);
+        setHasMore(gotMore);
+
         cachedAds = adsData;
+        cachedHasMore = gotMore;
+        cachedLimit = limitAmount;
         lastFetchTime = now;
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
         if (active) setErrorMsg("Erro ao carregar anúncios.");
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setIsFetchingMore(false);
+        }
       }
     };
-    fetchAds();
+
+    const isMoreFetch = limitAmount > PAGE_SIZE;
+    fetchAds(isMoreFetch);
+
     return () => { active = false; };
-  }, []);
+  }, [limitAmount]);
+
+  const handleLoadMore = () => {
+    if (!isFetchingMore) {
+      setLimitAmount(prev => prev + PAGE_SIZE);
+    }
+  };
 
   const filteredAds = useMemo(() => {
     let result = ads.filter(ad => {
@@ -196,6 +236,28 @@ const Home = () => {
             {filteredAds.map((ad) => (
               <AdCard key={ad.id} ad={ad} />
             ))}
+          </div>
+        )}
+
+        {hasMore && !loading && (
+          <div className="flex justify-center mt-12 pb-8">
+            <button
+              onClick={handleLoadMore}
+              disabled={isFetchingMore}
+              className="flex items-center gap-2 px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-full shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+            >
+              {isFetchingMore ? (
+                <>
+                  <RefreshCcw className="animate-spin" size={16} />
+                  A carregar mais...
+                </>
+              ) : (
+                <>
+                  Ver mais anúncios
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>
