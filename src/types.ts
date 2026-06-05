@@ -44,6 +44,7 @@ export interface MarketplaceSettings {
 }
 
 export interface UserProfile {
+  id?: string;
   uid: string;
   name: string;
   email: string;
@@ -59,6 +60,7 @@ export interface UserProfile {
   referredUsersCount?: number;
   referredBy?: string;
   referralCredits?: number;
+  pointsFromAds?: number;
 }
 
 export interface Ad {
@@ -86,6 +88,7 @@ export interface Ad {
   externalUrl?: string;
   isFeatured?: boolean;
   featuredUntil?: any; // Firestore Timestamp
+  pointsEarned?: boolean;
 }
 
 export interface Favorite {

@@ -20,7 +20,7 @@ const Login = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   
   const queryMode = searchParams.get('mode');
   const initialMode = (queryMode === 'register' || queryMode === 'login' || queryMode === 'forgot') ? queryMode : 'login';

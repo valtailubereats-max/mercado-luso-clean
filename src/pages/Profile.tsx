@@ -12,6 +12,7 @@ import { pt } from 'date-fns/locale';
 import { formatPrice } from '../utils';
 import OptimizedImage from '../components/OptimizedImage';
 import ReviewModal from '../components/ReviewModal';
+import { calculateTotalPoints, calculateProgressPoints, POINTS_THRESHOLD, POINTS_PER_REFERRAL, POINTS_PER_AD } from '../utils/rewards';
 
 const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -43,13 +44,20 @@ const Profile = () => {
       setReferralsCount(realCount);
       setReferralsLoading(false);
 
-      if (realCount !== (profile.referredUsersCount ?? 0)) {
-        console.log(`Updating user referral stats. DB Count: ${realCount}, Profile Count: ${profile.referredUsersCount}`);
-        const profileCount = profile.referredUsersCount || 0;
-        const currentCredits = profile.referralCredits || 0;
+      const profileCount = profile.referredUsersCount || 0;
+      const pointsFromAds = (profile as any).pointsFromAds || 0;
+      const currentCredits = profile.referralCredits || 0;
+
+      if (realCount !== profileCount) {
+        console.log(`Updating user referral stats. DB Count: ${realCount}, Profile Count: ${profileCount}`);
         
-        const newCreditsEarned = Math.floor(realCount / 3) - Math.floor(profileCount / 3);
-        const nextCredits = currentCredits + Math.max(0, newCreditsEarned);
+        const oldPoints = calculateTotalPoints(profileCount, pointsFromAds);
+        const newPoints = calculateTotalPoints(realCount, pointsFromAds);
+        
+        const oldCreditsEarned = Math.floor(oldPoints / POINTS_THRESHOLD);
+        const newCreditsEarned = Math.floor(newPoints / POINTS_THRESHOLD);
+        const creditsToGrant = Math.max(0, newCreditsEarned - oldCreditsEarned);
+        const nextCredits = currentCredits + creditsToGrant;
 
         await updateDoc(doc(db, 'users', user.uid), {
           referredUsersCount: realCount,
@@ -272,6 +280,13 @@ const Profile = () => {
 
   if (!user) return <div className="text-center py-20">Por favor, faça login para ver seu perfil.</div>;
 
+  const pointsFromAds = (profile as any)?.pointsFromAds || 0;
+  const pointsFromReferrals = (referralsLoading ? 0 : referralsCount) * POINTS_PER_REFERRAL;
+  const totalPoints = calculateTotalPoints(referralsLoading ? 0 : referralsCount, pointsFromAds);
+  const progressPoints = calculateProgressPoints(totalPoints);
+  const progressPercent = Math.min(100, Math.round((progressPoints / POINTS_THRESHOLD) * 100));
+  const pointsNeeded = POINTS_THRESHOLD - progressPoints;
+
   return (
     <div className="max-w-4xl mx-auto space-y-12">
       <motion.div
@@ -404,7 +419,7 @@ const Profile = () => {
         ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="space-y-3">
+          <div className="space-y-3 col-span-1 md:col-span-2">
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">O Seu Link de Convite</h4>
             <div className="flex gap-2 w-full">
               <input
@@ -433,16 +448,40 @@ const Profile = () => {
               </button>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center justify-around gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-            <div className="text-center">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Convidados Válidos</span>
-              <span className="text-4xl font-brand font-black text-emerald-600 block mt-1">{referralsLoading ? '...' : referralsCount}</span>
+        {/* Bento Grid layout for Reward Points */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Pontos de Convites</span>
+              <span className="text-2xl font-brand font-black text-emerald-600 block mt-2">{referralsLoading ? '...' : `${pointsFromReferrals} pts`}</span>
             </div>
-            <div className="text-center">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Créditos de Destaque</span>
-              <span className="text-4xl font-brand font-black text-indigo-600 block mt-1">{profile?.referralCredits || 0}</span>
+            <span className="text-[10px] text-slate-500 font-bold block mt-2 border-t border-slate-50 pt-1.5">{referralsCount} amigos ({POINTS_PER_REFERRAL} pts/cada)</span>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Pontos de Anúncios</span>
+              <span className="text-2xl font-brand font-black text-indigo-600 block mt-2">{referralsLoading ? '...' : `${pointsFromAds} pts`}</span>
             </div>
+            <span className="text-[10px] text-slate-500 font-bold block mt-2 border-t border-slate-50 pt-1.5">Aprovados ({POINTS_PER_AD} pts/cada)</span>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Próximo Destaque</span>
+              <span className="text-2xl font-brand font-black text-amber-500 block mt-2">{referralsLoading ? '...' : `${progressPoints} / 150`}</span>
+            </div>
+            <span className="text-[10px] text-slate-500 font-bold block mt-2 border-t border-slate-50 pt-1.5">Faltam {pointsNeeded} pts para o destaque</span>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Destaques Disponíveis</span>
+              <span className="text-2xl font-brand font-black text-indigo-700 block mt-2">{profile?.referralCredits || 0}</span>
+            </div>
+            <span className="text-[10px] text-slate-500 font-bold block mt-2 border-t border-slate-50 pt-1.5">Créditos de destaque de 24h</span>
           </div>
         </div>
 
@@ -456,9 +495,7 @@ const Profile = () => {
                   "A carregar convidados..."
                 ) : (
                   <>
-                    {(referralsCount % 3) === 2 && "Falta apenas 1 convidado para ganhar 1 crédito de destaque."}
-                    {(referralsCount % 3) === 1 && "Faltam 2 convidados para ganhar 1 crédito de destaque."}
-                    {(referralsCount % 3) === 0 && "Convide 3 pessoas para ganhar 1 crédito de destaque."}
+                    Faltam {pointsNeeded} pontos para ganhar automaticamente 1 crédito de destaque.
                   </>
                 )}
               </h4>
@@ -466,7 +503,7 @@ const Profile = () => {
             <div className="text-right">
               <span className="text-xs font-black text-slate-400 uppercase tracking-widest block font-mono">Progresso</span>
               <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 block mt-0.5">
-                {referralsLoading ? '...' : `${referralsCount % 3} / 3`}
+                {referralsLoading ? '...' : `${progressPercent}%`}
               </span>
             </div>
           </div>
@@ -475,7 +512,7 @@ const Profile = () => {
           <div className="relative w-full bg-slate-100 rounded-full h-4 overflow-hidden border border-slate-200/60 shadow-inner">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: referralsLoading ? "0%" : `${(referralsCount % 3) === 2 ? 67 : (referralsCount % 3) === 1 ? 33 : 0}%` }}
+              animate={{ width: referralsLoading ? "0%" : `${progressPercent}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-sm relative overflow-hidden"
             >
@@ -489,8 +526,9 @@ const Profile = () => {
 
           <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
             <span>0%</span>
-            <span>33%</span>
-            <span>67%</span>
+            <span>25%</span>
+            <span>50%</span>
+            <span>75%</span>
             <span>100% 🎁</span>
           </div>
         </div>

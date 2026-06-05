@@ -14,16 +14,23 @@ import {
   Calendar,
   Clock,
   MoreVertical,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { manualAddCredits, manualAddPoints } from '../utils/rewards';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Debug Tool States
+  const [debugSelectedUserId, setDebugSelectedUserId] = useState<string>('');
+  const [debugStatus, setDebugStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -33,7 +40,7 @@ const AdminUsers = () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const q = query(collection(db, 'users'), limit(5));
+      const q = query(collection(db, 'users'), limit(100));
       const querySnapshot = await getDocsWithCacheFallback(q, 'admin/users');
       const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as UserProfile));
       
@@ -48,6 +55,10 @@ const AdminUsers = () => {
       });
 
       setUsers(usersData);
+      
+      if (usersData.length > 0) {
+        setDebugSelectedUserId(usersData[0].id);
+      }
     } catch (err: any) {
       console.error("Error loading users:", err);
       let message = "Ocorreu um erro ao carregar os utilizadores.";
@@ -78,6 +89,49 @@ const AdminUsers = () => {
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as 'admin' | 'user' } : u));
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${userId}`);
+    }
+  };
+
+  const handleDebugAction = async (actionType: 'credit' | 'points50' | 'points150') => {
+    if (!debugSelectedUserId) {
+      setDebugStatus({ type: 'error', message: 'Selecione um utilizador primeiro.' });
+      return;
+    }
+    setDebugLoading(true);
+    setDebugStatus(null);
+    try {
+      let success = false;
+      const targetUser = users.find(u => u.id === debugSelectedUserId);
+      const name = targetUser ? (targetUser.name || targetUser.email || debugSelectedUserId) : debugSelectedUserId;
+      
+      if (actionType === 'credit') {
+        success = await manualAddCredits(debugSelectedUserId, 1);
+        if (success) {
+          setDebugStatus({ type: 'success', message: `1 Crédito de Destaque adicionado com sucesso a ${name}!` });
+        }
+      } else if (actionType === 'points50') {
+        success = await manualAddPoints(debugSelectedUserId, 50);
+        if (success) {
+          setDebugStatus({ type: 'success', message: `50 Pontos adicionados com sucesso a ${name}!` });
+        }
+      } else if (actionType === 'points150') {
+        success = await manualAddPoints(debugSelectedUserId, 150);
+        if (success) {
+          setDebugStatus({ type: 'success', message: `150 Pontos adicionados com sucesso a ${name}! (Destaques adicionais gerados se elegível)` });
+        }
+      }
+
+      if (success) {
+        // Refresh local user list to show changes immediately
+        await fetchUsers();
+      } else {
+        setDebugStatus({ type: 'error', message: `Não foi possível atualizar o utilizador. Verifique as permissões.` });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setDebugStatus({ type: 'error', message: `Erro ao executar ação debug: ${err.message}` });
+    } finally {
+      setDebugLoading(false);
     }
   };
 
@@ -115,6 +169,74 @@ const AdminUsers = () => {
             className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
           />
         </div>
+      </div>
+
+      {/* Ferramenta de Teste de Recompensas (Apenas Admin) */}
+      <div className="bg-amber-50/70 border border-amber-200 p-6 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="text-amber-600 animate-pulse" size={18} />
+          <h2 className="text-sm font-black text-amber-900 uppercase tracking-wider">🔬 Ferramenta de Teste de Recompensas (Modo Debug)</h2>
+        </div>
+        <p className="text-xs text-amber-800 font-semibold mb-4 leading-relaxed">
+          Utilize esta ferramenta para simular e testar o recebimento de pontos de destaques para o utilizador selecionado. 
+          O limite para conversão automática é de 150 pontos para gerar 1 crédito de destaque.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div className="md:col-span-4 space-y-1">
+            <label className="block text-[10px] font-black text-amber-900 uppercase tracking-widest leading-none">Selecionar Utilizador</label>
+            <select
+              value={debugSelectedUserId}
+              onChange={(e) => setDebugSelectedUserId(e.target.value)}
+              disabled={debugLoading || users.length === 0}
+              className="w-full bg-white border border-amber-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+            >
+              {users.length === 0 ? (
+                <option value="">A carregar utilizadores...</option>
+              ) : (
+                users.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.name || 'Sem nome'} ({u.email || u.id})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+          
+          <div className="md:col-span-8 flex flex-wrap gap-2 pt-2 md:pt-4">
+            <button
+              onClick={() => handleDebugAction('points50')}
+              disabled={debugLoading || !debugSelectedUserId}
+              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer"
+            >
+              Adicionar 50 Pontos
+            </button>
+            <button
+              onClick={() => handleDebugAction('points150')}
+              disabled={debugLoading || !debugSelectedUserId}
+              className="px-4 py-2.5 bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer"
+            >
+              Adicionar 150 Pontos (Gera Crédito)
+            </button>
+            <button
+              onClick={() => handleDebugAction('credit')}
+              disabled={debugLoading || !debugSelectedUserId}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer"
+            >
+              Adicionar 1 Crédito Destaque
+            </button>
+          </div>
+        </div>
+        
+        {debugStatus && (
+          <div className={`mt-4 p-3 rounded-xl text-xs font-bold transition-all ${
+            debugStatus.type === 'success' 
+              ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' 
+              : 'bg-rose-50 border border-rose-100 text-rose-800'
+          }`}>
+            {debugStatus.message}
+          </div>
+        )}
       </div>
 
       {loading ? (

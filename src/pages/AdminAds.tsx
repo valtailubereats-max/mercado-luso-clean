@@ -5,6 +5,7 @@ import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } fro
 import { Ad } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import OptimizedImage from '../components/OptimizedImage';
+import { awardAdApprovalPoints } from '../utils/rewards';
 import { 
   Clock, 
   Archive, 
@@ -55,10 +56,21 @@ const AdminAds = () => {
 
   const handleAdAction = async (adId: string, status: string) => {
     try {
+      const adToUpdate = ads.find(a => a.id === adId) || (selectedAd?.id === adId ? selectedAd : null);
+
       await updateDoc(doc(db, 'ads', adId), { 
         status,
         updatedAt: serverTimestamp()
       });
+
+      if (status === 'approved' && adToUpdate && adToUpdate.sellerId) {
+        try {
+          await awardAdApprovalPoints(adToUpdate.sellerId, adId);
+        } catch (pointsErr) {
+          console.error("Error awarding ad approved points:", pointsErr);
+        }
+      }
+
       setAds(prevAds => prevAds.map(ad => ad.id === adId ? { ...ad, status } as Ad : ad));
       setSelectedAd(prev => prev && prev.id === adId ? { ...prev, status: status as any } : prev);
       return true;
