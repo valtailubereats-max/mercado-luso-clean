@@ -370,8 +370,8 @@ export default function App() {
                   <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>
                   <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
                   <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>
-                  <a href="mailto:mercalusopt@gmail.com" className="hover:text-indigo-600 text-slate-500 transition-colors normal-case flex items-center gap-1 font-semibold">
-                    <span>📧</span> Contacto: mercalusopt@gmail.com
+                  <a href="mailto:mercadolusopt@gmail.com" className="hover:text-indigo-600 text-slate-500 transition-colors normal-case flex items-center gap-1 font-semibold">
+                    <span>📧</span> Contacto: mercadolusopt@gmail.com
                   </a>
                 </div>
               </div>
