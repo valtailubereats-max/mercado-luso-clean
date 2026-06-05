@@ -35,7 +35,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         if (docSnap.exists()) {
           const data = docSnap.data() as MarketplaceSettings;
-          setSettings(data);
+          setSettings({
+            ...data,
+            showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true
+          });
         } else {
           // Initialize if doesn't exist
           const defaultSettings: MarketplaceSettings = {
@@ -44,7 +47,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             maxImages: { free: 1, intermediate: 3, premium: 5 },
             expirationAction: 'archive',
             warningDays: 3,
-            categories: CATEGORIES
+            categories: CATEGORIES,
+            showTotalAdsBadge: true
           };
           setDoc(doc(db, 'settings', 'global'), defaultSettings).catch((err) => {
             console.error("Error initializing default settings:", err);

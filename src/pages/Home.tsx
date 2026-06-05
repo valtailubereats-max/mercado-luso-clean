@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, getCountFromServer } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES } from '../types';
@@ -18,7 +18,7 @@ let cachedHasMore = false;
 let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
-  const { categories } = useSettings();
+  const { settings, categories } = useSettings();
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,11 +26,30 @@ const Home = () => {
   const [category, setCategory] = useState('Todas');
   const [city, setCity] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
+  const [totalApprovedCount, setTotalApprovedCount] = useState<number | null>(null);
 
   // Estados de paginação de 30 em 30 itens
   const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+  // Buscar total de anúncios aprovados no banco de dados para estatísticas da Home
+  useEffect(() => {
+    let active = true;
+    const fetchTotalCount = async () => {
+      try {
+        const q = query(collection(db, 'ads'), where('status', '==', 'approved'));
+        const snapshot = await getCountFromServer(q);
+        if (active) {
+          setTotalApprovedCount(snapshot.data().count);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar total de anúncios aprovados:', err);
+      }
+    };
+    fetchTotalCount();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const search = searchParams.get('search');
@@ -208,10 +227,14 @@ const Home = () => {
               </div>
 
               {/* Contador de Anúncios Slim */}
-              <div className="h-10 md:h-12 px-5 flex items-center bg-black/30 backdrop-blur-3xl rounded-full border border-white/10 shadow-inner">
-                <span className="text-white font-black text-sm md:text-lg mr-2">{filteredAds.length}</span>
-                <span className="text-white/60 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Anúncios</span>
-              </div>
+              {settings?.showTotalAdsBadge !== false && (
+                <div className="h-10 md:h-12 px-5 flex items-center bg-black/30 backdrop-blur-3xl rounded-full border border-white/10 shadow-inner">
+                  <span className="text-white font-black text-sm md:text-lg mr-2">
+                    {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
+                  </span>
+                  <span className="text-white/60 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Anúncios</span>
+                </div>
+              )}
 
             </div>
           </motion.div>

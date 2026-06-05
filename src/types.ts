@@ -40,6 +40,7 @@ export interface MarketplaceSettings {
   warningDays: number;
   categories?: string[];
   ptRibbonScale?: number;
+  showTotalAdsBadge?: boolean;
 }
 
 export interface UserProfile {

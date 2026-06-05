@@ -33,7 +33,8 @@ const AdminSettings = () => {
           ...data,
           maxImages: data.maxImages || { free: 1, intermediate: 3, premium: 5 },
           categories: data.categories || CATEGORIES,
-          ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150
+          ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150,
+          showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -43,7 +44,8 @@ const AdminSettings = () => {
           expirationAction: 'archive',
           warningDays: 3,
           categories: CATEGORIES,
-          ptRibbonScale: 150
+          ptRibbonScale: 150,
+          showTotalAdsBadge: true
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -195,6 +197,34 @@ const AdminSettings = () => {
                 onChange={(e) => setSettings({ ...settings, warningDays: parseInt(e.target.value) || 0 })}
                 className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold"
               />
+            </div>
+          </div>
+        </section>
+
+        {/* Homepage Display Settings */}
+        <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+              <Settings size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">Configurações de Exibição da Home</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-900">Mostrar Total de Anúncios</h3>
+                <p className="text-xs text-slate-500 font-medium">Exibe no topo da página principal a quantidade total acumulada de anúncios aprovados no sistema.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={!!settings.showTotalAdsBadge} 
+                  onChange={(e) => setSettings({ ...settings, showTotalAdsBadge: e.target.checked })} 
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
             </div>
           </div>
         </section>
