@@ -34,7 +34,8 @@ const AdminSettings = () => {
           maxImages: data.maxImages || { free: 1, intermediate: 3, premium: 5 },
           categories: data.categories || CATEGORIES,
           ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150,
-          showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true
+          showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
+          highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 3
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -45,7 +46,8 @@ const AdminSettings = () => {
           warningDays: 3,
           categories: CATEGORIES,
           ptRibbonScale: 150,
-          showTotalAdsBadge: true
+          showTotalAdsBadge: true,
+          highlightSpeed: 3
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -225,6 +227,31 @@ const AdminSettings = () => {
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
               </label>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Velocidade do Carrossel (Destaques)</h3>
+                  <p className="text-xs text-slate-500 font-medium">Ajuste a velocidade do movimento contínuo dos anúncios destacados na página principal.</p>
+                </div>
+                <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl text-xs font-black">
+                  {settings.highlightSpeed === 0 ? 'Parado' : `${settings.highlightSpeed}x`}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Parado</span>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="10" 
+                  step="1"
+                  value={settings.highlightSpeed !== undefined ? settings.highlightSpeed : 3} 
+                  onChange={(e) => setSettings({ ...settings, highlightSpeed: parseInt(e.target.value) })} 
+                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Rápido</span>
+              </div>
             </div>
           </div>
         </section>

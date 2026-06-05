@@ -38,35 +38,6 @@ const Home = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const isHoveredRef = useRef(false);
 
-  useEffect(() => {
-    const el = carouselRef.current;
-    if (!el || featuredAds.length === 0) return;
-
-    let animationFrameId: number;
-    let scrollPos = el.scrollLeft;
-
-    const scrollLoop = () => {
-      if (el) {
-        if (!isHoveredRef.current) {
-          scrollPos += 0.45; // Smooth slow scroll speed
-          const maxScroll = el.scrollWidth - el.clientWidth;
-          
-          if (scrollPos >= maxScroll - 1) {
-            scrollPos = 0;
-          }
-          el.scrollLeft = scrollPos;
-        } else {
-          // Sync scrollPos on manual user swipes/scrolls to resume seamlessly
-          scrollPos = el.scrollLeft;
-        }
-      }
-      animationFrameId = requestAnimationFrame(scrollLoop);
-    };
-
-    animationFrameId = requestAnimationFrame(scrollLoop);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [featuredAds]);
-
   // Buscar total de anúncios aprovados no banco de dados para estatísticas da Home
   useEffect(() => {
     let active = true;
@@ -212,8 +183,46 @@ const Home = () => {
       const timeA = a.featuredUntil?.seconds ? a.featuredUntil.seconds * 1000 : new Date(a.featuredUntil).getTime();
       const timeB = b.featuredUntil?.seconds ? b.featuredUntil.seconds * 1000 : new Date(b.featuredUntil).getTime();
       return (timeB || 0) - (timeA || 0);
-    }).slice(0, 6);
+    }).slice(0, 20);
   }, [featuredAds, searchTerm, category, city]);
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el || filteredFeaturedAds.length === 0) return;
+
+    let animationFrameId: number;
+    let scrollPos = el.scrollLeft;
+
+    const scrollLoop = () => {
+      if (el) {
+        const speedMultiplier = settings?.highlightSpeed !== undefined ? settings.highlightSpeed : 3;
+        const speed = speedMultiplier * 0.15; // Smooth slow scroll speed
+
+        if (!isHoveredRef.current && speed > 0) {
+          scrollPos += speed;
+          
+          // Infinite loop: if we scroll past the first duplicated block, reset to start
+          const halfWidth = el.scrollWidth / 2;
+          if (scrollPos >= halfWidth) {
+            scrollPos -= halfWidth;
+          }
+          el.scrollLeft = scrollPos;
+        } else {
+          // Sync scrollPos on manual user swipes/scrolls to resume seamlessly
+          scrollPos = el.scrollLeft;
+          const halfWidth = el.scrollWidth / 2;
+          if (scrollPos >= halfWidth) {
+            scrollPos -= halfWidth;
+            el.scrollLeft = scrollPos;
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(scrollLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(scrollLoop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [filteredFeaturedAds, settings?.highlightSpeed]);
 
   const filteredAds = useMemo(() => {
     let result = ads.filter(ad => {
@@ -354,8 +363,8 @@ const Home = () => {
               onTouchEnd={() => { isHoveredRef.current = false; }}
               className="flex gap-4 md:gap-6 overflow-x-auto pb-4 pt-1 -mx-4 md:-mx-6 px-4 md:px-6 scrollbar-none scroll-smooth snap-x snap-mandatory"
             >
-              {filteredFeaturedAds.map((ad) => (
-                <div key={ad.id} className="w-[180px] md:w-[220px] shrink-0 snap-start">
+              {[...filteredFeaturedAds, ...filteredFeaturedAds].map((ad, idx) => (
+                <div key={`${ad.id}-${idx}`} className="w-[180px] md:w-[220px] shrink-0 snap-start">
                   <AdCard ad={ad} />
                 </div>
               ))}

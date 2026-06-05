@@ -41,6 +41,7 @@ export interface MarketplaceSettings {
   categories?: string[];
   ptRibbonScale?: number;
   showTotalAdsBadge?: boolean;
+  highlightSpeed?: number;
 }
 
 export interface UserProfile {
