@@ -21,6 +21,7 @@ const Home = () => {
   const { settings, categories } = useSettings();
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
+  const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [category, setCategory] = useState('Todas');
@@ -48,6 +49,29 @@ const Home = () => {
       }
     };
     fetchTotalCount();
+    return () => { active = false; };
+  }, []);
+
+  // Buscar anúncios destacados para carrossel no topo
+  useEffect(() => {
+    let active = true;
+    const fetchFeatured = async () => {
+      try {
+        const q = query(
+          collection(db, 'ads'),
+          where('status', '==', 'approved'),
+          where('isFeatured', '==', true),
+          limit(20)
+        );
+        const snapshot = await getDocsWithCacheFallback(q, 'home/featured-ads');
+        if (!active) return;
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+        setFeaturedAds(docs);
+      } catch (err) {
+        console.error('Erro ao buscar anúncios destacados:', err);
+      }
+    };
+    fetchFeatured();
     return () => { active = false; };
   }, []);
 
@@ -133,6 +157,31 @@ const Home = () => {
     }
   };
 
+  const filteredFeaturedAds = useMemo(() => {
+    const now = new Date();
+    let result = featuredAds.filter(ad => {
+      if (!ad.isFeatured || !ad.featuredUntil) return false;
+      const featuredUntilDate = ad.featuredUntil.seconds
+        ? ad.featuredUntil.toDate()
+        : new Date(ad.featuredUntil);
+      if (featuredUntilDate <= now) return false;
+
+      const search = searchTerm.toLowerCase().trim();
+      const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
+      const matchesStatus = !ad.adStatus || ad.adStatus !== 'expired';
+      return matchesSearch && matchesStatus;
+    });
+
+    if (category !== 'Todas') result = result.filter(ad => ad.category === category);
+    if (city !== 'Todas') result = result.filter(ad => ad.city === city);
+
+    return result.sort((a, b) => {
+      const timeA = a.featuredUntil?.seconds ? a.featuredUntil.seconds * 1000 : new Date(a.featuredUntil).getTime();
+      const timeB = b.featuredUntil?.seconds ? b.featuredUntil.seconds * 1000 : new Date(b.featuredUntil).getTime();
+      return (timeB || 0) - (timeA || 0);
+    }).slice(0, 6);
+  }, [featuredAds, searchTerm, category, city]);
+
   const filteredAds = useMemo(() => {
     let result = ads.filter(ad => {
       const search = searchTerm.toLowerCase().trim();
@@ -141,8 +190,12 @@ const Home = () => {
     });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
-    return result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-  }, [ads, searchTerm, category, city]);
+    const sorted = result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    // Deduplicate: Exclude any ad that is already shown as highlighted
+    const featuredIds = new Set(filteredFeaturedAds.map(f => f.id));
+    return sorted.filter(ad => !featuredIds.has(ad.id));
+  }, [ads, searchTerm, category, city, filteredFeaturedAds]);
 
   return (
     <div className="space-y-6">
@@ -240,6 +293,36 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* ✨ ANÚNCIOS EM DESTAQUE */}
+      {filteredFeaturedAds.length > 0 && (
+        <section className="space-y-4 py-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">✨</span>
+              <div>
+                <h2 className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-none">
+                  Anúncios em Destaque
+                </h2>
+                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-1">
+                  Anúncios promovidos pela comunidade
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Carrossel Horizontal Responsivo */}
+          <div className="relative">
+            <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 pt-1 -mx-4 md:-mx-6 px-4 md:px-6 scrollbar-none scroll-smooth snap-x snap-mandatory">
+              {filteredFeaturedAds.map((ad) => (
+                <div key={ad.id} className="w-[180px] md:w-[220px] shrink-0 snap-start">
+                  <AdCard ad={ad} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Grid de Anúncios */}
       <div className="px-0">
