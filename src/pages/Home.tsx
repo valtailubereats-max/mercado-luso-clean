@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, limit, getCountFromServer } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
@@ -33,6 +33,39 @@ const Home = () => {
   const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+  // Auto-scroll loop for the featured listing carousel
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const isHoveredRef = useRef(false);
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el || featuredAds.length === 0) return;
+
+    let animationFrameId: number;
+    let scrollPos = el.scrollLeft;
+
+    const scrollLoop = () => {
+      if (el) {
+        if (!isHoveredRef.current) {
+          scrollPos += 0.45; // Smooth slow scroll speed
+          const maxScroll = el.scrollWidth - el.clientWidth;
+          
+          if (scrollPos >= maxScroll - 1) {
+            scrollPos = 0;
+          }
+          el.scrollLeft = scrollPos;
+        } else {
+          // Sync scrollPos on manual user swipes/scrolls to resume seamlessly
+          scrollPos = el.scrollLeft;
+        }
+      }
+      animationFrameId = requestAnimationFrame(scrollLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(scrollLoop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [featuredAds]);
 
   // Buscar total de anúncios aprovados no banco de dados para estatísticas da Home
   useEffect(() => {
@@ -313,7 +346,14 @@ const Home = () => {
           
           {/* Carrossel Horizontal Responsivo */}
           <div className="relative">
-            <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 pt-1 -mx-4 md:-mx-6 px-4 md:px-6 scrollbar-none scroll-smooth snap-x snap-mandatory">
+            <div 
+              ref={carouselRef}
+              onMouseEnter={() => { isHoveredRef.current = true; }}
+              onMouseLeave={() => { isHoveredRef.current = false; }}
+              onTouchStart={() => { isHoveredRef.current = true; }}
+              onTouchEnd={() => { isHoveredRef.current = false; }}
+              className="flex gap-4 md:gap-6 overflow-x-auto pb-4 pt-1 -mx-4 md:-mx-6 px-4 md:px-6 scrollbar-none scroll-smooth snap-x snap-mandatory"
+            >
               {filteredFeaturedAds.map((ad) => (
                 <div key={ad.id} className="w-[180px] md:w-[220px] shrink-0 snap-start">
                   <AdCard ad={ad} />
