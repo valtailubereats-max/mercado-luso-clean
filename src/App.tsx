@@ -346,12 +346,12 @@ export default function App() {
     <HelmetProvider>
       <Helmet>
         <title>Mercado Luso - Classificados & IA Copilot</title>
-        <meta name="description" content="Marketplace moderno para Portugal, focado em simplicidade, conexão via WhatsApp e com copiloto de Inteligência Artificial." />
+        <meta name="description" content="O Mercado Luso é uma plataforma de anúncios e negócios criada para conectar toda a comunidade de língua portuguesa em qualquer lugar do mundo." />
         <link rel="canonical" href="https://www.mercado-luso.com" />
         <meta property="og:url" content="https://www.mercado-luso.com" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Mercado Luso - Classificados & IA Copilot" />
-        <meta property="og:description" content="Marketplace moderno para Portugal, focado em simplicidade, conexão via WhatsApp e com copiloto de Inteligência Artificial." />
+        <meta property="og:description" content="O Mercado Luso é uma plataforma de anúncios e negócios criada para conectar toda a comunidade de língua portuguesa em qualquer lugar do mundo." />
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
       <SettingsProvider>

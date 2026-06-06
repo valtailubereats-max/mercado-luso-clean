@@ -18,7 +18,7 @@ const FAQ = () => {
   const faqData: FAQItem[] = [
     {
       question: 'O que é o Mercado Luso?',
-      answer: 'O Mercado Luso é um marketplace moderno desenhado especialmente para Portugal. O nosso objetivo é guiar compradores e vendedores locais para negociarem excelentes artigos de forma simples, direta e segura, tirando partido de ferramentas intuitivas e suporte via WhatsApp.'
+      answer: 'O Mercado Luso é uma plataforma de anúncios e negócios criada para conectar toda a comunidade de língua portuguesa em qualquer lugar do mundo. O nosso objetivo é guiar compradores e vendedores para negociarem excelentes artigos de forma simples, direta e segura, tirando partido de ferramentas intuitivas e suporte via WhatsApp.'
     },
     {
       question: 'Como publicar um anúncio?',
