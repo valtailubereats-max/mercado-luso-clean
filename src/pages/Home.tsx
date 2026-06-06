@@ -39,6 +39,50 @@ const Home = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // Onboarding states for country selection
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [shouldAnimateButton, setShouldAnimateButton] = useState(false);
+
+  // Helpers for country flags and labels
+  const getCountryFlag = (countryVal: string) => {
+    if (countryVal === 'Portugal') return '🇵🇹';
+    if (countryVal === 'Reino Unido') return '🇬🇧';
+    return '🌍';
+  };
+
+  const getCommunityLabel = (countryVal: string) => {
+    if (countryVal === 'Portugal') {
+      return { flag: '🇵🇹', text: 'Você está na comunidade de Portugal' };
+    }
+    if (countryVal === 'Reino Unido') {
+      return { flag: '🇬🇧', text: 'Você está na comunidade do Reino Unido' };
+    }
+    return { flag: '🌍', text: 'Você está a visualizar todas as comunidades do Mercado Luso' };
+  };
+
+  useEffect(() => {
+    const sessionVisited = sessionStorage.getItem('countryOnboardingSessionInit');
+    const storedViews = localStorage.getItem('countryOnboardingViews');
+    let current = storedViews ? parseInt(storedViews, 10) : 0;
+    if (isNaN(current)) current = 0;
+
+    if (!sessionVisited) {
+      current = current + 1;
+      localStorage.setItem('countryOnboardingViews', current.toString());
+      sessionStorage.setItem('countryOnboardingSessionInit', 'true');
+    }
+
+    if (current === 1) {
+      setShowTooltip(true);
+    } else if (current === 2 || current === 3) {
+      setShouldAnimateButton(true);
+      const timer = setTimeout(() => {
+        setShouldAnimateButton(false);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   // Monitorar scroll para exibir/esconder o botão de "Voltar ao topo"
   useEffect(() => {
     const handleScroll = () => {
@@ -204,7 +248,11 @@ const Home = () => {
   const selectableCitiesOnHome = useMemo(() => {
     if (country === 'Portugal') return PORTUGAL_CITIES;
     if (country === 'Reino Unido') return UK_CITIES;
-    return [...PORTUGAL_CITIES.filter(c => c !== 'Outra'), ...UK_CITIES.filter(c => c !== 'Outra'), 'Outra'];
+    return [
+      ...PORTUGAL_CITIES.filter(c => c !== 'Outra'), 
+      ...UK_CITIES.filter(c => c !== 'Outra'),
+      'Outra'
+    ];
   }, [country]);
 
   const filteredFeaturedAds = useMemo(() => {
@@ -326,14 +374,20 @@ const Home = () => {
               </div>
 
               {/* Botão País - Apenas Ícone de Bandeiras */}
-              <div className="relative group">
-                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="País">
-                  <span className="text-lg leading-none">{country === 'Portugal' ? '🇵🇹' : country === 'Reino Unido' ? '🇬🇧' : '🌍'}</span>
+              <div className="relative">
+                <div 
+                  className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg ${
+                    shouldAnimateButton ? 'animate-country-pulse' : ''
+                  }`} 
+                  title="País"
+                >
+                  <span className="text-lg leading-none">{getCountryFlag(country)}</span>
                   <select 
                     value={country} 
                     onChange={(e) => {
                       setCountry(e.target.value);
                       setCity('Todas');
+                      setShowTooltip(false); // fechar tooltip ao interagir
                     }} 
                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   >
@@ -342,6 +396,30 @@ const Home = () => {
                     <option value="Reino Unido" className="bg-slate-900">🇬🇧 Reino Unido</option>
                   </select>
                 </div>
+
+                {/* Tooltip de Onboarding no 1º acesso */}
+                {showTooltip && (
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                      className="absolute top-14 left-1/2 -translate-x-1/2 z-50 w-56 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-3 shadow-2xl text-center"
+                    >
+                      {/* Seta do Balão */}
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
+                      <p className="text-xs font-semibold leading-relaxed">
+                        Escolha o país para visualizar anúncios da sua comunidade.
+                      </p>
+                      <button
+                        onClick={() => setShowTooltip(false)}
+                        className="mt-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1 px-3 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105"
+                      >
+                        Explorar Comunidades
+                      </button>
+                    </motion.div>
+                  </AnimatePresence>
+                )}
               </div>
 
               {/* Botão Localização - Apenas Ícone */}
@@ -373,6 +451,26 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Etiqueta Informativa de Comunidade */}
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={country}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="bg-emerald-50/80 border border-emerald-100 rounded-3xl p-4 flex items-center justify-between text-emerald-800 text-sm md:text-base font-semibold shadow-sm transition-all duration-300"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl leading-none">{getCommunityLabel(country).flag}</span>
+            <span className="tracking-tight">{getCommunityLabel(country).text}</span>
+          </div>
+          <span className="text-xs text-emerald-600/90 font-bold bg-white/60 px-3 py-1 rounded-full border border-emerald-200/50 hidden sm:inline-block uppercase tracking-wider">
+            Comunidade Ativa
+          </span>
+        </motion.div>
+      </AnimatePresence>
 
       {/* ✨ ANÚNCIOS EM DESTAQUE */}
       {filteredFeaturedAds.length > 0 && (

@@ -46,6 +46,7 @@ const CreateAd = () => {
 
   const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido') => {
     const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
+    
     setFormData(prev => ({
       ...prev,
       country: newCountry,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MapPin, Search, ChevronDown, Plus, Check } from 'lucide-react';
 import { CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -45,7 +45,10 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
     }
   }, [isOpen]);
 
-  const activeCities = country === 'Reino Unido' ? UK_CITIES : PORTUGAL_CITIES;
+  const activeCities = useMemo(() => {
+    if (country === 'Reino Unido') return UK_CITIES;
+    return PORTUGAL_CITIES;
+  }, [country]);
 
   const filteredCities = activeCities.filter(city =>
     city.toLowerCase().includes(search.toLowerCase())
