@@ -151,6 +151,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "inviterId", "inviterCode", "referredUserId", "referredName", "createdAt"]
+    },
+    "Suggestion": {
+      "title": "Suggestion",
+      "description": "User suggestions and ideas for platform improvement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "reviewed", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "message", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -189,6 +203,10 @@
     "/referrals/{referralId}": {
       "schema": "Referral",
       "description": "User referral trackings"
+    },
+    "/suggestions/{suggestionId}": {
+      "schema": "Suggestion",
+      "description": "User suggestions and ideas"
     }
   }
 }

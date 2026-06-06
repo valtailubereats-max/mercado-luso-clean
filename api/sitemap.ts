@@ -51,7 +51,9 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
     { loc: 'https://www.mercado-luso.com/terms', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.3' },
     { loc: 'https://www.mercado-luso.com/privacy', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.3' },
     { loc: 'https://www.mercado-luso.com/cookies', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.3' },
-    { loc: 'https://www.mercado-luso.com/report', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.3' }
+    { loc: 'https://www.mercado-luso.com/report', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.3' },
+    { loc: 'https://www.mercado-luso.com/sugestoes', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.4' },
+    { loc: 'https://www.mercado-luso.com/faq', lastmod: currentDateStr, changefreq: 'monthly', priority: '0.4' }
   ];
 
   let ads: { id: string; title: string; lastmod: string }[] = [];

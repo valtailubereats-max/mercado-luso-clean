@@ -22,6 +22,9 @@ import Privacy from './pages/Privacy';
 import Cookies from './pages/Cookies';
 import Report from './pages/Report';
 import AdDetails from './pages/AdDetails';
+import Suggestions from './pages/Suggestions';
+import FAQ from './pages/FAQ';
+import AdminSuggestions from './pages/AdminSuggestions';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
@@ -378,12 +381,17 @@ export default function App() {
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/cookies" element={<Cookies />} />
                 <Route path="/denuncia" element={<Report />} />
+                <Route path="/sugestoes" element={<Suggestions />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/admin/suggestions" element={<AdminLayout><AdminSuggestions /></AdminLayout>} />
               </Routes>
             </main>
             <footer className="bg-white border-t border-slate-200 py-12 mt-20">
               <div className="max-w-7xl mx-auto px-4 text-center">
                 <p className="text-sm font-extrabold transition-colors" style={{ color: '#52b64d' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
                 <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap items-center">
+                  <Link to="/faq" className="hover:text-indigo-600">Perguntas Frequentes</Link>
+                  <Link to="/sugestoes" className="hover:text-indigo-600">Sugestões</Link>
                   <Link to="/terms" className="hover:text-indigo-600" style={{ color: '#ff2056' }}>Termos de Uso</Link>
                   <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
                   <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>

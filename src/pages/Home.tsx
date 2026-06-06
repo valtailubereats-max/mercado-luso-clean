@@ -5,8 +5,8 @@ import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import AdCard from '../components/AdCard';
-import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import cplpCollage from '../assets/images/cplp_flags_collage_1780303992447.png';
 
@@ -36,6 +36,24 @@ const Home = () => {
 
   // State to pause marquee on hover
   const [isHovered, setIsHovered] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Monitorar scroll para exibir/esconder o botão de "Voltar ao topo"
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Buscar total de anúncios aprovados no banco de dados para estatísticas da Home
   useEffect(() => {
@@ -400,6 +418,23 @@ const Home = () => {
             </button>
           </div>
         )}
+
+        <AnimatePresence>
+          {showScrollTop && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 15 }}
+              onClick={scrollToTop}
+              title="Voltar ao topo"
+              aria-label="Voltar ao topo"
+              className="fixed bottom-6 right-6 z-50 p-3.5 md:p-4 bg-white text-indigo-600 hover:text-indigo-700 border border-slate-150 rounded-full shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+              id="back-to-top-btn"
+            >
+              <ArrowUp size={20} className="md:w-6 md:h-6" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

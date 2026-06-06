@@ -13,7 +13,8 @@ import {
   LogOut,
   Bell,
   Megaphone,
-  Briefcase
+  Briefcase,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,6 +35,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Users, label: 'Utilizadores', path: '/admin/users' },
     { icon: Briefcase, label: 'Gestão de Equipe', path: '/admin/team' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
+    { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
     { icon: Settings, label: 'Definições', path: '/admin/settings' },
   ];
 
