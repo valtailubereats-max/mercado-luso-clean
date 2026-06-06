@@ -53,7 +53,7 @@ const AdminTeam = () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const q = query(collection(db, 'users'), limit(5));
+      const q = query(collection(db, 'users'), limit(100));
       const querySnapshot = await getDocsWithCacheFallback(q, 'admin/users-team');
       const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as UserProfile));
       

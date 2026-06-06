@@ -54,7 +54,7 @@ export interface UserProfile {
   email: string;
   phone: string;
   city?: string;
-  role: 'user' | 'admin';
+  role?: 'user' | 'admin' | 'moderator';
   acceptedTerms: boolean;
   acceptedTermsAt: any; // Firestore Timestamp
   lastLoginAt?: any; // Firestore Timestamp

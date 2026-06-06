@@ -26,6 +26,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   
   // Debug Tool States
   const [debugSelectedUserId, setDebugSelectedUserId] = useState<string>('');
@@ -80,15 +81,25 @@ const AdminUsers = () => {
     }
   };
 
-  const handleToggleAdmin = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    if (!window.confirm(`Tem certeza que deseja alterar o cargo deste utilizador para ${newRole}?`)) return;
+  const handleUpdateRole = async (userId: string, newRole: 'user' | 'moderator' | 'admin', currentRole: string) => {
+    if (newRole === currentRole) return;
+    
+    const roleLabels = {
+      user: 'Utilizador Comum',
+      moderator: 'Moderador',
+      admin: 'Administrador'
+    };
 
+    if (!window.confirm(`Tem a certeza que deseja alterar o cargo deste utilizador para ${roleLabels[newRole]}?`)) return;
+
+    setUpdatingUserId(userId);
     try {
       await updateDoc(doc(db, 'users', userId), { role: newRole });
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as 'admin' | 'user' } : u));
+      setUsers(users.map(u => u.uid === userId || u.id === userId ? { ...u, role: newRole } : u));
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${userId}`);
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -281,10 +292,12 @@ const AdminUsers = () => {
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                         user.role === 'admin' 
                           ? 'bg-indigo-100 text-indigo-700' 
+                          : user.role === 'moderator'
+                          ? 'bg-amber-100 text-amber-700'
                           : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {user.role === 'admin' ? <Shield size={12} /> : <Users size={12} />}
-                        {user.role}
+                        {user.role === 'admin' ? <Shield size={12} /> : user.role === 'moderator' ? <ShieldAlert size={12} /> : <Users size={12} />}
+                        {user.role || 'user'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -304,26 +317,41 @@ const AdminUsers = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleToggleAdmin(user.id, user.role)}
-                        className={`h-10 px-4 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ml-auto ${
-                          user.role === 'admin'
-                            ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white'
-                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
-                        }`}
-                      >
-                        {user.role === 'admin' ? (
-                          <>
-                            <ShieldAlert size={16} />
-                            Remover Admin
-                          </>
-                        ) : (
-                          <>
-                            <Shield size={16} />
-                            Tornar Admin
-                          </>
-                        )}
-                      </button>
+                      {updatingUserId === user.id ? (
+                        <div className="flex justify-end pr-8">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1.5">
+                          {user.role !== 'user' && user.role !== undefined && (
+                            <button
+                              onClick={() => handleUpdateRole(user.id || '', 'user', user.role || 'user')}
+                              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-xs rounded-xl transition-all"
+                              title="Configurar como Utilizador Comum"
+                            >
+                              Fazer Comum
+                            </button>
+                          )}
+                          {user.role !== 'moderator' && (
+                            <button
+                              onClick={() => handleUpdateRole(user.id || '', 'moderator', user.role || 'user')}
+                              className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold text-xs rounded-xl transition-all border border-amber-100/50"
+                              title="Tornar Moderador"
+                            >
+                              Tornar Moderador
+                            </button>
+                          )}
+                          {user.role !== 'admin' && (
+                            <button
+                              onClick={() => handleUpdateRole(user.id || '', 'admin', user.role || 'user')}
+                              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs rounded-xl transition-all border border-indigo-100/50"
+                              title="Tornar Administrador"
+                            >
+                              Tornar Admin
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

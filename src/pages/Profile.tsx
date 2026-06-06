@@ -451,31 +451,45 @@ const Profile = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <div className="space-y-3 col-span-1 md:col-span-2">
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">O Seu Link de Convite</h4>
-            <div className="flex gap-2 w-full">
+            <div className="flex flex-col sm:flex-row gap-2.5 w-full">
               <input
                 type="text"
                 readOnly
                 value={`${window.location.origin}/?ref=${profile?.referralCode || ''}`}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold font-mono text-slate-700 focus:outline-none select-all col-span-3"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold font-mono text-slate-700 focus:outline-none select-all"
               />
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(`${window.location.origin}/?ref=${profile?.referralCode || ''}`);
-                    setCopiedReferral(true);
-                    setTimeout(() => setCopiedReferral(false), 2000);
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }}
-                className={`px-5 py-3 rounded-xl font-bold text-sm shrink-0 transition-all ${
-                  copiedReferral 
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' 
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100'
-                }`}
-              >
-                {copiedReferral ? 'Copiado!' : 'Copiar Link'}
-              </button>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`${window.location.origin}/?ref=${profile?.referralCode || ''}`);
+                      setCopiedReferral(true);
+                      setTimeout(() => setCopiedReferral(false), 2000);
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  className={`px-5 py-3 rounded-xl font-bold text-sm flex-1 sm:flex-none transition-all ${
+                    copiedReferral 
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' 
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100'
+                  }`}
+                >
+                  {copiedReferral ? 'Copiado!' : 'Copiar Link'}
+                </button>
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `Olá! 👋 Recomendo o Marketplace da nossa Comunidade Lusófona! Regista-te pelo meu link de convite para começares já a ver anúncios ou criar publicações, e ganharmos pontos de destaque grátis! 🎉 Abraço!\n\n${window.location.origin}/?ref=${profile?.referralCode || ''}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white hover:scale-102 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-100/50 cursor-pointer flex-1 sm:flex-none whitespace-nowrap"
+                >
+                  <MessageSquare size={16} />
+                  <span>Convidar no WhatsApp</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
