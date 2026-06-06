@@ -24,6 +24,7 @@ const Profile = () => {
   const [countryCode, setCountryCode] = useState('+351');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
+  const [country, setCountry] = useState<'Portugal' | 'Reino Unido'>('Portugal');
   const [loading, setLoading] = useState(false);
   const [ads, setAds] = useState<Ad[]>([]);
   const [adsLoading, setAdsLoading] = useState(true);
@@ -138,6 +139,13 @@ const Profile = () => {
       }
       setName(profile.name || '');
       setCity(profile.city || '');
+      if (profile.country === 'Portugal' || profile.country === 'Reino Unido') {
+        setCountry(profile.country);
+      } else {
+        // Fallback to localStorage or Portugal
+        const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
+        setCountry(saved === 'Portugal' || saved === 'Reino Unido' ? saved : 'Portugal');
+      }
       fetchUserAds();
       fetchUserReviews(user?.uid || '');
       updateReferralStatsAndCredits();
@@ -203,7 +211,8 @@ const Profile = () => {
       }
       const fullPhone = `${countryCode}${digitsOnly}`;
       // Use setDoc with merge: true to avoid "No document to update" if creation failed
-      await setDoc(docRef, { name, phone: fullPhone, city }, { merge: true });
+      await setDoc(docRef, { name, phone: fullPhone, city, country }, { merge: true });
+      localStorage.setItem('selectedCountry', country);
       await refreshProfile();
       navigate('/');
     } catch (err) {
@@ -358,6 +367,26 @@ const Profile = () => {
             <p className="text-xs text-slate-400 mt-1">Necessário para que os compradores entrem em contacto.</p>
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">País / Comunidade</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base leading-none select-none pointer-events-none z-10">
+                {country === 'Portugal' ? '🇵🇹' : '🇬🇧'}
+              </span>
+              <select
+                value={country}
+                onChange={(e) => {
+                  setCountry(e.target.value as 'Portugal' | 'Reino Unido');
+                  setCity('');
+                }}
+                className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer"
+              >
+                <option value="Portugal">🇵🇹 Portugal</option>
+                <option value="Reino Unido">🇬🇧 Reino Unido</option>
+              </select>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">▼</span>
+            </div>
+          </div>
+          <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cidade</label>
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={20} />
@@ -365,6 +394,7 @@ const Profile = () => {
                 value={city}
                 onChange={(val) => setCity(val)}
                 placeholder="Escreva ou escolha a sua cidade"
+                country={country}
               />
             </div>
           </div>

@@ -77,6 +77,25 @@ const CreateAd = () => {
     }
   };
 
+  useEffect(() => {
+    if (!id && !prefill) {
+      const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
+      let targetCountry: 'Portugal' | 'Reino Unido' = 'Portugal';
+      if (profile?.country === 'Portugal' || profile?.country === 'Reino Unido') {
+        targetCountry = profile.country;
+      } else if (saved === 'Portugal' || saved === 'Reino Unido') {
+        targetCountry = saved;
+      }
+      
+      const defaultCity = targetCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
+      setFormData(prev => ({
+        ...prev,
+        country: targetCountry,
+        city: defaultCity
+      }));
+    }
+  }, [profile, id, prefill]);
+
   const fetchAd = async () => {
     setFetching(true);
     try {
@@ -509,15 +528,15 @@ const CreateAd = () => {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">País</label>
-              <select
-                value={formData.country}
-                onChange={(e) => handleCountryChange(e.target.value as 'Portugal' | 'Reino Unido')}
-                className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none font-semibold text-slate-800"
-              >
-                <option value="Portugal">🇵🇹 Portugal</option>
-                <option value="Reino Unido">🇬🇧 Reino Unido</option>
-              </select>
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Comunidade de Publicação</label>
+              <div className="flex items-center gap-3 w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold text-emerald-800">
+                <span className="text-xl shrink-0">
+                  {formData.country === 'Portugal' ? '🇵🇹' : '🇬🇧'}
+                </span>
+                <span className="text-sm tracking-tight leading-relaxed">
+                  Este anúncio será publicado na comunidade de <span className="underline decoration-wavy decoration-emerald-500">{formData.country === 'Portugal' ? 'Portugal' : 'Reino Unido'}</span>.
+                </span>
+              </div>
             </div>
 
             <div className="space-y-2">

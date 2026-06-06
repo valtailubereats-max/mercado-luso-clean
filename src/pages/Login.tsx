@@ -37,6 +37,10 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [profileCountry, setProfileCountry] = useState<'Portugal' | 'Reino Unido'>(() => {
+    const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
+    return saved === 'Portugal' || saved === 'Reino Unido' ? saved : 'Reino Unido';
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -91,6 +95,9 @@ const Login = () => {
       }
 
       if (!docSnap?.exists()) {
+        const homeCountry = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
+        const finalCountry = homeCountry === 'Portugal' || homeCountry === 'Reino Unido' ? homeCountry : 'Reino Unido';
+        
         // Create basic profile if it doesn't exist
         const isAdminEmail = user.email === 'valtailubereats@gmail.com' || user.email === 'generalsales2021@gmail.com';
         try {
@@ -99,6 +106,7 @@ const Login = () => {
             name: user.displayName || 'Utilizador',
             email: user.email || '',
             phone: '', 
+            country: finalCountry,
             role: isAdminEmail ? 'admin' : 'user',
             acceptedTerms: true,
             acceptedTermsAt: serverTimestamp()
@@ -164,10 +172,13 @@ const Login = () => {
             name: name,
             email: user.email || '',
             phone: '',
+            country: profileCountry,
             role: isAdminEmail ? 'admin' : 'user',
             acceptedTerms: true,
             acceptedTermsAt: serverTimestamp()
           });
+          // Synchronize locally too
+          localStorage.setItem('selectedCountry', profileCountry);
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
@@ -276,16 +287,35 @@ const Login = () => {
 
         <form onSubmit={mode === 'forgot' ? handlePasswordReset : handleEmailAuth} className="space-y-4 mb-6">
           {mode === 'register' && (
-            <div className="relative">
-              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-              <input
-                type="text"
-                placeholder="Nome completo"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
-              />
-            </div>
+            <>
+              <div className="relative">
+                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-2">País / Comunidade</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base leading-none select-none shrink-0 pointer-events-none">
+                    {profileCountry === 'Portugal' ? '🇵🇹' : '🇬🇧'}
+                  </span>
+                  <select
+                    value={profileCountry}
+                    onChange={(e) => setProfileCountry(e.target.value as 'Portugal' | 'Reino Unido')}
+                    className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-800 appearance-none cursor-pointer"
+                  >
+                    <option value="Portugal">🇵🇹 Portugal</option>
+                    <option value="Reino Unido">🇬🇧 Reino Unido</option>
+                  </select>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">▼</span>
+                </div>
+              </div>
+            </>
           )}
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />

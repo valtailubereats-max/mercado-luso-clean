@@ -62,6 +62,7 @@ export interface UserProfile {
   referredBy?: string;
   referralCredits?: number;
   pointsFromAds?: number;
+  country?: 'Portugal' | 'Reino Unido';
 }
 
 export interface Ad {

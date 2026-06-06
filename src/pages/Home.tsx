@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,6 +20,7 @@ let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
   const { settings, categories } = useSettings();
+  const { profile } = useAuth();
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
@@ -26,7 +28,39 @@ const Home = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [category, setCategory] = useState('Todas');
   const [city, setCity] = useState('Todas');
-  const [country, setCountry] = useState('Todos');
+  
+  const [country, setCountry] = useState<'Portugal' | 'Reino Unido'>(() => {
+    // 1. Check localStorage first
+    const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
+    if (saved === 'Portugal' || saved === 'Reino Unido') return saved;
+    
+    // 2. Try safe detection based on browser timezone and language
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const lang = navigator.language;
+      if (
+        tz.includes('Lisbon') || 
+        tz.includes('Atlantic/Madeira') || 
+        tz.includes('Atlantic/Azores') || 
+        lang.startsWith('pt')
+      ) {
+        return 'Portugal';
+      }
+      if (
+        tz.includes('London') || 
+        tz.includes('Europe/Belfast') || 
+        lang.startsWith('en-GB')
+      ) {
+        return 'Reino Unido';
+      }
+    } catch (e) {
+      console.warn("Could not determine timezone:", e);
+    }
+    
+    // 3. Fallback per instructions: Reino Unido
+    return 'Reino Unido';
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [totalApprovedCount, setTotalApprovedCount] = useState<number | null>(null);
 
@@ -43,21 +77,52 @@ const Home = () => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [shouldAnimateButton, setShouldAnimateButton] = useState(false);
 
+  // Custom Dropdown states
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   // Helpers for country flags and labels
-  const getCountryFlag = (countryVal: string) => {
-    if (countryVal === 'Portugal') return '🇵🇹';
-    if (countryVal === 'Reino Unido') return '🇬🇧';
-    return '🌍';
+  const getCountryFlag = (countryVal: 'Portugal' | 'Reino Unido') => {
+    return countryVal === 'Portugal' ? '🇵🇹' : '🇬🇧';
   };
 
-  const getCommunityLabel = (countryVal: string) => {
+  const getCommunityLabel = (countryVal: 'Portugal' | 'Reino Unido') => {
     if (countryVal === 'Portugal') {
       return { flag: '🇵🇹', text: 'Você está na comunidade de Portugal' };
     }
-    if (countryVal === 'Reino Unido') {
-      return { flag: '🇬🇧', text: 'Você está na comunidade do Reino Unido' };
+    return { flag: '🇬🇧', text: 'Você está na comunidade do Reino Unido' };
+  };
+
+  // Sync with Profile country if registered
+  useEffect(() => {
+    if (profile?.country && (profile.country === 'Portugal' || profile.country === 'Reino Unido')) {
+      setCountry(profile.country);
+      localStorage.setItem('selectedCountry', profile.country);
     }
-    return { flag: '🌍', text: 'Você está a visualizar todas as comunidades do Mercado Luso' };
+  }, [profile]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setCountryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle Country Change
+  const handleCountryChange = (val: 'Portugal' | 'Reino Unido') => {
+    setCountry(val);
+    setCity('Todas');
+    localStorage.setItem('selectedCountry', val);
+    setShowTooltip(false);
+  };
+
+  const handleOnboardingButtonClick = () => {
+    setShowTooltip(false);
+    setCountryDropdownOpen(true);
   };
 
   useEffect(() => {
@@ -148,8 +213,11 @@ const Home = () => {
     if (cat) setCategory(cat);
     const cty = searchParams.get('city');
     if (cty) setCity(cty);
-    const countr = searchParams.get('country');
-    if (countr) setCountry(countr);
+    const countr = searchParams.get('country') as 'Portugal' | 'Reino Unido' | null;
+    if (countr === 'Portugal' || countr === 'Reino Unido') {
+      setCountry(countr);
+      localStorage.setItem('selectedCountry', countr);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -247,12 +315,7 @@ const Home = () => {
 
   const selectableCitiesOnHome = useMemo(() => {
     if (country === 'Portugal') return PORTUGAL_CITIES;
-    if (country === 'Reino Unido') return UK_CITIES;
-    return [
-      ...PORTUGAL_CITIES.filter(c => c !== 'Outra'), 
-      ...UK_CITIES.filter(c => c !== 'Outra'),
-      'Outra'
-    ];
+    return UK_CITIES;
   }, [country]);
 
   const filteredFeaturedAds = useMemo(() => {
@@ -270,12 +333,10 @@ const Home = () => {
       return matchesSearch && matchesStatus;
     });
 
-    if (country !== 'Todos') {
-      result = result.filter(ad => {
-        const adCountry = ad.country || 'Portugal';
-        return adCountry === country;
-      });
-    }
+    result = result.filter(ad => {
+      const adCountry = ad.country || 'Portugal';
+      return adCountry === country;
+    });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
 
@@ -294,12 +355,10 @@ const Home = () => {
       const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
       return matchesSearch && (!ad.adStatus || ad.adStatus !== 'expired');
     });
-    if (country !== 'Todos') {
-      result = result.filter(ad => {
-        const adCountry = ad.country || 'Portugal';
-        return adCountry === country;
-      });
-    }
+    result = result.filter(ad => {
+      const adCountry = ad.country || 'Portugal';
+      return adCountry === country;
+    });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
     return result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -373,29 +432,64 @@ const Home = () => {
                 </div>
               </div>
 
-              {/* Botão País - Apenas Ícone de Bandeiras */}
-              <div className="relative">
-                <div 
-                  className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg ${
-                    shouldAnimateButton ? 'animate-country-pulse' : ''
-                  }`} 
-                  title="País"
+              {/* Botão País com Bandeira e Nome da Comunidade */}
+              <div className="relative" ref={dropdownRef}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setCountryDropdownOpen(prev => !prev);
+                    setShowTooltip(false);
+                  }}
+                  className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
+                    shouldAnimateButton ? 'animate-country-pulse border-amber-400' : ''
+                  }`}
+                  title="Mudar de Comunidade"
+                  id="community-toggle-button"
                 >
-                  <span className="text-lg leading-none">{getCountryFlag(country)}</span>
-                  <select 
-                    value={country} 
-                    onChange={(e) => {
-                      setCountry(e.target.value);
-                      setCity('Todas');
-                      setShowTooltip(false); // fechar tooltip ao interagir
-                    }} 
-                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  >
-                    <option value="Todos" className="bg-slate-900">🌍 Todos os Países</option>
-                    <option value="Portugal" className="bg-slate-900">🇵🇹 Portugal</option>
-                    <option value="Reino Unido" className="bg-slate-900">🇬🇧 Reino Unido</option>
-                  </select>
-                </div>
+                  <span className="text-base md:text-lg leading-none shrink-0">{getCountryFlag(country)}</span>
+                  <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
+                  <span className="text-[10px] opacity-60 ml-0.5">▼</span>
+                </button>
+
+                {/* Dropdown de Países Personalizado */}
+                <AnimatePresence>
+                  {countryDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 md:left-0 md:right-auto top-12 md:top-14 z-[60] w-48 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-2 shadow-2xl divide-y divide-slate-800"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCountryChange('Portugal');
+                          setCountryDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
+                          country === 'Portugal' ? 'bg-indigo-600/30 text-indigo-300' : ''
+                        }`}
+                      >
+                        <span className="text-lg">🇵🇹</span>
+                        <span>Portugal</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCountryChange('Reino Unido');
+                          setCountryDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
+                          country === 'Reino Unido' ? 'bg-indigo-600/30 text-indigo-300' : ''
+                        }`}
+                      >
+                        <span className="text-lg">🇬🇧</span>
+                        <span>Reino Unido</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Tooltip de Onboarding no 1º acesso */}
                 {showTooltip && (
@@ -404,18 +498,20 @@ const Home = () => {
                       initial={{ opacity: 0, y: 12, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                      className="absolute top-14 left-1/2 -translate-x-1/2 z-50 w-56 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-3 shadow-2xl text-center"
+                      className="absolute top-14 left-1/2 -translate-x-1/2 z-50 w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
                     >
                       {/* Seta do Balão */}
                       <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
-                      <p className="text-xs font-semibold leading-relaxed">
-                        Escolha o país para visualizar anúncios da sua comunidade.
+                      <p className="text-xs font-semibold leading-relaxed text-slate-200">
+                        Escolha a sua comunidade para ver anúncios perto de si.
                       </p>
                       <button
-                        onClick={() => setShowTooltip(false)}
-                        className="mt-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1 px-3 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105"
+                        type="button"
+                        onClick={handleOnboardingButtonClick}
+                        className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
+                        id="onboarding-community-select"
                       >
-                        Explorar Comunidades
+                        Escolher Comunidade
                       </button>
                     </motion.div>
                   </AnimatePresence>
