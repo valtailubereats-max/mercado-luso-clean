@@ -411,22 +411,7 @@ const Home = () => {
         <div className="relative z-10 max-w-4xl mx-auto text-center py-5 md:py-12 px-6">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             
-            {/* Badge da Comunidade Lusófona com as Bandeiras */}
-            <div className="inline-flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-full px-3 md:px-4 py-1 md:py-1.5 mb-2.5 md:mb-3.5 border border-white/20 text-white select-none shadow hover:bg-black/50 transition-all">
-              <span className="flex items-center">
-                <img 
-                  src={cplpCollage} 
-                  alt="Bandeiras da Comunidade Lusófona (CPLP)" 
-                  className="h-4 md:h-5 w-auto object-contain rounded-sm"
-                  referrerPolicy="no-referrer"
-                />
-              </span>
-              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest leading-none">
-                Comunidade CPLP
-              </span>
-            </div>
-
-            {/* Título com Tipografia Premium */}
+                        {/* Título com Tipografia Premium */}
             <h1 
               onClick={() => {
                 setCategory('Todas');
