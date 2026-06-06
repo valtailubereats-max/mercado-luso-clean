@@ -113,22 +113,42 @@ const Home = () => {
       }
 
       try {
-        // Pedimos limitAmount + 1 para validar se existem de facto mais anúncios (fetch-one-more strategy)
+        const queryLimit = limitAmount + 30; // Garante margem para não contar destacados ativos no limite
         const q = query(
           collection(db, 'ads'),
           where('status', '==', 'approved'),
-          limit(limitAmount + 1)
+          limit(queryLimit)
         );
 
         const snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-limit-${limitAmount}`), 30000);
         if (!active) return;
 
         const docs = snapshot.docs;
-        const gotMore = docs.length > limitAmount;
+        
+        let normalDocsCount = 0;
+        const visibleDocs: typeof docs = [];
+        const currentDate = new Date();
 
-        // Filtra a última linha de teste se existir
-        const visibleDocs = gotMore ? docs.slice(0, limitAmount) : docs;
+        for (const doc of docs) {
+          const data = doc.data() as Ad;
+          const isFeatured = data.isFeatured && data.featuredUntil && (
+            data.featuredUntil.seconds 
+              ? data.featuredUntil.toDate() > currentDate
+              : new Date(data.featuredUntil) > currentDate
+          ) && data.adStatus !== 'expired';
+
+          if (isFeatured) {
+            visibleDocs.push(doc);
+          } else {
+            if (normalDocsCount < limitAmount) {
+              visibleDocs.push(doc);
+              normalDocsCount++;
+            }
+          }
+        }
+
         const adsData = visibleDocs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+        const gotMore = docs.length === queryLimit;
 
         setAds(adsData);
         setHasMore(gotMore);

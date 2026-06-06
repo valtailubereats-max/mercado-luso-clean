@@ -219,12 +219,31 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu */}
-          <div className="md:hidden flex items-center gap-2">
-            <button onClick={handlePublishClick} title="Publicar" className="text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center">
-              <Plus size={24}/>
+          <div className="md:hidden flex items-center gap-3">
+            <button 
+              onClick={handlePublishClick} 
+              title="Anunciar" 
+              className="text-slate-600 hover:text-indigo-600 transition-colors flex flex-col items-center justify-center p-1.5 cursor-pointer hover:bg-slate-50 rounded-xl"
+            >
+              <Plus size={20}/>
+              <span className="text-[9px] font-bold tracking-tight mt-0.5 leading-none">Anunciar</span>
             </button>
-            <button onClick={handleShare} className="text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors"><Share2 size={24}/></button>
-            <button onClick={() => setIsOpen(!isOpen)} className="text-slate-600 p-2">{isOpen ? <X size={28}/> : <Menu size={28}/>}</button>
+            <button 
+              onClick={handleShare} 
+              title="Partilhar"
+              className="text-slate-600 hover:text-indigo-600 transition-colors flex flex-col items-center justify-center p-1.5 cursor-pointer hover:bg-slate-50 rounded-xl"
+            >
+              <Share2 size={20}/>
+              <span className="text-[9px] font-bold tracking-tight mt-0.5 leading-none">Partilhar</span>
+            </button>
+            <button 
+              onClick={() => setIsOpen(!isOpen)} 
+              title="Menu"
+              className="text-slate-600 hover:text-indigo-600 transition-colors flex flex-col items-center justify-center p-1.5 cursor-pointer hover:bg-slate-50 rounded-xl"
+            >
+              {isOpen ? <X size={20}/> : <Menu size={20}/>}
+              <span className="text-[9px] font-bold tracking-tight mt-0.5 leading-none">Menu</span>
+            </button>
           </div>
         </div>
       </div>
