@@ -35,7 +35,8 @@ const AdminSettings = () => {
           categories: data.categories || CATEGORIES,
           ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150,
           showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
-          highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 3
+          highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 3,
+          showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -47,7 +48,8 @@ const AdminSettings = () => {
           categories: CATEGORIES,
           ptRibbonScale: 150,
           showTotalAdsBadge: true,
-          highlightSpeed: 3
+          highlightSpeed: 3,
+          showTotalUsersBadge: false
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -223,6 +225,22 @@ const AdminSettings = () => {
                   type="checkbox" 
                   checked={!!settings.showTotalAdsBadge} 
                   onChange={(e) => setSettings({ ...settings, showTotalAdsBadge: e.target.checked })} 
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-900">Mostrar Total de Utilizadores (Público)</h3>
+                <p className="text-xs text-slate-500 font-medium">Torna visível o indicador com o total de utilizadores registados na página principal para visitantes comuns. (Admins/Moderadores sempre conseguem ver).</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={!!settings.showTotalUsersBadge} 
+                  onChange={(e) => setSettings({ ...settings, showTotalUsersBadge: e.target.checked })} 
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>

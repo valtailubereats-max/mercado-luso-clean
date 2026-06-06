@@ -37,7 +37,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const data = docSnap.data() as MarketplaceSettings;
           setSettings({
             ...data,
-            showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true
+            showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
+            showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false
           });
         } else {
           // Initialize if doesn't exist
@@ -48,7 +49,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             expirationAction: 'archive',
             warningDays: 3,
             categories: CATEGORIES,
-            showTotalAdsBadge: true
+            showTotalAdsBadge: true,
+            showTotalUsersBadge: false
           };
           setDoc(doc(db, 'settings', 'global'), defaultSettings).catch((err) => {
             console.error("Error initializing default settings:", err);

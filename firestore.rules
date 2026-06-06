@@ -145,7 +145,11 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isAuthenticated();
-      allow list: if isAdmin();
+      allow list: if isAdmin() || 
+                    (isAuthenticated() && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator') || 
+                    request.query.limit == 0;
       allow create: if isOwner(userId) && 
                       (
                         !('role' in request.resource.data) || 

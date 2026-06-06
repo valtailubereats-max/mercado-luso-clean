@@ -20,7 +20,8 @@ let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
   const { settings, categories } = useSettings();
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
+  const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
@@ -63,6 +64,7 @@ const Home = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [totalApprovedCount, setTotalApprovedCount] = useState<number | null>(null);
+  const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null);
 
   // Estados de paginação de 30 em 30 itens
   const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
@@ -182,6 +184,27 @@ const Home = () => {
     fetchTotalCount();
     return () => { active = false; };
   }, []);
+
+  // Buscar total de utilizadores no banco de dados se permitido/configurado
+  useEffect(() => {
+    const shouldFetch = settings?.showTotalUsersBadge || isModeratorOrAdmin;
+    if (!shouldFetch) return;
+
+    let active = true;
+    const fetchUsersCount = async () => {
+      try {
+        const q = query(collection(db, 'users'));
+        const snapshot = await getCountFromServer(q);
+        if (active) {
+          setTotalUsersCount(snapshot.data().count);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar total de utilizadores:', err);
+      }
+    };
+    fetchUsersCount();
+    return () => { active = false; };
+  }, [settings?.showTotalUsersBadge, isModeratorOrAdmin]);
 
   // Buscar anúncios destacados para carrossel no topo
   useEffect(() => {
@@ -365,7 +388,7 @@ const Home = () => {
   }, [ads, searchTerm, category, city, country]);
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-3 md:gap-6">
       {/* HERO BANNER LUXURY SLIM */}
       <section className="relative -mt-6 md:-mt-8 overflow-hidden shadow-2xl transition-all duration-500 rounded-b-[2rem] md:rounded-b-[3rem]">
         
@@ -543,6 +566,23 @@ const Home = () => {
                 </div>
               )}
 
+              {/* Contador de Utilizadores Slim */}
+              {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
+                <div className="h-10 md:h-12 px-5 flex items-center bg-slate-900/40 backdrop-blur-3xl rounded-full border border-indigo-500/30 shadow-inner group relative select-none">
+                  <span className="text-indigo-300 font-black text-sm md:text-lg mr-2">
+                    {totalUsersCount}
+                  </span>
+                  <span className="text-indigo-400/80 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Membros</span>
+                  
+                  {/* Tooltip para admin/moderador se estiver oculto para utilizadores comuns */}
+                  {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                      🔒 Oculto para o público (Visto por Staff)
+                    </span>
+                  )}
+                </div>
+              )}
+
             </div>
           </motion.div>
         </div>
@@ -556,7 +596,7 @@ const Home = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="bg-emerald-50/80 border border-emerald-100 rounded-3xl p-4 flex items-center justify-between text-emerald-800 text-sm md:text-base font-semibold shadow-sm transition-all duration-300"
+          className="bg-emerald-50/80 border border-emerald-100 rounded-3xl py-2.5 px-4 md:py-4 md:px-6 flex items-center justify-between text-emerald-800 text-sm md:text-base font-semibold shadow-sm transition-all duration-300"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl leading-none">{getCommunityLabel(country).flag}</span>
@@ -570,7 +610,7 @@ const Home = () => {
 
       {/* ✨ ANÚNCIOS EM DESTAQUE */}
       {filteredFeaturedAds.length > 0 && (
-        <section className="space-y-4 py-2">
+        <section className="space-y-3 md:space-y-4 pt-0.5 pb-2 md:py-2">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">✨</span>

@@ -42,6 +42,7 @@ export interface MarketplaceSettings {
   ptRibbonScale?: number;
   showTotalAdsBadge?: boolean;
   highlightSpeed?: number;
+  showTotalUsersBadge?: boolean;
 }
 
 export interface UserProfile {
