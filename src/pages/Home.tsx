@@ -446,6 +446,9 @@ const Home = () => {
                     placeholder="O que procura hoje?"
                     className="w-full bg-white/10 backdrop-blur-3xl border border-white/20 rounded-full py-3 px-12 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-all shadow-xl text-sm"
                   />
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <Search size={18} className="text-white/60 group-focus-within:text-white transition-colors" />
+                  </div>
                 </div>
 
                 {/* Ícones de Filtro e Contador */}
