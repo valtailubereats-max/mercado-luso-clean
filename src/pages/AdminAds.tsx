@@ -244,7 +244,7 @@ const AdminAds = () => {
 
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-sm sm:text-base font-black text-indigo-600">
-                      {formatPrice(ad.price)}
+                      {formatPrice(ad.price, ad.country)}
                     </span>
                     <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
                       • Vendedor: <span className="text-slate-600 font-semibold">{ad.sellerName || 'ValtailAdmin'}</span>
@@ -472,7 +472,7 @@ const AdminAds = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50">
                     <p className="text-[10px] font-black uppercase text-indigo-600 tracking-wider">Preço</p>
-                    <p className="text-2xl font-black text-slate-950 mt-1">{formatPrice(selectedAd.price)}</p>
+                    <p className="text-2xl font-black text-slate-950 mt-1">{formatPrice(selectedAd.price, selectedAd.country)}</p>
                   </div>
 
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">

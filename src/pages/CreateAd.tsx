@@ -479,9 +479,13 @@ const CreateAd = () => {
 
             {formData.category !== 'Imigração' ? (
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Preço (€)</label>
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                  Preço ({formData.country === 'Reino Unido' ? '£' : '€'})
+                </label>
                 <div className="relative">
-                  <Euro className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl select-none leading-none z-10">
+                    {formData.country === 'Reino Unido' ? '£' : '€'}
+                  </span>
                   <input
                     type="number"
                     value={formData.price}
@@ -529,13 +533,18 @@ const CreateAd = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Comunidade de Publicação</label>
-              <div className="flex items-center gap-3 w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold text-emerald-800">
-                <span className="text-xl shrink-0">
-                  {formData.country === 'Portugal' ? '🇵🇹' : '🇬🇧'}
-                </span>
-                <span className="text-sm tracking-tight leading-relaxed">
-                  Este anúncio será publicado na comunidade de <span className="underline decoration-wavy decoration-emerald-500">{formData.country === 'Portugal' ? 'Portugal' : 'Reino Unido'}</span>.
-                </span>
+              <div className="relative">
+                <select
+                  value={formData.country}
+                  onChange={(e) => handleCountryChange(e.target.value as 'Portugal' | 'Reino Unido')}
+                  className="w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold text-emerald-800 outline-none cursor-pointer appearance-none shadow-sm hover:border-emerald-200 transition-all font-sans"
+                >
+                  <option value="Portugal" className="font-bold text-slate-900 bg-white">🇵🇹 Portugal</option>
+                  <option value="Reino Unido" className="font-bold text-slate-900 bg-white">🇬🇧 Reino Unido</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-emerald-800 font-bold select-none">
+                  ▼
+                </div>
               </div>
             </div>
 

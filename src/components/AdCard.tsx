@@ -146,7 +146,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
     e.stopPropagation();
 
     const url = `${window.location.origin}${getAdUrl(ad)}`;
-    const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
+    const priceText = hasPrice ? ` - ${formatPrice(ad.price, ad.country)}` : '';
     const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -350,7 +350,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 <div className={`font-black text-indigo-600 tracking-tight leading-none ${
                   isFeaturedVariant ? 'text-sm md:text-base' : 'text-base md:text-lg'
                 }`}>
-                  {formatPrice(ad.price)}
+                  {formatPrice(ad.price, ad.country)}
                 </div>
                 {(ad.status === 'sold' || ad.adStatus === 'sold') && ad.price !== undefined && Number(ad.price) > 0 && (
                   <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-tight flex items-center justify-center gap-1 mt-1">
@@ -480,7 +480,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                     </div>
                     {ad.category !== 'Imigração' && (
                       <div className="text-2xl md:text-3xl font-black text-indigo-600 flex items-center justify-center">
-                        {formatPrice(ad.price)}
+                        {formatPrice(ad.price, ad.country)}
                       </div>
                     )}
                   </div>

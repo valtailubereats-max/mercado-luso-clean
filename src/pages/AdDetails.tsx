@@ -194,7 +194,7 @@ const AdDetails = () => {
     if (!ad) return;
 
     const url = `${window.location.origin}${getAdUrl(ad)}`;
-    const priceText = hasPrice ? ` - ${formatPrice(ad.price)}` : '';
+    const priceText = hasPrice ? ` - ${formatPrice(ad.price, ad.country)}` : '';
     const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -417,7 +417,7 @@ const AdDetails = () => {
                 </div>
                 {hasPrice ? (
                   <div className="text-3.5xl font-black text-indigo-600 bg-indigo-50/50 py-1.5 px-4 rounded-2xl border border-indigo-100/50 flex items-center justify-center">
-                    {formatPrice(ad.price)}
+                    {formatPrice(ad.price, ad.country)}
                   </div>
                 ) : (
                   <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-100 flex items-center justify-center">

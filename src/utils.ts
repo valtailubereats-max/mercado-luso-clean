@@ -1,8 +1,9 @@
-export const formatPrice = (price: number | undefined): string => {
+export const formatPrice = (price: number | undefined, country?: string): string => {
   if (price === undefined || price === null) return 'Grátis';
-  return new Intl.NumberFormat('pt-PT', {
+  const isUK = country === 'Reino Unido';
+  return new Intl.NumberFormat(isUK ? 'en-GB' : 'pt-PT', {
     style: 'currency',
-    currency: 'EUR',
+    currency: isUK ? 'GBP' : 'EUR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(price);
