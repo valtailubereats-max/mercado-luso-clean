@@ -9,8 +9,6 @@ import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
-import cplpCollage from '../assets/images/cplp_flags_collage_1780303992447.png';
-// @ts-ignore
 import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
 // @ts-ignore
 import londonAerial from '../assets/images/london_aerial_1780755464204.png';
@@ -393,10 +391,10 @@ const Home = () => {
 
   return (
     <div className="flex flex-col gap-3 md:gap-6">
-      {/* HERO BANNER LUXURY SLIM */}
+      {/* HERO BANNER LUXURY SLIM + PAINEL LUSÓFONO */}
       <section className="relative -mt-6 md:-mt-8 transition-all duration-500">
-        
-        {/* Imagem de Fundo (Bandeiras) */}
+
+        {/* Imagem de Fundo dinâmica: Portugal / Reino Unido */}
         <div className="absolute inset-0 z-0 overflow-hidden shadow-2xl rounded-b-[2rem] md:rounded-b-[3rem]">
           <img 
             src={country === 'Portugal' ? lisbonAerial : londonAerial} 
@@ -404,189 +402,254 @@ const Home = () => {
             className="w-full h-full object-cover scale-105 transition-all duration-700 ease-in-out"
             referrerPolicy="no-referrer"
           />
-          {/* Overlay suave para dar brilho e profundidade */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/45 backdrop-saturate-[1.3]" />
+          {/* Overlay suave para contraste */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/5 to-black/55 backdrop-saturate-[1.25]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/20 hidden lg:block" />
         </div>
-        
-        <div className="relative z-10 max-w-4xl mx-auto text-center py-5 md:py-12 px-6">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            
-                        {/* Título com Tipografia Premium */}
-            <h1 
-              onClick={() => {
-                setCategory('Todas');
-                setCity('Todas');
-                setSearchTerm('');
-              }}
-              title="Resetar filtros"
-              className="text-2xl md:text-5xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)] mb-1 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none"
-            >
-              Mercado da Língua Portuguesa
-            </h1>
-            <p className="text-xs md:text-lg font-medium text-white/90 mb-4 md:mb-6 tracking-widest uppercase drop-shadow-md">
-              Conectando o Mundo Lusófono
-            </p>
 
-            {/* Barra de Pesquisa Minimalista */}
-            <div className="relative max-w-lg mx-auto mb-3 md:mb-4.5 group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <Search size={18} className="text-white/60 group-focus-within:text-white transition-colors" />
-              </div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="O que procura hoje?"
-                className="w-full bg-white/10 backdrop-blur-3xl border border-white/20 rounded-full py-3 px-12 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-all shadow-xl text-sm"
-              />
-            </div>
+        <div className="relative z-10 mx-auto w-full px-4 sm:px-6 py-5 md:py-8 lg:py-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto max-w-7xl"
+          >
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
 
-            {/* Ícones de Filtro e Contador (Layout Limpo) */}
-            <div className="flex items-center justify-center gap-4">
-              
-              {/* Botão Categoria - Apenas Ícone */}
-              <div className="relative group">
-                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Categoria">
-                  <Tag size={18} />
-                  <select 
-                    value={category} 
-                    onChange={(e) => setCategory(e.target.value)} 
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  >
-                    <option value="Todas">Categorias</option>
-                    {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
-                  </select>
-                </div>
-              </div>
+              {/* Área principal: comunidade ativa */}
+              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[235px] md:min-h-[340px] lg:min-h-[390px] px-2 sm:px-5 lg:px-10 py-4 lg:py-8">
 
-              {/* Botão País com Bandeira e Nome da Comunidade */}
-              <div className="relative" ref={dropdownRef}>
-                <button 
-                  type="button"
+                {/* Título com Tipografia Premium */}
+                <h1 
                   onClick={() => {
-                    setCountryDropdownOpen(prev => !prev);
-                    setShowTooltip(false);
+                    setCategory('Todas');
+                    setCity('Todas');
+                    setSearchTerm('');
                   }}
-                  className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 bg-white/25 backdrop-blur-3xl rounded-full border border-white/40 text-white hover:bg-white/40 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
-                    shouldAnimateButton ? 'animate-country-pulse border-amber-400' : ''
-                  }`}
-                  title="Mudar de Comunidade"
-                  id="community-toggle-button"
+                  title="Resetar filtros"
+                  className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.75)] mb-1 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none"
                 >
-                  <span className="text-base md:text-lg leading-none shrink-0">{getCountryFlag(country)}</span>
-                  <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
-                  <span className="text-[10px] opacity-60 ml-0.5">▼</span>
-                </button>
+                  Mercado da Língua Portuguesa
+                </h1>
+                <p className="text-xs md:text-lg font-medium text-white/90 mb-4 md:mb-6 tracking-widest uppercase drop-shadow-md">
+                  Conectando o Mundo Lusófono
+                </p>
 
-                {/* Dropdown de Países Personalizado */}
-                <AnimatePresence>
-                  {countryDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 md:left-0 md:right-auto top-12 md:top-14 z-[60] w-48 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-2 shadow-2xl divide-y divide-slate-800"
+                {/* Barra de Pesquisa Minimalista */}
+                <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-3 md:mb-4 group">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Search size={18} className="text-white/60 group-focus-within:text-white transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="O que procura hoje?"
+                    className="w-full bg-white/10 backdrop-blur-3xl border border-white/20 rounded-full py-3 px-12 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-all shadow-xl text-sm"
+                  />
+                </div>
+
+                {/* Ícones de Filtro e Contador */}
+                <div className="flex items-center justify-center lg:justify-start gap-3 md:gap-4 flex-wrap">
+
+                  {/* Botão Categoria - Apenas Ícone */}
+                  <div className="relative group">
+                    <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Categoria">
+                      <Tag size={18} />
+                      <select 
+                        value={category} 
+                        onChange={(e) => setCategory(e.target.value)} 
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      >
+                        <option value="Todas">Categorias</option>
+                        {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Botão País com Bandeira e Nome da Comunidade */}
+                  <div className="relative" ref={dropdownRef}>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setCountryDropdownOpen(prev => !prev);
+                        setShowTooltip(false);
+                      }}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 bg-white/25 backdrop-blur-3xl rounded-full border border-white/40 text-white hover:bg-white/40 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
+                        shouldAnimateButton ? 'animate-country-pulse border-amber-400' : ''
+                      }`}
+                      title="Mudar de Comunidade"
+                      id="community-toggle-button"
                     >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleCountryChange('Portugal');
-                          setCountryDropdownOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
-                          country === 'Portugal' ? 'bg-indigo-600/30 text-indigo-300' : ''
-                        }`}
+                      <span className="text-base md:text-lg leading-none shrink-0">{getCountryFlag(country)}</span>
+                      <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
+                      <span className="text-[10px] opacity-60 ml-0.5">▼</span>
+                    </button>
+
+                    {/* Dropdown de Países Personalizado */}
+                    <AnimatePresence>
+                      {countryDropdownOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 md:left-0 md:right-auto top-12 md:top-14 z-[9999] w-48 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-2 shadow-2xl divide-y divide-slate-800"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleCountryChange('Portugal');
+                              setCountryDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
+                              country === 'Portugal' ? 'bg-indigo-600/30 text-indigo-300' : ''
+                            }`}
+                          >
+                            <span className="text-lg">🇵🇹</span>
+                            <span>Portugal</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleCountryChange('Reino Unido');
+                              setCountryDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
+                              country === 'Reino Unido' ? 'bg-indigo-600/30 text-indigo-300' : ''
+                            }`}
+                          >
+                            <span className="text-lg">🇬🇧</span>
+                            <span>Reino Unido</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Tooltip de Onboarding no 1º acesso */}
+                    {showTooltip && (
+                      <AnimatePresence>
+                        <motion.div
+                          initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                          className="absolute top-14 left-1/2 -translate-x-1/2 z-[9998] w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
+                        >
+                          {/* Seta do Balão */}
+                          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
+                          <p className="text-xs font-semibold leading-relaxed text-slate-200">
+                            Escolha a sua comunidade para ver anúncios perto de si.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleOnboardingButtonClick}
+                            className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
+                            id="onboarding-community-select"
+                          >
+                            Escolher Comunidade
+                          </button>
+                        </motion.div>
+                      </AnimatePresence>
+                    )}
+                  </div>
+
+                  {/* Botão Localização - Apenas Ícone */}
+                  <div className="relative group">
+                    <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Cidade">
+                      <MapPin size={18} />
+                      <select 
+                        value={city} 
+                        onChange={(e) => setCity(e.target.value)} 
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       >
-                        <span className="text-lg">🇵🇹</span>
-                        <span>Portugal</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleCountryChange('Reino Unido');
-                          setCountryDropdownOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
-                          country === 'Reino Unido' ? 'bg-indigo-600/30 text-indigo-300' : ''
-                        }`}
-                      >
-                        <span className="text-lg">🇬🇧</span>
-                        <span>Reino Unido</span>
-                      </button>
-                    </motion.div>
+                        <option value="Todas">Cidade / Região</option>
+                        {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Contador de Anúncios Slim */}
+                  {settings?.showTotalAdsBadge !== false && (
+                    <div className="h-10 md:h-12 px-4 md:px-5 flex items-center bg-black/30 backdrop-blur-3xl rounded-full border border-white/10 shadow-inner">
+                      <span className="text-white font-black text-sm md:text-lg mr-2">
+                        {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
+                      </span>
+                      <span className="text-white/60 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Anúncios</span>
+                    </div>
                   )}
-                </AnimatePresence>
 
-                {/* Tooltip de Onboarding no 1º acesso */}
-                {showTooltip && (
-                  <AnimatePresence>
-                    <motion.div
-                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                      className="absolute top-14 left-1/2 -translate-x-1/2 z-50 w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
-                    >
-                      {/* Seta do Balão */}
-                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
-                      <p className="text-xs font-semibold leading-relaxed text-slate-200">
-                        Escolha a sua comunidade para ver anúncios perto de si.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleOnboardingButtonClick}
-                        className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
-                        id="onboarding-community-select"
-                      >
-                        Escolher Comunidade
-                      </button>
-                    </motion.div>
-                  </AnimatePresence>
-                )}
+                  {/* Contador de Utilizadores Slim */}
+                  {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
+                    <div className="h-10 md:h-12 px-4 md:px-5 flex items-center bg-slate-900/40 backdrop-blur-3xl rounded-full border border-indigo-500/30 shadow-inner group relative select-none">
+                      <span className="text-indigo-300 font-black text-sm md:text-lg mr-2">
+                        {totalUsersCount}
+                      </span>
+                      <span className="text-indigo-400/80 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Membros</span>
+
+                      {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
+                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                          🔒 Oculto para o público (Visto por Staff)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Painel Lusófono compacto no mobile */}
+                <div className="lg:hidden mt-4 mx-auto w-full max-w-md rounded-[1.5rem] bg-emerald-950/80 border border-amber-300/25 backdrop-blur-2xl p-3 shadow-2xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 mb-2">
+                    🌍 Comunidade Lusófona
+                  </p>
+                  <div className="grid grid-cols-9 gap-1.5 text-lg leading-none mb-2">
+                    {['🇵🇹','🇧🇷','🇦🇴','🇲🇿','🇨🇻','🇬🇼','🇸🇹','🇹🇱','🇬🇶'].map((flag, idx) => (
+                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 shadow-inner">
+                        {flag}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/80 font-semibold">
+                    Mais de 300 milhões de falantes de português no mundo.
+                  </p>
+                </div>
               </div>
 
-              {/* Botão Localização - Apenas Ícone */}
-              <div className="relative group">
-                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Cidade">
-                  <MapPin size={18} />
-                  <select 
-                    value={city} 
-                    onChange={(e) => setCity(e.target.value)} 
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  >
-                    <option value="Todas">Cidade / Região</option>
-                    {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
-                  </select>
-                </div>
-              </div>
+              {/* Painel lateral: Comunidade Lusófona */}
+              <aside className="hidden lg:flex lg:basis-[30%] min-h-[390px] rounded-[2rem] overflow-hidden border border-amber-200/20 bg-gradient-to-br from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 shadow-2xl backdrop-blur-2xl">
+                <div className="relative w-full p-6 xl:p-8 flex flex-col justify-center text-center text-white">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.20),transparent_38%)] pointer-events-none" />
+                  <div className="relative z-10">
+                    <p className="text-amber-300 text-xs font-black uppercase tracking-[0.22em] mb-4">
+                      🌍 Comunidade Lusófona
+                    </p>
+                    <h2 className="text-2xl xl:text-3xl font-black leading-tight mb-2">
+                      Mais de 300 milhões
+                    </h2>
+                    <p className="text-sm xl:text-base font-semibold text-white/85 mb-5">
+                      de falantes de português no mundo.
+                    </p>
 
-              {/* Contador de Anúncios Slim */}
-              {settings?.showTotalAdsBadge !== false && (
-                <div className="h-10 md:h-12 px-5 flex items-center bg-black/30 backdrop-blur-3xl rounded-full border border-white/10 shadow-inner">
-                  <span className="text-white font-black text-sm md:text-lg mr-2">
-                    {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
-                  </span>
-                  <span className="text-white/60 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Anúncios</span>
-                </div>
-              )}
+                    <div className="h-px w-24 mx-auto bg-amber-300/50 mb-5" />
 
-              {/* Contador de Utilizadores Slim */}
-              {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
-                <div className="h-10 md:h-12 px-5 flex items-center bg-slate-900/40 backdrop-blur-3xl rounded-full border border-indigo-500/30 shadow-inner group relative select-none">
-                  <span className="text-indigo-300 font-black text-sm md:text-lg mr-2">
-                    {totalUsersCount}
-                  </span>
-                  <span className="text-indigo-400/80 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Membros</span>
-                  
-                  {/* Tooltip para admin/moderador se estiver oculto para utilizadores comuns */}
-                  {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
-                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
-                      🔒 Oculto para o público (Visto por Staff)
-                    </span>
-                  )}
+                    <div className="grid grid-cols-3 gap-3 xl:gap-4">
+                      {[
+                        { flag: '🇵🇹', name: 'Portugal' },
+                        { flag: '🇧🇷', name: 'Brasil' },
+                        { flag: '🇦🇴', name: 'Angola' },
+                        { flag: '🇲🇿', name: 'Moçambique' },
+                        { flag: '🇨🇻', name: 'Cabo Verde' },
+                        { flag: '🇬🇼', name: 'Guiné-Bissau' },
+                        { flag: '🇸🇹', name: 'São Tomé' },
+                        { flag: '🇹🇱', name: 'Timor-Leste' },
+                        { flag: '🇬🇶', name: 'Guiné Eq.' },
+                      ].map((item) => (
+                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-2.5 shadow-inner hover:bg-white/12 transition-colors">
+                          <div className="text-3xl leading-none mb-1">{item.flag}</div>
+                          <div className="text-[10px] font-bold text-white/85 leading-tight">{item.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              )}
-
+              </aside>
             </div>
           </motion.div>
         </div>
@@ -600,7 +663,7 @@ const Home = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="bg-emerald-50/80 border border-emerald-100 rounded-3xl py-1.5 px-4 md:py-3 md:px-6 flex items-center justify-between text-emerald-800 text-xs md:text-sm font-semibold shadow-sm transition-all duration-300 -my-1 md:my-0"
+          className="bg-emerald-50/80 border border-emerald-100 rounded-2xl py-1 px-3 md:py-2 md:px-5 flex items-center justify-between text-emerald-800 text-xs md:text-sm font-semibold shadow-sm transition-all duration-300 -my-2 md:-my-1"
         >
           <div className="flex items-center gap-3">
             <span className="text-xl md:text-2xl leading-none">{getCommunityLabel(country).flag}</span>
@@ -614,7 +677,7 @@ const Home = () => {
 
       {/* ✨ ANÚNCIOS EM DESTAQUE */}
       {filteredFeaturedAds.length > 0 && (
-        <section className="space-y-3 md:space-y-4 pt-0.5 pb-2 md:py-2">
+        <section className="space-y-2 md:space-y-3 pt-0 pb-2 md:py-1">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">✨</span>
