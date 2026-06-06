@@ -599,14 +599,15 @@ const Home = () => {
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 mb-2">
                     🌍 Comunidade Lusófona
                   </p>
-                  <div className="grid grid-cols-9 gap-1.5 text-lg leading-none mb-2">
-                    {['🇵🇹','🇧🇷','🇦🇴','🇲🇿','🇨🇻','🇬🇼','🇸🇹','🇹🇱','🇬🇶'].map((flag, idx) => (
-                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 shadow-inner">
-                        {flag}
-                      </span>
-                    ))}
+                  <div className="rounded-2xl bg-white/10 border border-white/10 p-2 shadow-inner overflow-hidden">
+                    <img
+                      src={cplpCollage}
+                      alt="Bandeiras da comunidade lusófona"
+                      className="w-full h-12 object-cover rounded-xl"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
-                  <p className="text-[10px] text-white/80 font-semibold">
+                  <p className="mt-2 text-[10px] text-white/80 font-semibold">
                     Mais de 300 milhões de falantes de português no mundo.
                   </p>
                 </div>
@@ -629,24 +630,18 @@ const Home = () => {
 
                     <div className="h-px w-24 mx-auto bg-amber-300/50 mb-5" />
 
-                    <div className="grid grid-cols-3 gap-3 xl:gap-4">
-                      {[
-                        { flag: '🇵🇹', name: 'Portugal' },
-                        { flag: '🇧🇷', name: 'Brasil' },
-                        { flag: '🇦🇴', name: 'Angola' },
-                        { flag: '🇲🇿', name: 'Moçambique' },
-                        { flag: '🇨🇻', name: 'Cabo Verde' },
-                        { flag: '🇬🇼', name: 'Guiné-Bissau' },
-                        { flag: '🇸🇹', name: 'São Tomé' },
-                        { flag: '🇹🇱', name: 'Timor-Leste' },
-                        { flag: '🇬🇶', name: 'Guiné Eq.' },
-                      ].map((item) => (
-                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-2.5 shadow-inner hover:bg-white/12 transition-colors">
-                          <div className="text-3xl leading-none mb-1">{item.flag}</div>
-                          <div className="text-[10px] font-bold text-white/85 leading-tight">{item.name}</div>
-                        </div>
-                      ))}
+                    <div className="rounded-[1.6rem] bg-white/10 border border-white/10 p-3 shadow-inner overflow-hidden">
+                      <img
+                        src={cplpCollage}
+                        alt="Bandeiras da comunidade lusófona"
+                        className="w-full h-48 xl:h-56 object-cover rounded-[1.2rem]"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
+
+                    <p className="mt-4 text-[11px] xl:text-xs text-white/70 font-bold uppercase tracking-[0.18em]">
+                      Portugal • Brasil • África • Timor
+                    </p>
                   </div>
                 </div>
               </aside>
