@@ -10,6 +10,10 @@ import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, 
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import cplpCollage from '../assets/images/cplp_flags_collage_1780303992447.png';
+// @ts-ignore
+import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
+// @ts-ignore
+import londonAerial from '../assets/images/london_aerial_1780755464204.png';
 
 const PAGE_SIZE = 30; 
 
@@ -395,23 +399,38 @@ const Home = () => {
         {/* Imagem de Fundo (Bandeiras) */}
         <div className="absolute inset-0 z-0 overflow-hidden shadow-2xl rounded-b-[2rem] md:rounded-b-[3rem]">
           <img 
-            src={cplpCollage} 
-            alt="Lusofonia" 
-            className="w-full h-full object-cover scale-105"
+            src={country === 'Portugal' ? lisbonAerial : londonAerial} 
+            alt={country} 
+            className="w-full h-full object-cover scale-105 transition-all duration-700 ease-in-out"
+            referrerPolicy="no-referrer"
           />
           {/* Overlay suave para dar brilho e profundidade */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 backdrop-saturate-[1.4]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/45 backdrop-saturate-[1.3]" />
         </div>
         
         <div className="relative z-10 max-w-4xl mx-auto text-center py-5 md:py-12 px-6">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             
+            {/* Badge da Comunidade Lusófona com as Bandeiras */}
+            <div className="inline-flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-full px-3 md:px-4 py-1 md:py-1.5 mb-2.5 md:mb-3.5 border border-white/20 text-white select-none shadow hover:bg-black/50 transition-all">
+              <span className="flex items-center">
+                <img 
+                  src={cplpCollage} 
+                  alt="Bandeiras da Comunidade Lusófona (CPLP)" 
+                  className="h-4 md:h-5 w-auto object-contain rounded-sm"
+                  referrerPolicy="no-referrer"
+                />
+              </span>
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest leading-none">
+                Comunidade CPLP
+              </span>
+            </div>
+
             {/* Título com Tipografia Premium */}
             <h1 
               onClick={() => {
                 setCategory('Todas');
                 setCity('Todas');
-                setCountry('Todos');
                 setSearchTerm('');
               }}
               title="Resetar filtros"
@@ -463,7 +482,7 @@ const Home = () => {
                     setCountryDropdownOpen(prev => !prev);
                     setShowTooltip(false);
                   }}
-                  className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
+                  className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 bg-white/25 backdrop-blur-3xl rounded-full border border-white/40 text-white hover:bg-white/40 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
                     shouldAnimateButton ? 'animate-country-pulse border-amber-400' : ''
                   }`}
                   title="Mudar de Comunidade"
