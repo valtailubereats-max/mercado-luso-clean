@@ -600,9 +600,25 @@ const Home = () => {
                     🌍 Comunidade Lusófona
                   </p>
                   <div className="grid grid-cols-9 gap-1.5 text-lg leading-none mb-2">
-                    {['🇵🇹','🇧🇷','🇦🇴','🇲🇿','🇨🇻','🇬🇼','🇸🇹','🇹🇱','🇬🇶'].map((flag, idx) => (
-                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 shadow-inner">
-                        {flag}
+                    {[
+                      { code: 'pt', flag: '🇵🇹' },
+                      { code: 'br', flag: '🇧🇷' },
+                      { code: 'ao', flag: '🇦🇴' },
+                      { code: 'mz', flag: '🇲🇿' },
+                      { code: 'cv', flag: '🇨🇻' },
+                      { code: 'gw', flag: '🇬🇼' },
+                      { code: 'st', flag: '🇸🇹' },
+                      { code: 'tl', flag: '🇹🇱' },
+                      { code: 'gq', flag: '🇬🇶' },
+                    ].map((item, idx) => (
+                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 px-0.5 shadow-inner">
+                        <img 
+                          src={`https://flagcdn.com/w40/${item.code}.png`} 
+                          alt={item.flag} 
+                          title={item.flag}
+                          className="h-4.5 w-auto object-contain rounded-sm"
+                          referrerPolicy="no-referrer"
+                        />
                       </span>
                     ))}
                   </div>
@@ -631,18 +647,24 @@ const Home = () => {
 
                     <div className="grid grid-cols-3 gap-3 xl:gap-4">
                       {[
-                        { flag: '🇵🇹', name: 'Portugal' },
-                        { flag: '🇧🇷', name: 'Brasil' },
-                        { flag: '🇦🇴', name: 'Angola' },
-                        { flag: '🇲🇿', name: 'Moçambique' },
-                        { flag: '🇨🇻', name: 'Cabo Verde' },
-                        { flag: '🇬🇼', name: 'Guiné-Bissau' },
-                        { flag: '🇸🇹', name: 'São Tomé' },
-                        { flag: '🇹🇱', name: 'Timor-Leste' },
-                        { flag: '🇬🇶', name: 'Guiné Eq.' },
+                        { flag: '🇵🇹', name: 'Portugal', code: 'pt' },
+                        { flag: '🇧🇷', name: 'Brasil', code: 'br' },
+                        { flag: '🇦🇴', name: 'Angola', code: 'ao' },
+                        { flag: '🇲🇿', name: 'Moçambique', code: 'mz' },
+                        { flag: '🇨🇻', name: 'Cabo Verde', code: 'cv' },
+                        { flag: '🇬🇼', name: 'Guiné-Bissau', code: 'gw' },
+                        { flag: '🇸🇹', name: 'São Tomé', code: 'st' },
+                        { flag: '🇹🇱', name: 'Timor-Leste', code: 'tl' },
+                        { flag: '🇬🇶', name: 'Guiné Eq.', code: 'gq' },
                       ].map((item) => (
-                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-2.5 shadow-inner hover:bg-white/12 transition-colors">
-                          <div className="text-3xl leading-none mb-1">{item.flag}</div>
+                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-2.5 shadow-inner hover:bg-white/12 transition-colors flex flex-col items-center justify-center">
+                          <img 
+                            src={`https://flagcdn.com/w80/${item.code}.png`} 
+                            alt={item.flag} 
+                            title={item.name}
+                            className="h-6.5 w-auto object-contain rounded shadow-sm mb-1"
+                            referrerPolicy="no-referrer"
+                          />
                           <div className="text-[10px] font-bold text-white/85 leading-tight">{item.name}</div>
                         </div>
                       ))}
