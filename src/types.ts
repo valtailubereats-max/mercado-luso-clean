@@ -72,6 +72,7 @@ export interface Ad {
   imageUrl: string; // Keep for backward compatibility, but use images[0]
   images: string[];
   city: string;
+  country?: 'Portugal' | 'Reino Unido';
   category: string;
   sellerId: string;
   sellerPhone: string;
@@ -169,6 +170,41 @@ export const CITIES = [
   'Viana do Castelo',
   'Funchal',
   'Ponta Delgada'
+];
+
+export const PORTUGAL_CITIES = [
+  'Lisboa',
+  'Porto',
+  'Braga',
+  'Faro',
+  'Coimbra',
+  'Aveiro',
+  'Setúbal',
+  'Leiria',
+  'Madeira',
+  'Açores',
+  'Outra'
+];
+
+export const UK_CITIES = [
+  'Londres',
+  'Manchester',
+  'Birmingham',
+  'Liverpool',
+  'Leeds',
+  'Bristol',
+  'Sheffield',
+  'Nottingham',
+  'Leicester',
+  'Coventry',
+  'Glasgow',
+  'Edinburgh',
+  'Cardiff',
+  'Belfast',
+  'Southampton',
+  'Bournemouth',
+  'Weymouth',
+  'Outra'
 ];
 
 export const COUNTRY_CODES = [

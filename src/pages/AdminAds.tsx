@@ -480,7 +480,7 @@ const AdminAds = () => {
                     <div className="space-y-1.5 mt-2">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                         <MapPin size={14} className="text-red-500 shrink-0" />
-                        <span>{selectedAd.city}</span>
+                        <span>{selectedAd.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {selectedAd.city}, {selectedAd.country || 'Portugal'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                         <Tag size={14} className="text-indigo-500 shrink-0" />

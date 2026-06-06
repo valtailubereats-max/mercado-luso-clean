@@ -289,7 +289,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           }`}>
             <div className="flex items-center gap-1 text-slate-600">
               <MapPin size={isFeaturedVariant ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
-              <span className="truncate">{ad.city}</span>
+              <span className="truncate">
+                {ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}
+              </span>
             </div>
             <div className="flex items-center gap-1 text-slate-500">
               <Tag size={isFeaturedVariant ? 10 : 12} className="text-teal-600 shrink-0 opacity-75" />
@@ -472,7 +474,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                       <div className="flex items-center gap-3 text-slate-500 text-xs font-medium">
                         <div className="flex items-center gap-1">
                           <MapPin size={14} className="text-indigo-600" />
-                          <span>{ad.city}</span>
+                          <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}</span>
                         </div>
                       </div>
                     </div>

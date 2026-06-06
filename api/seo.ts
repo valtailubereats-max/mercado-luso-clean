@@ -98,7 +98,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
 
   const projectId = 'navlink-489413';
   const firestoreDatabaseId = 'ai-studio-68f2b08f-f2a5-4a0e-9c12-0146a4e48db1';
-  let adDataEx: { title?: string; description?: string; images?: string[]; imageUrl?: string; price?: number | string; city?: string } | null = null;
+  let adDataEx: { title?: string; description?: string; images?: string[]; imageUrl?: string; price?: number | string; city?: string; country?: string } | null = null;
 
   // --- MÉTODO 1: Chamada via REST API pública do Firestore ---
   // Vantagem extrema: Não precisa de credenciais de conta de serviço (FIREBASE_SERVICE_ACCOUNT) nas variáveis da Vercel
@@ -120,6 +120,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
           imageUrl: getStringValue(fields.imageUrl),
           price: getStringValue(fields.price),
           city: getStringValue(fields.city),
+          country: getStringValue(fields.country),
           images: getArrayValues(fields.images)
         };
         console.log(`[SEO SERVERLESS] Dados extraídos com sucesso do Firestore REST API para o anúncio "${adDataEx.title}"`);
@@ -173,6 +174,7 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
             imageUrl: adData.imageUrl,
             price: adData.price,
             city: adData.city,
+            country: adData.country,
             images: adData.images
           };
           console.log(`[SEO SERVERLESS] Dados obtidos com sucesso através do fallback do Firebase Admin SDK.`);
@@ -194,7 +196,8 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
 
   // 5. Preparar as variáveis e os metadados dinâmicos para a injeção
   const rawTitle = adDataEx.title || 'Anúncio';
-  const rawLocation = adDataEx.city ? ` - ${adDataEx.city}` : '';
+  const countryVal = adDataEx.country || 'Portugal';
+  const rawLocation = adDataEx.city ? ` - ${adDataEx.city}, ${countryVal}` : '';
   const title = escapeHtml(`${rawTitle}${rawLocation} | Mercado Luso`);
   
   const description = escapeHtml(

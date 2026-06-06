@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Search, ChevronDown, Plus, Check } from 'lucide-react';
-import { CITIES } from '../types';
+import { CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface SearchableCitySelectProps {
@@ -8,6 +8,7 @@ interface SearchableCitySelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  country?: 'Portugal' | 'Reino Unido';
 }
 
 export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
@@ -15,6 +16,7 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
   onChange,
   placeholder = "Escreva ou escolha a sua cidade",
   required = false,
+  country = 'Portugal',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -43,11 +45,13 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
     }
   }, [isOpen]);
 
-  const filteredCities = CITIES.filter(city =>
+  const activeCities = country === 'Reino Unido' ? UK_CITIES : PORTUGAL_CITIES;
+
+  const filteredCities = activeCities.filter(city =>
     city.toLowerCase().includes(search.toLowerCase())
   );
 
-  const exactMatchExists = CITIES.some(city => 
+  const exactMatchExists = activeCities.some(city => 
     city.toLowerCase() === search.trim().toLowerCase()
   );
 

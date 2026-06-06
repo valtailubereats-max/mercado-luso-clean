@@ -301,11 +301,11 @@ const AdDetails = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {ad && (
         <Helmet>
-          <title>{ad.title} | Mercado Luso</title>
+          <title>{ad.title} - {ad.city}, {ad.country || 'Portugal'} | Mercado Luso</title>
           <meta name="description" content={ad.description.substring(0, 160)} />
           <link rel="canonical" href={`https://www.mercado-luso.com${getAdUrl(ad)}`} />
           <meta property="og:url" content={`https://www.mercado-luso.com${getAdUrl(ad)}`} />
-          <meta property="og:title" content={`${ad.title} | Mercado Luso`} />
+          <meta property="og:title" content={`${ad.title} - ${ad.city}, ${ad.country || 'Portugal'} | Mercado Luso`} />
           <meta property="og:description" content={ad.description.substring(0, 160)} />
           <meta property="og:image" content={ad.imageUrl} />
         </Helmet>
@@ -413,7 +413,7 @@ const AdDetails = () => {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 text-slate-500 font-bold text-sm">
                   <MapPin size={16} className="text-indigo-600" />
-                  <span>{ad.city}</span>
+                  <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}, {ad.country || 'Portugal'}</span>
                 </div>
                 {hasPrice ? (
                   <div className="text-3.5xl font-black text-indigo-600 bg-indigo-50/50 py-1.5 px-4 rounded-2xl border border-indigo-100/50 flex items-center justify-center">

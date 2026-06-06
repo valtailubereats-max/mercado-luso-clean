@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { CITIES, Ad, MarketplaceSettings } from '../types';
+import { CITIES, Ad, MarketplaceSettings, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
 import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw } from 'lucide-react';
@@ -34,7 +34,8 @@ const CreateAd = () => {
     description: prefill?.description || '',
     price: prefill?.price?.toString() || '',
     images: [] as string[],
-    city: prefill?.city || CITIES[0],
+    city: prefill?.city || PORTUGAL_CITIES[0],
+    country: (prefill?.country || 'Portugal') as 'Portugal' | 'Reino Unido',
     category: prefill?.category || categories[0] || 'Outros',
     plan: 'free' as 'free' | 'intermediate' | 'premium',
     duration: 30, // Default for free
@@ -42,6 +43,15 @@ const CreateAd = () => {
     externalUrl: '',
     sellerPhone: prefill?.sellerPhone || ''
   });
+
+  const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido') => {
+    const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
+    setFormData(prev => ({
+      ...prev,
+      country: newCountry,
+      city: defaultCity
+    }));
+  };
   const [settings, setSettings] = useState<MarketplaceSettings | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -84,6 +94,7 @@ const CreateAd = () => {
           price: data.price?.toString() || '',
           images: data.images || (data.imageUrl ? [data.imageUrl] : []),
           city: data.city,
+          country: data.country || 'Portugal',
           category: data.category,
           plan: data.plan || 'free',
           duration: 30, // Duration is only used for calculation on submit
@@ -278,6 +289,7 @@ const CreateAd = () => {
         imageUrl: formData.images[0], // Primary image
         images: formData.images,
         city: formData.city,
+        country: formData.country,
         category: formData.category,
         sellerId: id && originalAd ? originalAd.sellerId : user.uid,
         sellerPhone: formData.category === 'Imigração' ? formData.sellerPhone.trim() : (id && originalAd ? originalAd.sellerPhone : profile.phone),
@@ -496,6 +508,18 @@ const CreateAd = () => {
             )}
 
             <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">País</label>
+              <select
+                value={formData.country}
+                onChange={(e) => handleCountryChange(e.target.value as 'Portugal' | 'Reino Unido')}
+                className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none font-semibold text-slate-800"
+              >
+                <option value="Portugal">🇵🇹 Portugal</option>
+                <option value="Reino Unido">🇬🇧 Reino Unido</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cidade / Região</label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={20} />
@@ -503,6 +527,7 @@ const CreateAd = () => {
                   value={formData.city}
                   onChange={(val) => setFormData({ ...formData, city: val })}
                   placeholder="Escreva ou escolha a sua cidade"
+                  country={formData.country}
                 />
               </div>
             </div>

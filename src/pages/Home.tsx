@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, limit, getCountFromServer } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
-import { Ad, CITIES } from '../types';
+import { Ad, CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp } from 'lucide-react';
@@ -26,6 +26,7 @@ const Home = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [category, setCategory] = useState('Todas');
   const [city, setCity] = useState('Todas');
+  const [country, setCountry] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [totalApprovedCount, setTotalApprovedCount] = useState<number | null>(null);
 
@@ -103,6 +104,8 @@ const Home = () => {
     if (cat) setCategory(cat);
     const cty = searchParams.get('city');
     if (cty) setCity(cty);
+    const countr = searchParams.get('country');
+    if (countr) setCountry(countr);
   }, [searchParams]);
 
   useEffect(() => {
@@ -198,6 +201,12 @@ const Home = () => {
     }
   };
 
+  const selectableCitiesOnHome = useMemo(() => {
+    if (country === 'Portugal') return PORTUGAL_CITIES;
+    if (country === 'Reino Unido') return UK_CITIES;
+    return [...PORTUGAL_CITIES.filter(c => c !== 'Outra'), ...UK_CITIES.filter(c => c !== 'Outra'), 'Outra'];
+  }, [country]);
+
   const filteredFeaturedAds = useMemo(() => {
     const now = new Date();
     let result = featuredAds.filter(ad => {
@@ -213,6 +222,12 @@ const Home = () => {
       return matchesSearch && matchesStatus;
     });
 
+    if (country !== 'Todos') {
+      result = result.filter(ad => {
+        const adCountry = ad.country || 'Portugal';
+        return adCountry === country;
+      });
+    }
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
 
@@ -221,7 +236,7 @@ const Home = () => {
       const timeB = b.featuredUntil?.seconds ? b.featuredUntil.seconds * 1000 : new Date(b.featuredUntil).getTime();
       return (timeB || 0) - (timeA || 0);
     }).slice(0, 20);
-  }, [featuredAds, searchTerm, category, city]);
+  }, [featuredAds, searchTerm, category, city, country]);
 
 
 
@@ -231,10 +246,16 @@ const Home = () => {
       const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
       return matchesSearch && (!ad.adStatus || ad.adStatus !== 'expired');
     });
+    if (country !== 'Todos') {
+      result = result.filter(ad => {
+        const adCountry = ad.country || 'Portugal';
+        return adCountry === country;
+      });
+    }
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
     return result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-  }, [ads, searchTerm, category, city]);
+  }, [ads, searchTerm, category, city, country]);
 
   return (
     <div className="space-y-6">
@@ -260,6 +281,7 @@ const Home = () => {
               onClick={() => {
                 setCategory('Todas');
                 setCity('Todas');
+                setCountry('Todos');
                 setSearchTerm('');
               }}
               title="Resetar filtros"
@@ -290,7 +312,7 @@ const Home = () => {
               
               {/* Botão Categoria - Apenas Ícone */}
               <div className="relative group">
-                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg">
+                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Categoria">
                   <Tag size={18} />
                   <select 
                     value={category} 
@@ -303,17 +325,36 @@ const Home = () => {
                 </div>
               </div>
 
+              {/* Botão País - Apenas Ícone de Bandeiras */}
+              <div className="relative group">
+                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="País">
+                  <span className="text-lg leading-none">{country === 'Portugal' ? '🇵🇹' : country === 'Reino Unido' ? '🇬🇧' : '🌍'}</span>
+                  <select 
+                    value={country} 
+                    onChange={(e) => {
+                      setCountry(e.target.value);
+                      setCity('Todas');
+                    }} 
+                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  >
+                    <option value="Todos" className="bg-slate-900">🌍 Todos os Países</option>
+                    <option value="Portugal" className="bg-slate-900">🇵🇹 Portugal</option>
+                    <option value="Reino Unido" className="bg-slate-900">🇬🇧 Reino Unido</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Botão Localização - Apenas Ícone */}
               <div className="relative group">
-                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg">
+                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Cidade">
                   <MapPin size={18} />
                   <select 
                     value={city} 
                     onChange={(e) => setCity(e.target.value)} 
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   >
-                    <option value="Todas">Localização</option>
-                    {CITIES.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
+                    <option value="Todas">Cidade / Região</option>
+                    {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
                   </select>
                 </div>
               </div>
