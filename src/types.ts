@@ -43,6 +43,8 @@ export interface MarketplaceSettings {
   showTotalAdsBadge?: boolean;
   highlightSpeed?: number;
   showTotalUsersBadge?: boolean;
+  searchGroupBgColor?: string;
+  searchGroupOpacity?: number;
 }
 
 export interface UserProfile {

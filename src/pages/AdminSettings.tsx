@@ -36,7 +36,9 @@ const AdminSettings = () => {
           ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150,
           showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
           highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 3,
-          showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false
+          showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false,
+          searchGroupBgColor: data.searchGroupBgColor || '#ffffff',
+          searchGroupOpacity: data.searchGroupOpacity !== undefined ? data.searchGroupOpacity : 10
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -49,7 +51,9 @@ const AdminSettings = () => {
           ptRibbonScale: 150,
           showTotalAdsBadge: true,
           highlightSpeed: 3,
-          showTotalUsersBadge: false
+          showTotalUsersBadge: false,
+          searchGroupBgColor: '#ffffff',
+          searchGroupOpacity: 10
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -270,6 +274,66 @@ const AdminSettings = () => {
                 />
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Rápido</span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Controle de Cores e Transparência da Pesquisa da Home */}
+        <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+              <span className="text-xl">🎨</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">Personalização dos Elementos da Barra de Pesquisa</h2>
+          </div>
+          
+          <p className="text-sm text-slate-500 font-medium mb-6">
+            Ajuste a cor de fundo e a transparência comuns aplicadas a todos os botões/campos da barra de pesquisa e filtros na Home.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cor de Fundo */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+              <label className="block text-sm font-bold text-slate-900">Cor de Fundo Base</label>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="color" 
+                  value={settings.searchGroupBgColor || '#ffffff'} 
+                  onChange={(e) => setSettings({ ...settings, searchGroupBgColor: e.target.value })} 
+                  className="w-12 h-12 rounded-xl cursor-pointer border-2 border-slate-200"
+                />
+                <input 
+                  type="text" 
+                  value={settings.searchGroupBgColor || '#ffffff'} 
+                  onChange={(e) => setSettings({ ...settings, searchGroupBgColor: e.target.value })} 
+                  placeholder="#ffffff"
+                  className="flex-1 px-4 py-2.5 bg-white border-2 border-slate-100 rounded-xl focus:border-indigo-600 outline-none transition-all font-mono font-bold"
+                />
+              </div>
+            </div>
+
+            {/* Opacidade / Transparência */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 font-medium">
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-bold text-slate-900">Transparência (Opacidade)</label>
+                <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl text-xs font-black">
+                  {settings.searchGroupOpacity !== undefined ? settings.searchGroupOpacity : 10}%
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Transparente</span>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  step="5"
+                  value={settings.searchGroupOpacity !== undefined ? settings.searchGroupOpacity : 10} 
+                  onChange={(e) => setSettings({ ...settings, searchGroupOpacity: parseInt(e.target.value) })} 
+                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Opaco</span>
+              </div>
+              <p className="text-[11px] text-slate-400">Um valor menor torna os elementos mais transparentes com o fundo da imagem, maior é mais sólido.</p>
             </div>
           </div>
         </section>

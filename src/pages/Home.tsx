@@ -22,6 +22,43 @@ let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
   const { settings, categories } = useSettings();
+  
+  const hexToRgba = (hex: string | undefined, opacity: number | undefined) => {
+    const color = hex || '#ffffff';
+    const alpha = opacity !== undefined ? opacity / 100 : 0.1;
+    const cleanHex = color.replace('#', '');
+    const r = parseInt(cleanHex.substring(0, 2), 16) || 255;
+    const g = parseInt(cleanHex.substring(2, 4), 16) || 255;
+    const b = parseInt(cleanHex.substring(4, 6), 16) || 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const isColorLight = (hex: string | undefined) => {
+    if (!hex) return false;
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.substring(0, 2), 16) || 255;
+    const g = parseInt(cleanHex.substring(2, 4), 16) || 255;
+    const b = parseInt(cleanHex.substring(4, 6), 16) || 255;
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6;
+  };
+
+  const hasCustomStyles = settings?.searchGroupBgColor !== undefined || settings?.searchGroupOpacity !== undefined;
+  
+  const customBg = hasCustomStyles 
+    ? hexToRgba(settings?.searchGroupBgColor, settings?.searchGroupOpacity)
+    : undefined;
+
+  const customBorder = hasCustomStyles
+    ? hexToRgba(settings?.searchGroupBgColor, Math.min(100, (settings?.searchGroupOpacity ?? 10) + 15))
+    : undefined;
+
+  const isLightText = !(isColorLight(settings?.searchGroupBgColor) && (settings?.searchGroupOpacity || 10) > 40);
+  
+  const txtColorClass = isLightText ? 'text-white' : 'text-slate-900';
+  const txtMutedClass = isLightText ? 'text-white/60' : 'text-slate-900/60';
+  const placeholderClass = isLightText ? 'placeholder:text-white/50' : 'placeholder:text-slate-900/50';
+
   const { profile, isAdmin } = useAuth();
   const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
   const [searchParams] = useSearchParams();
@@ -436,18 +473,19 @@ const Home = () => {
 
                 {/* Barra de Pesquisa Minimalista */}
                 <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-3 md:mb-4 group">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                    <Search size={18} className="text-white/60 group-focus-within:text-white transition-colors" />
-                  </div>
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="O que procura hoje?"
-                    className="w-full bg-white/10 backdrop-blur-3xl border border-white/20 rounded-full py-3 px-12 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-all shadow-xl text-sm"
+                    className={`w-full backdrop-blur-3xl rounded-full py-3 pl-6 pr-12 ${txtColorClass} ${placeholderClass} outline-none focus:ring-2 focus:ring-white/30 transition-all shadow-xl text-sm border`}
+                    style={{
+                      backgroundColor: customBg || 'rgba(255,255,255,0.1)',
+                      borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                    }}
                   />
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    <Search size={18} className="text-white/60 group-focus-within:text-white transition-colors" />
+                    <Search size={18} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors`} />
                   </div>
                 </div>
 
@@ -456,7 +494,14 @@ const Home = () => {
 
                   {/* Botão Categoria - Apenas Ícone */}
                   <div className="relative group">
-                    <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Categoria">
+                    <div 
+                      style={{
+                        backgroundColor: customBg || 'rgba(255,255,255,0.1)',
+                        borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                      }}
+                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center backdrop-blur-3xl rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
+                      title="Categoria"
+                    >
                       <Tag size={18} />
                       <select 
                         value={category} 
@@ -477,7 +522,11 @@ const Home = () => {
                         setCountryDropdownOpen(prev => !prev);
                         setShowTooltip(false);
                       }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 bg-white/25 backdrop-blur-3xl rounded-full border border-white/40 text-white hover:bg-white/40 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
+                      style={{
+                        backgroundColor: customBg || 'rgba(255,255,255,0.25)',
+                        borderColor: customBorder || 'rgba(255,255,255,0.4)',
+                      }}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 backdrop-blur-3xl rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
                         shouldAnimateButton ? 'animate-country-pulse border-amber-400' : ''
                       }`}
                       title="Mudar de Comunidade"
@@ -557,7 +606,14 @@ const Home = () => {
 
                   {/* Botão Localização - Apenas Ícone */}
                   <div className="relative group">
-                    <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/10 backdrop-blur-3xl rounded-full border border-white/20 text-white hover:bg-white/25 hover:scale-110 transition-all cursor-pointer shadow-lg" title="Cidade">
+                    <div 
+                      style={{
+                        backgroundColor: customBg || 'rgba(255,255,255,0.1)',
+                        borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                      }}
+                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center backdrop-blur-3xl rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
+                      title="Cidade"
+                    >
                       <MapPin size={18} />
                       <select 
                         value={city} 
@@ -572,21 +628,33 @@ const Home = () => {
 
                   {/* Contador de Anúncios Slim */}
                   {settings?.showTotalAdsBadge !== false && (
-                    <div className="h-10 md:h-12 px-4 md:px-5 flex items-center bg-black/30 backdrop-blur-3xl rounded-full border border-white/10 shadow-inner">
-                      <span className="text-white font-black text-sm md:text-lg mr-2">
+                    <div 
+                      style={{
+                        backgroundColor: customBg || 'rgba(0,0,0,0.3)',
+                        borderColor: customBorder || 'rgba(255,255,255,0.1)',
+                      }}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center backdrop-blur-3xl rounded-full border shadow-inner`}
+                    >
+                      <span className={`${txtColorClass} font-black text-sm md:text-lg mr-2`}>
                         {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
                       </span>
-                      <span className="text-white/60 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Anúncios</span>
+                      <span className={`${txtMutedClass} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Anúncios</span>
                     </div>
                   )}
 
                   {/* Contador de Utilizadores Slim */}
                   {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
-                    <div className="h-10 md:h-12 px-4 md:px-5 flex items-center bg-slate-900/40 backdrop-blur-3xl rounded-full border border-indigo-500/30 shadow-inner group relative select-none">
-                      <span className="text-indigo-300 font-black text-sm md:text-lg mr-2">
+                    <div 
+                      style={{
+                        backgroundColor: customBg || 'rgba(15,23,42,0.4)',
+                        borderColor: customBorder || 'rgba(99,102,241,0.3)',
+                      }}
+                      className="h-10 md:h-12 px-4 md:px-5 flex items-center backdrop-blur-3xl rounded-full border shadow-inner group relative select-none"
+                    >
+                      <span className={`${isLightText ? 'text-indigo-300' : 'text-indigo-950'} font-black text-sm md:text-lg mr-2`}>
                         {totalUsersCount}
                       </span>
-                      <span className="text-indigo-400/80 text-[10px] md:text-xs uppercase font-bold tracking-tighter">Membros</span>
+                      <span className={`${isLightText ? 'text-indigo-400/80' : 'text-indigo-800/80'} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Membros</span>
 
                       {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
                         <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
