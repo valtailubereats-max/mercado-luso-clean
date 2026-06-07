@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { MarketplaceSettings, CATEGORIES } from '../types';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, 
   Save, 
@@ -11,14 +11,22 @@ import {
   Clock,
   Image as ImageIcon,
   AlertTriangle,
-  Tag
+  Tag,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
-const AdminSettings = () => {
+interface AdminSettingsProps {
+  onClose?: () => void;
+}
+
+const AdminSettings = ({ onClose }: AdminSettingsProps) => {
   const [settings, setSettings] = useState<MarketplaceSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -69,11 +77,24 @@ const AdminSettings = () => {
     e.preventDefault();
     if (!settings) return;
     setSaving(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
     try {
       await updateDoc(doc(db, 'settings', 'global'), { ...settings });
-      alert('Configurações atualizadas com sucesso!');
+      setSuccessMsg('Configurações salvas com sucesso.');
+      if (onClose) {
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'settings/global');
+      console.error('Error saving settings:', err);
+      setErrorMsg('Não foi possível salvar as configurações. Tente novamente.');
+      try {
+        handleFirestoreError(err, OperationType.UPDATE, 'settings/global');
+      } catch (logErr) {
+        // Silently capture Firestore exception logging
+      }
     } finally {
       setSaving(false);
     }
@@ -112,6 +133,32 @@ const AdminSettings = () => {
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Definições do Marketplace</h1>
         <p className="text-slate-500 font-medium">Configure as regras de negócio, planos e categorias.</p>
       </div>
+
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-3 font-bold text-sm shadow-sm"
+          >
+            <CheckCircle2 className="text-emerald-500 shrink-0" size={20} />
+            <span>{successMsg}</span>
+          </motion.div>
+        )}
+
+        {errorMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-center gap-3 font-bold text-sm shadow-sm"
+          >
+            <AlertCircle className="text-rose-500 shrink-0" size={20} />
+            <span>{errorMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={handleUpdateSettings} className="space-y-8">
         {/* Plan Durations */}
@@ -393,7 +440,7 @@ const AdminSettings = () => {
             className="w-full md:w-auto flex items-center justify-center gap-3 bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-200 disabled:opacity-50"
           >
             <Save size={24} />
-            {saving ? 'A GUARDAR...' : 'GUARDAR CONFIGURAÇÕES'}
+            {saving ? 'Salvando...' : 'GUARDAR CONFIGURAÇÕES'}
           </button>
         </div>
       </form>

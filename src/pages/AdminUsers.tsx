@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, parseFirestoreDate, getDocsWithCacheFallback } from '../firebase';
+import { collection, query, orderBy, limit, updateDoc, doc, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, parseFirestoreDate } from '../firebase';
 import { UserProfile } from '../types';
 import { motion } from 'motion/react';
 import { 
@@ -27,6 +27,8 @@ const AdminUsers = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [limitAmount, setLimitAmount] = useState(100);
+  const [hasMore, setHasMore] = useState(false);
   
   // Debug Tool States
   const [debugSelectedUserId, setDebugSelectedUserId] = useState<string>('');
@@ -34,16 +36,23 @@ const AdminUsers = () => {
   const [debugLoading, setDebugLoading] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(limitAmount);
+  }, [limitAmount]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (currentLimit: number = limitAmount) => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const q = query(collection(db, 'users'), limit(100));
-      const querySnapshot = await getDocsWithCacheFallback(q, 'admin/users');
-      const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as UserProfile));
+      const q = query(collection(db, 'users'), limit(currentLimit + 1));
+      const querySnapshot = await getDocs(q);
+      let usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as UserProfile));
+      
+      if (usersData.length > currentLimit) {
+        setHasMore(true);
+        usersData = usersData.slice(0, currentLimit);
+      } else {
+        setHasMore(false);
+      }
       
       // Sort client-side to be robust against missing indexes and missing fields
       usersData.sort((a, b) => {
@@ -146,10 +155,13 @@ const AdminUsers = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const search = searchTerm.toLowerCase();
+    if (!search) return true;
+    const nameMatch = (user.name || '').toLowerCase().includes(search);
+    const emailMatch = (user.email || '').toLowerCase().includes(search);
+    return nameMatch || emailMatch;
+  });
 
   return (
     <div className="space-y-8">
@@ -358,6 +370,17 @@ const AdminUsers = () => {
               </tbody>
             </table>
           </div>
+          {hasMore && (
+            <div className="p-4 border-t border-slate-100 flex justify-center bg-slate-50/50">
+              <button
+                onClick={() => setLimitAmount(prev => prev + 100)}
+                className="px-6 py-2.5 bg-white border border-slate-200 hover:border-indigo-500 hover:bg-slate-50 text-indigo-600 font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+              >
+                <Users size={14} className="text-indigo-500 animate-pulse" />
+                Carregar mais utilizadores
+              </button>
+            </div>
+          )}
           {filteredUsers.length === 0 && (
             <div className="p-12 text-center text-slate-400 font-medium">
               Nenhum utilizador encontrado para esta pesquisa.

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, parseFirestoreDate, getDocsWithCacheFallback } from '../firebase';
+import { collection, query, orderBy, limit, updateDoc, doc, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, parseFirestoreDate } from '../firebase';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -54,7 +54,7 @@ const AdminTeam = () => {
     setErrorMsg(null);
     try {
       const q = query(collection(db, 'users'), limit(100));
-      const querySnapshot = await getDocsWithCacheFallback(q, 'admin/users-team');
+      const querySnapshot = await getDocs(q);
       const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as UserProfile));
       
       // Sort client-side to be robust against missing indexes and missing fields
@@ -113,9 +113,10 @@ const AdminTeam = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const search = searchTerm.toLowerCase();
+    const matchesSearch = !search || 
+      (user.email || '').toLowerCase().includes(search) || 
+      (user.name || '').toLowerCase().includes(search);
     
     // Explicit role typing checks
     const roleToCheck = user.role || 'user';
