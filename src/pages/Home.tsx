@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { collection, query, where, limit, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, limit, getCountFromServer, orderBy } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
@@ -156,12 +156,10 @@ const Home = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [totalApprovedCount, setTotalApprovedCount] = useState<number | null>(null);
   const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null);
 
   // Estados de paginação de 30 em 30 itens
   const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
-  const [hasMore, setHasMore] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // State to pause marquee on hover
@@ -260,23 +258,10 @@ const Home = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Buscar total de anúncios aprovados no banco de dados para estatísticas da Home
+  // Resetar paginação ao alterar qualquer filtro principal
   useEffect(() => {
-    let active = true;
-    const fetchTotalCount = async () => {
-      try {
-        const q = query(collection(db, 'ads'), where('status', '==', 'approved'));
-        const snapshot = await getCountFromServer(q);
-        if (active) {
-          setTotalApprovedCount(snapshot.data().count);
-        }
-      } catch (err) {
-        console.error('Erro ao buscar total de anúncios aprovados:', err);
-      }
-    };
-    fetchTotalCount();
-    return () => { active = false; };
-  }, []);
+    setLimitAmount(PAGE_SIZE);
+  }, [country, category, city, searchTerm]);
 
   // Buscar total de utilizadores no banco de dados se permitido/configurado
   useEffect(() => {
@@ -338,95 +323,71 @@ const Home = () => {
 
   useEffect(() => {
     let active = true;
-    const fetchAds = async (isMore = false) => {
-      if (isMore) {
-        setIsFetchingMore(true);
-      } else {
-        setLoading(true);
-      }
+    const fetchAds = async () => {
+      setLoading(true);
       setErrorMsg(null);
 
       // Delay visual rápido e subtil de carregamento inicial
-      if (!isMore) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
+      await new Promise(resolve => setTimeout(resolve, 800));
       if (!active) return;
 
-      const now = Date.now();
-      // Reutiliza a cache local se o limite for idêntico e o intervalo for < 30s
-      if (!isMore && now - lastFetchTime < 30000 && cachedAds.length > 0 && cachedLimit === limitAmount) {
-        setAds(cachedAds);
-        setHasMore(cachedHasMore);
-        setLoading(false);
-        return;
-      }
-
       try {
-        const queryLimit = limitAmount + 30; // Garante margem para não contar destacados ativos no limite
-        const q = query(
-          collection(db, 'ads'),
-          where('status', '==', 'approved'),
-          limit(queryLimit)
-        );
+        let snapshot;
+        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a 1000 documentos
+        try {
+          const q = query(
+            collection(db, 'ads'),
+            where('status', '==', 'approved'),
+            // @ts-ignore
+            orderBy('createdAt', 'desc'),
+            limit(1000)
+          );
+          snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads-ordered'), 20000);
+        } catch (idxErr) {
+          console.warn("[Home] Query ordenada falhou (falta de índice composto), recorrendo a query plana e ordenação em memória:", idxErr);
+          const q = query(
+            collection(db, 'ads'),
+            where('status', '==', 'approved'),
+            limit(1000)
+          );
+          snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads-flat'), 20000);
+        }
 
-        const snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-limit-${limitAmount}`), 30000);
         if (!active) return;
 
         const docs = snapshot.docs;
-        
-        let normalDocsCount = 0;
-        const visibleDocs: typeof docs = [];
-        const currentDate = new Date();
+        const adsData = docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
 
-        for (const doc of docs) {
-          const data = doc.data() as Ad;
-          const isFeatured = data.isFeatured && data.featuredUntil && (
-            data.featuredUntil.seconds 
-              ? data.featuredUntil.toDate() > currentDate
-              : new Date(data.featuredUntil) > currentDate
-          ) && data.adStatus !== 'expired';
-
-          if (isFeatured) {
-            visibleDocs.push(doc);
-          } else {
-            if (normalDocsCount < limitAmount) {
-              visibleDocs.push(doc);
-              normalDocsCount++;
-            }
-          }
-        }
-
-        const adsData = visibleDocs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
-        const gotMore = docs.length === queryLimit;
+        // Garantir ordenação por data de criação de forma estrita em memória para evitar variações não-determinísticas
+        adsData.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1050 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          return (timeB || 0) - (timeA || 0);
+        });
 
         setAds(adsData);
-        setHasMore(gotMore);
-
-        cachedAds = adsData;
-        cachedHasMore = gotMore;
-        cachedLimit = limitAmount;
-        lastFetchTime = now;
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
         if (active) setErrorMsg("Erro ao carregar anúncios.");
       } finally {
         if (active) {
           setLoading(false);
-          setIsFetchingMore(false);
         }
       }
     };
 
-    const isMoreFetch = limitAmount > PAGE_SIZE;
-    fetchAds(isMoreFetch);
-
+    fetchAds();
     return () => { active = false; };
-  }, [limitAmount]);
+  }, []); // Carrega uma única vez ao montar de forma altamente otimizada, ou depende apenas da montagem
 
   const handleLoadMore = () => {
-    if (!isFetchingMore) {
+    if (isFetchingMore) return;
+    setIsFetchingMore(true);
+    // Simula delay de carregamento estético rápido para transição suave de paginação local
+    setTimeout(() => {
       setLimitAmount(prev => prev + PAGE_SIZE);
-    }
+      setIsFetchingMore(false);
+    }, 450);
   };
 
   const selectableCitiesOnHome = useMemo(() => {
@@ -483,6 +444,24 @@ const Home = () => {
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
     return result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   }, [ads, searchTerm, category, city, country]);
+
+  // Contagem calculada de anúncios aprovados em tempo real de acordo com as diretrizes de contexto de país e expiração de anúncios
+  const totalApprovedCount = useMemo(() => {
+    return ads.filter(ad => {
+      const adCountry = ad.country || 'Portugal';
+      const isNotExpired = !ad.adStatus || ad.adStatus !== 'expired';
+      return adCountry === country && isNotExpired;
+    }).length;
+  }, [ads, country]);
+
+  // Paginação inteligente de anúncios filtrados em memória (carregamento instantâneo offline-first)
+  const displayedAds = useMemo(() => {
+    return filteredAds.slice(0, limitAmount);
+  }, [filteredAds, limitAmount]);
+
+  const hasMore = useMemo(() => {
+    return filteredAds.length > limitAmount;
+  }, [filteredAds, limitAmount]);
 
   return (
     <div className="flex flex-col gap-3 md:gap-6">
@@ -688,18 +667,24 @@ const Home = () => {
                   </div>
 
                   {/* Contador de Anúncios Slim */}
-                  {settings?.showTotalAdsBadge !== false && (
+                  {(settings?.showTotalAdsBadge === true || isModeratorOrAdmin) && (
                     <div 
                       style={{
                         backgroundColor: customBg || 'rgba(0,0,0,0.3)',
                         borderColor: customBorder || 'rgba(255,255,255,0.1)',
                       }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner`}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
                     >
                       <span className={`${txtColorClass} font-black text-sm md:text-lg mr-2`}>
                         {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
                       </span>
                       <span className={`${txtMutedClass} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Anúncios</span>
+
+                      {!settings?.showTotalAdsBadge && isModeratorOrAdmin && (
+                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                          🔒 Oculto para o público (Visto por Staff)
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -887,7 +872,7 @@ const Home = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
-            {filteredAds.map((ad) => (
+            {displayedAds.map((ad) => (
               <AdCard key={ad.id} ad={ad} />
             ))}
           </div>
