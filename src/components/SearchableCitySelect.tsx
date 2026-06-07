@@ -8,7 +8,7 @@ interface SearchableCitySelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
-  country?: 'Portugal' | 'Reino Unido';
+  country?: 'Portugal' | 'Reino Unido' | '';
 }
 
 export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
@@ -47,7 +47,8 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
 
   const activeCities = useMemo(() => {
     if (country === 'Reino Unido') return UK_CITIES;
-    return PORTUGAL_CITIES;
+    if (country === 'Portugal') return PORTUGAL_CITIES;
+    return [];
   }, [country]);
 
   const filteredCities = activeCities.filter(city =>
@@ -76,7 +77,13 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
       <button
         type="button"
         id="searchable-city-select-trigger"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!country) {
+            alert('Por favor, selecione primeiro o país.');
+            return;
+          }
+          setIsOpen(!isOpen);
+        }}
         className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium text-left flex items-center justify-between text-slate-900 group"
       >
         <span className="flex items-center gap-1.5 truncate">

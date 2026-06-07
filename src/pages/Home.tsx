@@ -65,8 +65,10 @@ const Home = () => {
   const isLightText = !(isColorLight(settings?.searchGroupBgColor) && (settings?.searchGroupOpacity || 10) > 40);
   
   const txtColorClass = isLightText ? 'text-white' : 'text-slate-900';
-  const txtMutedClass = isLightText ? 'text-white/60' : 'text-slate-900/60';
-  const placeholderClass = isLightText ? 'placeholder:text-white/50' : 'placeholder:text-slate-900/50';
+  const txtMutedClass = isLightText ? 'text-white/75' : 'text-slate-900/75';
+  const placeholderClass = isLightText 
+    ? 'placeholder:text-white/80 placeholder:font-black placeholder:tracking-wide placeholder:uppercase placeholder:text-[10px] sm:placeholder:text-[11px]' 
+    : 'placeholder:text-slate-900/80 placeholder:font-black placeholder:tracking-wide placeholder:uppercase placeholder:text-[10px] sm:placeholder:text-[11px]';
   const blurClass = settings?.searchGroupOpacity === 0 ? '' : 'backdrop-blur-3xl';
 
   const getDropdownBgStyle = (currentCountry: string) => {
@@ -509,21 +511,21 @@ const Home = () => {
                 </p>
 
                 {/* Barra de Pesquisa Minimalista */}
-                <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-2.5 md:mb-3.5 group">
+                <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-3 md:mb-4 group">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onFocus={handleSearchFocus}
-                    placeholder="O que procura hoje?"
-                    className={`w-full ${blurClass} rounded-full py-2 sm:py-2.5 pl-5 sm:pl-6 pr-10 sm:pr-12 ${txtColorClass} ${placeholderClass} outline-none focus:ring-2 focus:ring-white/30 transition-all shadow-xl text-xs sm:text-sm border`}
+                    placeholder="✨ O que procura hoje? Digite aqui..."
+                    className={`w-full ${blurClass} rounded-full py-3 sm:py-3.5 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-sm sm:text-base focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
                     style={{
-                      backgroundColor: customBg || 'rgba(255,255,255,0.1)',
+                      backgroundColor: customBg || 'rgba(15,23,42,0.3)',
                       borderColor: customBorder || 'rgba(255,255,255,0.2)',
                     }}
                   />
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    <Search size={16} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors`} />
+                  <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
+                    <Search size={20} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors group-focus-within:scale-110 duration-300`} />
                   </div>
                 </div>
 
@@ -564,7 +566,7 @@ const Home = () => {
                         borderColor: customBorder || 'rgba(255,255,255,0.4)',
                         ...getFlagBgStyle(country)
                       }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none`}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none animate-country-pulse`}
                       title="Mudar de Comunidade"
                       id="community-toggle-button"
                     >

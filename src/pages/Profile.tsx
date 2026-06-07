@@ -24,7 +24,7 @@ const Profile = () => {
   const [countryCode, setCountryCode] = useState('+351');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
-  const [country, setCountry] = useState<'Portugal' | 'Reino Unido'>('Portugal');
+  const [country, setCountry] = useState<'Portugal' | 'Reino Unido' | ''>('');
   const [loading, setLoading] = useState(false);
   const [ads, setAds] = useState<Ad[]>([]);
   const [adsLoading, setAdsLoading] = useState(true);
@@ -142,9 +142,8 @@ const Profile = () => {
       if (profile.country === 'Portugal' || profile.country === 'Reino Unido') {
         setCountry(profile.country);
       } else {
-        // Fallback to localStorage or Portugal
-        const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
-        setCountry(saved === 'Portugal' || saved === 'Reino Unido' ? saved : 'Portugal');
+        // Primeira vez: Deixa em branco para forçar o utilizador a escolher o país
+        setCountry('');
       }
       fetchUserAds();
       fetchUserReviews(user?.uid || '');
@@ -200,6 +199,10 @@ const Profile = () => {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!country) {
+      alert('Por favor, selecione primeiro o país.');
+      return;
+    }
     setLoading(true);
     try {
       const docRef = doc(db, 'users', user.uid);
@@ -370,16 +373,24 @@ const Profile = () => {
             <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">País / Comunidade</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base leading-none select-none pointer-events-none z-10">
-                {country === 'Portugal' ? '🇵🇹' : '🇬🇧'}
+                {country === 'Portugal' ? '🇵🇹' : country === 'Reino Unido' ? '🇬🇧' : '🌍'}
               </span>
               <select
                 value={country}
                 onChange={(e) => {
-                  setCountry(e.target.value as 'Portugal' | 'Reino Unido');
+                  const newVal = e.target.value as 'Portugal' | 'Reino Unido' | '';
+                  setCountry(newVal);
                   setCity('');
+                  if (newVal === 'Reino Unido') {
+                    setCountryCode('+44');
+                  } else if (newVal === 'Portugal') {
+                    setCountryCode('+351');
+                  }
                 }}
+                required
                 className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer"
               >
+                <option value="" disabled className="text-slate-400">Selecione o seu país</option>
                 <option value="Portugal">🇵🇹 Portugal</option>
                 <option value="Reino Unido">🇬🇧 Reino Unido</option>
               </select>
