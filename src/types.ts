@@ -97,6 +97,7 @@ export interface Ad {
   pointsEarned?: boolean;
   imagePositionX?: number;
   imagePositionY?: number;
+  imageZoom?: number;
 }
 
 export interface Favorite {

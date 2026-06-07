@@ -38,12 +38,14 @@ const AdminAds = () => {
 
   const [adminImagePositionX, setAdminImagePositionX] = useState<number>(50);
   const [adminImagePositionY, setAdminImagePositionY] = useState<number>(50);
+  const [adminImageZoom, setAdminImageZoom] = useState<number>(1);
   const [savingPosition, setSavingPosition] = useState(false);
 
   useEffect(() => {
     if (selectedAd) {
       setAdminImagePositionX(selectedAd.imagePositionX !== undefined ? selectedAd.imagePositionX : 50);
       setAdminImagePositionY(selectedAd.imagePositionY !== undefined ? selectedAd.imagePositionY : 50);
+      setAdminImageZoom(selectedAd.imageZoom !== undefined ? selectedAd.imageZoom : 1);
     }
   }, [selectedAd]);
 
@@ -54,17 +56,20 @@ const AdminAds = () => {
       await updateDoc(doc(db, 'ads', selectedAd.id), {
         imagePositionX: adminImagePositionX,
         imagePositionY: adminImagePositionY,
+        imageZoom: adminImageZoom,
         updatedAt: serverTimestamp()
       });
       setAds(prevAds => prevAds.map(ad => ad.id === selectedAd.id ? { 
         ...ad, 
         imagePositionX: adminImagePositionX, 
-        imagePositionY: adminImagePositionY 
+        imagePositionY: adminImagePositionY,
+        imageZoom: adminImageZoom
       } as Ad : ad));
       setSelectedAd(prev => prev ? {
         ...prev,
         imagePositionX: adminImagePositionX,
-        imagePositionY: adminImagePositionY
+        imagePositionY: adminImagePositionY,
+        imageZoom: adminImageZoom
       } : null);
       alert('Enquadramento do anúncio guardado com sucesso!');
     } catch (err) {
@@ -503,7 +508,18 @@ const AdminAds = () => {
                           src={selectedAd.imageUrl} 
                           alt="Visualização do enquadramento" 
                           className="w-full h-full object-cover transition-all duration-75"
-                          style={{ objectPosition: `${adminImagePositionX}% ${adminImagePositionY}%` }}
+                          style={{
+                            objectPosition: `${adminImagePositionX}% ${adminImagePositionY}%`,
+                            transform: `scale(${adminImageZoom}) translate(${
+                              adminImageZoom > 1
+                                ? (adminImagePositionX - 50) * (adminImageZoom - 1) / adminImageZoom
+                                : 0
+                            }%, ${
+                              adminImageZoom > 1
+                                ? (adminImagePositionY - 50) * (adminImageZoom - 1) / adminImageZoom
+                                : 0
+                            }%)`
+                          }}
                           referrerPolicy="no-referrer"
                         />
                       </div>
@@ -541,6 +557,22 @@ const AdminAds = () => {
                         />
                       </div>
 
+                      <div>
+                        <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-0.5">
+                          <span>Zoom</span>
+                          <span className="font-mono text-indigo-600">{adminImageZoom.toFixed(2)}x</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="1.8"
+                          step="0.05"
+                          value={adminImageZoom}
+                          onChange={(e) => setAdminImageZoom(Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-zoom-in accent-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
                       <div className="flex gap-2 pt-1">
                         <button
                           type="button"
@@ -557,6 +589,7 @@ const AdminAds = () => {
                           onClick={() => {
                             setAdminImagePositionX(50);
                             setAdminImagePositionY(50);
+                            setAdminImageZoom(1);
                           }}
                           className="flex-1 py-1.5 px-2 bg-slate-100 border border-slate-200 hover:bg-slate-200/60 text-[10px] font-bold text-slate-600 rounded-lg transition-colors cursor-pointer text-center"
                         >

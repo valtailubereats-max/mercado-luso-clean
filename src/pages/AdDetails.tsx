@@ -334,13 +334,22 @@ const AdDetails = () => {
             <img
               src={images[currentImageIndex]}
               alt={ad.title}
-              className="w-full h-full object-contain relative z-10 cursor-zoom-in"
+              className="w-full h-full object-cover relative z-10 cursor-zoom-in"
               onClick={() => setShowFullImage(true)}
               referrerPolicy="no-referrer"
               style={currentImageIndex === 0 ? {
                 objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
                   ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
-                  : '50% 50%'
+                  : '50% 50%',
+                transform: `scale(${ad.imageZoom || 1}) translate(${
+                  ad.imageZoom && ad.imageZoom > 1
+                    ? ((ad.imagePositionX || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                    : 0
+                }%, ${
+                  ad.imageZoom && ad.imageZoom > 1
+                    ? ((ad.imagePositionY || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                    : 0
+                }%)`
               } : undefined}
             />
 
@@ -391,7 +400,16 @@ const AdDetails = () => {
                     style={i === 0 ? {
                       objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
                         ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
-                        : '50% 50%'
+                        : '50% 50%',
+                      transform: `scale(${ad.imageZoom || 1}) translate(${
+                        ad.imageZoom && ad.imageZoom > 1
+                          ? ((ad.imagePositionX || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                          : 0
+                      }%, ${
+                        ad.imageZoom && ad.imageZoom > 1
+                          ? ((ad.imagePositionY || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                          : 0
+                      }%)`
                     } : undefined}
                   />
                 </button>

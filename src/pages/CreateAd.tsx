@@ -46,6 +46,57 @@ const CreateAd = () => {
 
   const [imagePositionX, setImagePositionX] = useState<number>(50);
   const [imagePositionY, setImagePositionY] = useState<number>(50);
+  const [imageZoom, setImageZoom] = useState<number>(1);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0, posX: 50, posY: 50 });
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDraggingImage(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      posX: imagePositionX,
+      posY: imagePositionY
+    };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingImage || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
+
+    const scaleFactor = imageZoom > 1 ? 1 / imageZoom : 1.5;
+    const shiftX = (deltaX / rect.width) * 100 * scaleFactor;
+    const shiftY = (deltaY / rect.height) * 100 * scaleFactor;
+
+    const nextX = Math.min(100, Math.max(0, dragStartRef.current.posX - shiftX));
+    const nextY = Math.min(100, Math.max(0, dragStartRef.current.posY - shiftY));
+
+    setImagePositionX(Math.round(nextX));
+    setImagePositionY(Math.round(nextY));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingImage) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      setIsDraggingImage(false);
+    }
+  };
+
+  const getAdImageStyle = (x: number, y: number, z: number) => {
+    const scale = z;
+    const translateX = scale > 1 ? ((x - 50) * (scale - 1)) / scale : 0;
+    const translateY = scale > 1 ? ((y - 50) * (scale - 1)) / scale : 0;
+    return {
+      objectPosition: `${x}% ${y}%`,
+      transform: `scale(${scale}) translate(${translateX}%, ${translateY}%)`,
+    };
+  };
 
   const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido') => {
     const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
@@ -80,24 +131,32 @@ const CreateAd = () => {
     }
   };
 
+  const prefilledFromProfileRef = useRef(false);
+
   useEffect(() => {
-    if (!id && !prefill) {
+    if (!id && !prefill && !authLoading && !prefilledFromProfileRef.current) {
+      prefilledFromProfileRef.current = true;
       const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
       let targetCountry: 'Portugal' | 'Reino Unido' = 'Portugal';
+      
       if (profile?.country === 'Portugal' || profile?.country === 'Reino Unido') {
         targetCountry = profile.country;
       } else if (saved === 'Portugal' || saved === 'Reino Unido') {
         targetCountry = saved;
       }
       
-      const defaultCity = targetCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
+      let targetCity = targetCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
+      if (profile?.city) {
+        targetCity = profile.city;
+      }
+      
       setFormData(prev => ({
         ...prev,
         country: targetCountry,
-        city: defaultCity
+        city: targetCity
       }));
     }
-  }, [profile, id, prefill]);
+  }, [profile, authLoading, id, prefill]);
 
   const fetchAd = async () => {
     setFetching(true);
@@ -127,6 +186,7 @@ const CreateAd = () => {
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
+        setImageZoom(data.imageZoom !== undefined ? data.imageZoom : 1);
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.GET, `ads/${id}`);
@@ -329,7 +389,8 @@ const CreateAd = () => {
         contactEmail: formData.category === 'Imigração' ? (formData.contactEmail || '') : '',
         externalUrl: formData.category === 'Imigração' ? (formData.externalUrl || '') : '',
         imagePositionX: imagePositionX,
-        imagePositionY: imagePositionY
+        imagePositionY: imagePositionY,
+        imageZoom: imageZoom
       };
 
       await setDoc(doc(db, 'ads', adId), adData, { merge: true });
@@ -401,7 +462,7 @@ const CreateAd = () => {
                         src={url} 
                         alt={`Preview ${index}`} 
                         className="w-full h-full object-cover" 
-                        style={index === 0 ? { objectPosition: `${imagePositionX}% ${imagePositionY}%` } : undefined} 
+                        style={index === 0 ? getAdImageStyle(imagePositionX, imagePositionY, imageZoom) : undefined} 
                       />
                       <button
                         type="button"
@@ -470,20 +531,30 @@ const CreateAd = () => {
                   Enquadramento da Foto Principal (Ajuste Visual)
                 </h4>
                 <p className="text-xs text-slate-500 mb-4">
-                  Ajuste o foco e o enquadramento usando os sliders abaixo. Isto altera apenas como a foto é exibida na comunidade, sem modificar o ficheiro original.
+                  Ajuste o foco, o alinhamento e o zoom usando os sliders abaixo ou <strong>arraste a imagem diretamente com o rato/dedo</strong> no preview à esquerda. No mobile, arraste para ajustar.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                  {/* Live Interactive Preview Box */}
+                  {/* Live Interactive Preview Box with pointer handlers */}
                   <div className="flex flex-col items-center justify-center">
                     <div className="text-xs font-bold text-slate-400 uppercase mb-2 tracking-tighter">Preview de Proporção (Quadrado / Cartão)</div>
-                    <div className="w-full max-w-[200px] aspect-square bg-slate-200 rounded-2xl overflow-hidden border border-slate-300 shadow-inner relative">
+                    <div 
+                      ref={containerRef}
+                      onPointerDown={handlePointerDown}
+                      onPointerMove={handlePointerMove}
+                      onPointerUp={handlePointerUp}
+                      onPointerCancel={handlePointerUp}
+                      className="w-full max-w-[200px] aspect-square bg-slate-200 rounded-2xl overflow-hidden border border-slate-300 shadow-inner relative cursor-move select-none touch-none group"
+                    >
                       <img 
                         src={formData.images[0]} 
                         alt="Ajuste de enquadramento" 
-                        className="w-full h-full object-cover transition-all duration-75"
-                        style={{ objectPosition: `${imagePositionX}% ${imagePositionY}%` }}
+                        className="w-full h-full object-cover pointer-events-none transition-all duration-75"
+                        style={getAdImageStyle(imagePositionX, imagePositionY, imageZoom)}
                       />
+                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2 rounded-full pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+                        Arraste 🖐️
+                      </div>
                     </div>
                   </div>
 
@@ -531,6 +602,28 @@ const CreateAd = () => {
                       </div>
                     </div>
 
+                    {/* Zoom Slider */}
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">
+                        <span>Zoom</span>
+                        <span className="text-indigo-600 font-mono">{imageZoom.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="1.8"
+                        step="0.05"
+                        value={imageZoom}
+                        onChange={(e) => setImageZoom(Number(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-zoom-in accent-indigo-600 focus:outline-none"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
+                        <span>Mínimo (1x)</span>
+                        <span>Zoom</span>
+                        <span>Máximo (1.8x)</span>
+                      </div>
+                    </div>
+
                     {/* Reset/Center Buttons */}
                     <div className="flex gap-2 pt-2">
                       <button
@@ -539,7 +632,7 @@ const CreateAd = () => {
                           setImagePositionX(50);
                           setImagePositionY(50);
                         }}
-                        className="flex-1 py-2 px-3 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
+                        className="flex-1 py-1.5 px-3 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
                       >
                         Centralizar
                       </button>
@@ -548,8 +641,9 @@ const CreateAd = () => {
                         onClick={() => {
                           setImagePositionX(50);
                           setImagePositionY(50);
+                          setImageZoom(1);
                         }}
-                        className="flex-1 py-2 px-3 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
+                        className="flex-1 py-1.5 px-3 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
                       >
                         Repor Ajuste
                       </button>

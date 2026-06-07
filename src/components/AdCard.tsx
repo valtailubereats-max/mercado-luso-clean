@@ -21,6 +21,7 @@ interface AdCardProps {
 const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const { user, favorites, toggleFavoriteGlobal } = useAuth();
   const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
   const [showContactWarning, setShowContactWarning] = useState(false);
@@ -248,6 +249,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
           navigate(getAdUrl(ad));
         }}
@@ -270,12 +273,21 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           <OptimizedImage
             src={ad.imageUrl}
             alt={ad.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-500"
             referrerPolicy="no-referrer"
             style={{
               objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
                 ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
-                : '50% 50%'
+                : '50% 50%',
+              transform: `scale(${(ad.imageZoom || 1) * (isHovered ? 1.08 : 1)}) translate(${
+                ad.imageZoom && ad.imageZoom > 1
+                  ? ((ad.imagePositionX || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                  : 0
+              }%, ${
+                ad.imageZoom && ad.imageZoom > 1
+                  ? ((ad.imagePositionY || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                  : 0
+              }%)`
             }}
           />
         </div>

@@ -481,7 +481,7 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/20 hidden lg:block" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full px-4 sm:px-6 py-5 md:py-8 lg:py-10">
+        <div className="relative z-10 mx-auto w-full px-4 sm:px-6 py-3 md:py-8 lg:py-10">
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }}
@@ -490,7 +490,7 @@ const Home = () => {
             <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
 
               {/* Área principal: comunidade ativa */}
-              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[235px] md:min-h-[340px] lg:min-h-[390px] px-2 sm:px-5 lg:px-10 py-4 lg:py-8">
+              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[175px] md:min-h-[340px] lg:min-h-[390px] px-2 sm:px-5 lg:px-10 py-2 sm:py-4 lg:py-8">
 
                 {/* Título com Tipografia Premium */}
                 <h1 
