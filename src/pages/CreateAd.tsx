@@ -534,32 +534,53 @@ const CreateAd = () => {
                   Ajuste o foco, o alinhamento e o zoom usando os sliders abaixo ou <strong>arraste a imagem diretamente com o rato/dedo</strong> no preview à esquerda. No mobile, arraste para ajustar.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                  {/* Live Interactive Preview Box with pointer handlers */}
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="text-xs font-bold text-slate-400 uppercase mb-2 tracking-tighter">Preview de Proporção (Quadrado / Cartão)</div>
-                    <div 
-                      ref={containerRef}
-                      onPointerDown={handlePointerDown}
-                      onPointerMove={handlePointerMove}
-                      onPointerUp={handlePointerUp}
-                      onPointerCancel={handlePointerUp}
-                      className="w-full max-w-[200px] aspect-square bg-slate-200 rounded-2xl overflow-hidden border border-slate-300 shadow-inner relative cursor-move select-none touch-none group"
-                    >
-                      <img 
-                        src={formData.images[0]} 
-                        alt="Ajuste de enquadramento" 
-                        className="w-full h-full object-cover pointer-events-none transition-all duration-75"
-                        style={getAdImageStyle(imagePositionX, imagePositionY, imageZoom)}
-                      />
-                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2 rounded-full pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
-                        Arraste 🖐️
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                  {/* Both Previews Box (Original + Card Crop) - Spans 7 cols on large screens */}
+                  <div className="lg:col-span-7 flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    
+                    {/* Imagem Original Preview - Reference */}
+                    <div className="flex flex-col items-center">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-tighter text-center">
+                        Imagem Original (Referência)
+                      </div>
+                      <div className="w-[170px] h-[170px] sm:w-[180px] sm:h-[180px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-300 shadow-inner relative flex items-center justify-center">
+                        <img 
+                          src={formData.images[0]} 
+                          alt="Imagem original sem corte" 
+                          className="w-full h-full object-contain pointer-events-none"
+                        />
                       </div>
                     </div>
+
+                    {/* Como Ficará No Card Preview - Interactive */}
+                    <div className="flex flex-col items-center">
+                      <div className="text-[10px] font-bold text-indigo-500 uppercase mb-2 tracking-tighter text-center">
+                        Como ficará no Card (Arraste)
+                      </div>
+                      <div 
+                        ref={containerRef}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        className="w-[170px] h-[170px] sm:w-[180px] sm:h-[180px] bg-slate-200 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-lg relative cursor-move select-none touch-none group"
+                      >
+                        <img 
+                          src={formData.images[0]} 
+                          alt="Ajuste de enquadramento" 
+                          className="w-full h-full object-cover pointer-events-none transition-all duration-75"
+                          style={getAdImageStyle(imagePositionX, imagePositionY, imageZoom)}
+                        />
+                        <div className="absolute top-2 right-2 bg-indigo-600/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2 rounded-full pointer-events-none shadow">
+                          Arraste 🖐️
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
 
-                  {/* Slider Controls Box */}
-                  <div className="space-y-4">
+                  {/* Slider Controls Box - Spans 5 cols on large screens */}
+                  <div className="lg:col-span-5 space-y-4">
                     {/* Horizontal Slider */}
                     <div>
                       <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">

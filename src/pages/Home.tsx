@@ -500,7 +500,7 @@ const Home = () => {
                     setSearchTerm('');
                   }}
                   title="Resetar filtros"
-                  className="text-sm xs:text-base sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.75)] mb-0.5 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none whitespace-nowrap overflow-hidden text-ellipsis"
+                  className="text-lg xs:text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.75)] mb-1 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none w-[80%] max-w-[80%] mx-auto lg:mx-0 break-words text-balance"
                 >
                   Mercado da Língua Portuguesa
                 </h1>

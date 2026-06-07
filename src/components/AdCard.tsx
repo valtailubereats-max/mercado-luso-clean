@@ -255,12 +255,14 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           navigate(getAdUrl(ad));
         }}
         className={`card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer relative transition-all duration-300 ${
-          isAdFeatured 
-            ? 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
-            : ''
+          isFeaturedVariant
+            ? '!bg-gradient-to-br !from-[#fffdf4] !to-[#faf5e6] !border-amber-200/80 shadow-lg shadow-amber-100/40 hover:!border-amber-300 hover:shadow-xl hover:shadow-amber-100/60'
+            : isAdFeatured 
+              ? 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
+              : ''
         }`}
       >
-        <div className="relative aspect-square overflow-hidden bg-slate-50">
+        <div className={`relative aspect-square overflow-hidden ${isFeaturedVariant ? 'bg-[#faf5e6]' : 'bg-slate-50'}`}>
           {isAdFeatured && (
             <div className={`absolute z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white font-black rounded-full shadow-md flex items-center justify-center ${
               isFeaturedVariant 
