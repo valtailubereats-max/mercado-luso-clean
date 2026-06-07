@@ -272,6 +272,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
             alt={ad.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             referrerPolicy="no-referrer"
+            style={{
+              objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
+                ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
+                : '50% 50%'
+            }}
           />
         </div>
 

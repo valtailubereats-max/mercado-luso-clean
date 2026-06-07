@@ -21,7 +21,8 @@ import {
   AlertCircle,
   X,
   MapPin,
-  Tag
+  Tag,
+  Image as ImageIcon
 } from 'lucide-react';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -34,6 +35,45 @@ const AdminAds = () => {
   const [adFilter, setAdFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+
+  const [adminImagePositionX, setAdminImagePositionX] = useState<number>(50);
+  const [adminImagePositionY, setAdminImagePositionY] = useState<number>(50);
+  const [savingPosition, setSavingPosition] = useState(false);
+
+  useEffect(() => {
+    if (selectedAd) {
+      setAdminImagePositionX(selectedAd.imagePositionX !== undefined ? selectedAd.imagePositionX : 50);
+      setAdminImagePositionY(selectedAd.imagePositionY !== undefined ? selectedAd.imagePositionY : 50);
+    }
+  }, [selectedAd]);
+
+  const handleSaveEnquadramento = async () => {
+    if (!selectedAd) return;
+    setSavingPosition(true);
+    try {
+      await updateDoc(doc(db, 'ads', selectedAd.id), {
+        imagePositionX: adminImagePositionX,
+        imagePositionY: adminImagePositionY,
+        updatedAt: serverTimestamp()
+      });
+      setAds(prevAds => prevAds.map(ad => ad.id === selectedAd.id ? { 
+        ...ad, 
+        imagePositionX: adminImagePositionX, 
+        imagePositionY: adminImagePositionY 
+      } as Ad : ad));
+      setSelectedAd(prev => prev ? {
+        ...prev,
+        imagePositionX: adminImagePositionX,
+        imagePositionY: adminImagePositionY
+      } : null);
+      alert('Enquadramento do anúncio guardado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao guardar enquadramento.');
+    } finally {
+      setSavingPosition(false);
+    }
+  };
 
   useEffect(() => {
     fetchAds();
@@ -445,6 +485,97 @@ const AdminAds = () => {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Ajuste de Enquadramento */}
+                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5 pb-2 border-b border-slate-200">
+                    <ImageIcon size={14} className="text-indigo-500" />
+                    Enquadramento de Imagem (Ajuste Administrador)
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    {/* Live Preview Box */}
+                    <div className="flex flex-col items-center">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Live Preview (Card/Cover)</p>
+                      <div className="w-28 h-28 bg-slate-200 rounded-xl overflow-hidden border border-slate-300 relative shadow-inner">
+                        <img 
+                          src={selectedAd.imageUrl} 
+                          alt="Visualização do enquadramento" 
+                          className="w-full h-full object-cover transition-all duration-75"
+                          style={{ objectPosition: `${adminImagePositionX}% ${adminImagePositionY}%` }}
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sliders and Action Buttons */}
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-0.5">
+                          <span>Horizontal</span>
+                          <span className="font-mono text-indigo-600">{adminImagePositionX}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={adminImagePositionX}
+                          onChange={(e) => setAdminImagePositionX(Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-ew-resize accent-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-0.5">
+                          <span>Vertical</span>
+                          <span className="font-mono text-indigo-600">{adminImagePositionY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={adminImagePositionY}
+                          onChange={(e) => setAdminImagePositionY(Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-ns-resize accent-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdminImagePositionX(50);
+                            setAdminImagePositionY(50);
+                          }}
+                          className="flex-1 py-1.5 px-2 bg-indigo-50 border border-indigo-100/70 hover:bg-indigo-100/60 text-[10px] font-bold text-indigo-600 rounded-lg transition-colors cursor-pointer text-center"
+                        >
+                          Centralizar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdminImagePositionX(50);
+                            setAdminImagePositionY(50);
+                          }}
+                          className="flex-1 py-1.5 px-2 bg-slate-100 border border-slate-200 hover:bg-slate-200/60 text-[10px] font-bold text-slate-600 rounded-lg transition-colors cursor-pointer text-center"
+                        >
+                          Repor
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1 bg-none">
+                    <button
+                      type="button"
+                      disabled={savingPosition}
+                      onClick={handleSaveEnquadramento}
+                      className="w-full bg-slate-900 hover:bg-indigo-600 text-white disabled:opacity-50 font-black text-xs py-2 px-3 rounded-xl transition-all shadow-sm cursor-pointer"
+                    >
+                      {savingPosition ? 'A Guardar...' : 'Guardar Enquadramento'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Badges Info */}

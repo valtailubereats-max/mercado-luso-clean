@@ -78,15 +78,33 @@ const Navbar = () => {
   };
 
   const handleShare = async () => {
+    const officialUrl = 'https://www.mercado-luso.com';
     const shareData = {
       title: 'Mercado Luso',
       text: 'Confira o Mercado Luso - Compre e venda em Portugal de forma simples e segura!',
-      url: window.location.origin,
+      url: officialUrl,
     };
-    try {
-      if (navigator.share) await navigator.share(shareData);
-      else { await navigator.clipboard.writeText(window.location.origin); alert('Link copiado para a área de transferência!'); }
-    } catch (err) { console.error('Error sharing:', err); }
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          try {
+            await navigator.clipboard.writeText(officialUrl);
+            alert('Link copiado com sucesso.');
+          } catch (clipErr) {
+            console.error('Failed to copy fallback:', clipErr);
+          }
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(officialUrl);
+        alert('Link copiado com sucesso.');
+      } catch (err) {
+        console.error('Clipboard copy failed:', err);
+      }
+    }
   };
 
   const handlePublishClick = () => {

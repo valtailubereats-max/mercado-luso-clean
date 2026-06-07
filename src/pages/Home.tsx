@@ -22,6 +22,15 @@ let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
   const { settings, categories } = useSettings();
+  const resultsSectionRef = useRef<HTMLDivElement>(null);
+
+  const handleSearchFocus = () => {
+    setTimeout(() => {
+      if (resultsSectionRef.current) {
+        resultsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  };
   
   const hexToRgba = (hex: string | undefined, opacity: number | undefined) => {
     const color = hex || '#ffffff';
@@ -50,7 +59,7 @@ const Home = () => {
     : undefined;
 
   const customBorder = hasCustomStyles
-    ? hexToRgba(settings?.searchGroupBgColor, Math.min(100, (settings?.searchGroupOpacity ?? 10) + 15))
+    ? hexToRgba(settings?.searchGroupBgColor, settings?.searchGroupOpacity === 0 ? 0 : Math.min(100, (settings?.searchGroupOpacity ?? 10) + 15))
     : undefined;
 
   const isLightText = !(isColorLight(settings?.searchGroupBgColor) && (settings?.searchGroupOpacity || 10) > 40);
@@ -58,6 +67,51 @@ const Home = () => {
   const txtColorClass = isLightText ? 'text-white' : 'text-slate-900';
   const txtMutedClass = isLightText ? 'text-white/60' : 'text-slate-900/60';
   const placeholderClass = isLightText ? 'placeholder:text-white/50' : 'placeholder:text-slate-900/50';
+  const blurClass = settings?.searchGroupOpacity === 0 ? '' : 'backdrop-blur-3xl';
+
+  const getDropdownBgStyle = (currentCountry: string) => {
+    let flagSvg = '';
+    if (currentCountry === 'Portugal') {
+      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect width='240' height='400' fill='%23006600'/%3E%3Crect x='240' width='360' height='400' fill='%23ff0000'/%3E%3Ccircle cx='240' cy='200' r='65' fill='%23ffe600'/%3E%3Cpath d='M240,165 v70 M205,200 h70' stroke='%23ff0000' stroke-width='10'/%3E%3C/svg%3E")`;
+    } else if (currentCountry === 'Reino Unido') {
+      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3Crect width='60' height='30' fill='%23012169'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23fff' stroke-width='6'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23c8102e' stroke-width='4'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23c8102e' stroke-width='6'/%3E%3C/svg%3E")`;
+    } else {
+      return { backgroundColor: '#0f172a' };
+    }
+    return {
+      backgroundImage: flagSvg,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  };
+
+  const getFlagBgStyle = (currentCountry: string) => {
+    let flagSvg = '';
+    if (currentCountry === 'Portugal') {
+      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect width='240' height='400' fill='%23006600'/%3E%3Crect x='240' width='360' height='400' fill='%23ff0000'/%3E%3Ccircle cx='240' cy='200' r='65' fill='%23ffe600'/%3E%3Cpath d='M240,165 v70 M205,200 h70' stroke='%23ff0000' stroke-width='10'/%3E%3C/svg%3E")`;
+    } else if (currentCountry === 'Reino Unido') {
+      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3Crect width='60' height='30' fill='%23012169'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23fff' stroke-width='6'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23c8102e' stroke-width='4'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23c8102e' stroke-width='6'/%3E%3C/svg%3E")`;
+    } else {
+      return {
+        backgroundColor: customBg || 'rgba(255,255,255,0.25)',
+      };
+    }
+
+    const userOpacity = settings?.searchGroupOpacity !== undefined ? settings.searchGroupOpacity / 100 : 0.25;
+    
+    // Dynamically inject opacity attribute in original SVG node string for exact alpha control
+    const dimmedFlagSvg = flagSvg.replace('%3Csvg', `%3Csvg opacity='${userOpacity}'`);
+
+    const overlayColor = hasCustomStyles
+      ? hexToRgba(settings?.searchGroupBgColor, settings?.searchGroupOpacity)
+      : (isLightText ? 'rgba(15, 23, 42, 0.45)' : 'rgba(255, 255, 255, 0.45)');
+
+    return {
+      backgroundImage: `linear-gradient(${overlayColor}, ${overlayColor}), ${dimmedFlagSvg}`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  };
 
   const { profile, isAdmin } = useAuth();
   const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
@@ -376,9 +430,13 @@ const Home = () => {
   };
 
   const selectableCitiesOnHome = useMemo(() => {
-    if (country === 'Portugal') return PORTUGAL_CITIES;
-    return UK_CITIES;
-  }, [country]);
+    const defaultCities = country === 'Portugal' ? PORTUGAL_CITIES : UK_CITIES;
+    const customCities = ads
+      .filter(ad => ad.country === country && ad.city && !defaultCities.includes(ad.city))
+      .map(ad => ad.city) as string[];
+    const uniqueCustom = Array.from(new Set(customCities)).filter(Boolean).sort();
+    return [...defaultCities, ...uniqueCustom];
+  }, [country, ads]);
 
   const filteredFeaturedAds = useMemo(() => {
     const now = new Date();
@@ -477,8 +535,9 @@ const Home = () => {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={handleSearchFocus}
                     placeholder="O que procura hoje?"
-                    className={`w-full backdrop-blur-3xl rounded-full py-3 pl-6 pr-12 ${txtColorClass} ${placeholderClass} outline-none focus:ring-2 focus:ring-white/30 transition-all shadow-xl text-sm border`}
+                    className={`w-full ${blurClass} rounded-full py-3 pl-6 pr-12 ${txtColorClass} ${placeholderClass} outline-none focus:ring-2 focus:ring-white/30 transition-all shadow-xl text-sm border`}
                     style={{
                       backgroundColor: customBg || 'rgba(255,255,255,0.1)',
                       borderColor: customBorder || 'rgba(255,255,255,0.2)',
@@ -499,7 +558,7 @@ const Home = () => {
                         backgroundColor: customBg || 'rgba(255,255,255,0.1)',
                         borderColor: customBorder || 'rgba(255,255,255,0.2)',
                       }}
-                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center backdrop-blur-3xl rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
+                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
                       title="Categoria"
                     >
                       <Tag size={18} />
@@ -523,16 +582,13 @@ const Home = () => {
                         setShowTooltip(false);
                       }}
                       style={{
-                        backgroundColor: customBg || 'rgba(255,255,255,0.25)',
                         borderColor: customBorder || 'rgba(255,255,255,0.4)',
+                        ...getFlagBgStyle(country)
                       }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 backdrop-blur-3xl rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none ${
-                        shouldAnimateButton ? 'animate-country-pulse border-amber-400' : ''
-                      }`}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none`}
                       title="Mudar de Comunidade"
                       id="community-toggle-button"
                     >
-                      <span className="text-base md:text-lg leading-none shrink-0">{getCountryFlag(country)}</span>
                       <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
                       <span className="text-[10px] opacity-60 ml-0.5">▼</span>
                     </button>
@@ -545,7 +601,8 @@ const Home = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute right-0 md:left-0 md:right-auto top-12 md:top-14 z-[9999] w-48 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-2 shadow-2xl divide-y divide-slate-800"
+                          style={getDropdownBgStyle(country)}
+                          className="absolute right-0 md:left-0 md:right-auto top-12 md:top-14 z-[9999] w-48 border border-white/10 text-white rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5"
                         >
                           <button
                             type="button"
@@ -553,8 +610,10 @@ const Home = () => {
                               handleCountryChange('Portugal');
                               setCountryDropdownOpen(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
-                              country === 'Portugal' ? 'bg-indigo-600/30 text-indigo-300' : ''
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
+                              country === 'Portugal' 
+                                ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
+                                : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
                             }`}
                           >
                             <span className="text-lg">🇵🇹</span>
@@ -566,8 +625,10 @@ const Home = () => {
                               handleCountryChange('Reino Unido');
                               setCountryDropdownOpen(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-left text-sm font-bold transition-all cursor-pointer border-none outline-none ${
-                              country === 'Reino Unido' ? 'bg-indigo-600/30 text-indigo-300' : ''
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
+                              country === 'Reino Unido' 
+                                ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
+                                : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
                             }`}
                           >
                             <span className="text-lg">🇬🇧</span>
@@ -611,7 +672,7 @@ const Home = () => {
                         backgroundColor: customBg || 'rgba(255,255,255,0.1)',
                         borderColor: customBorder || 'rgba(255,255,255,0.2)',
                       }}
-                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center backdrop-blur-3xl rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
+                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
                       title="Cidade"
                     >
                       <MapPin size={18} />
@@ -633,7 +694,7 @@ const Home = () => {
                         backgroundColor: customBg || 'rgba(0,0,0,0.3)',
                         borderColor: customBorder || 'rgba(255,255,255,0.1)',
                       }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center backdrop-blur-3xl rounded-full border shadow-inner`}
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner`}
                     >
                       <span className={`${txtColorClass} font-black text-sm md:text-lg mr-2`}>
                         {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
@@ -649,7 +710,7 @@ const Home = () => {
                         backgroundColor: customBg || 'rgba(15,23,42,0.4)',
                         borderColor: customBorder || 'rgba(99,102,241,0.3)',
                       }}
-                      className="h-10 md:h-12 px-4 md:px-5 flex items-center backdrop-blur-3xl rounded-full border shadow-inner group relative select-none"
+                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
                     >
                       <span className={`${isLightText ? 'text-indigo-300' : 'text-indigo-950'} font-black text-sm md:text-lg mr-2`}>
                         {totalUsersCount}
@@ -812,7 +873,7 @@ const Home = () => {
       )}
 
       {/* Grid de Anúncios */}
-      <div className="px-0">
+      <div ref={resultsSectionRef} className="px-0">
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
             {[...Array(5)].map((_, i) => (

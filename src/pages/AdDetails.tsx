@@ -337,6 +337,11 @@ const AdDetails = () => {
               className="w-full h-full object-contain relative z-10 cursor-zoom-in"
               onClick={() => setShowFullImage(true)}
               referrerPolicy="no-referrer"
+              style={currentImageIndex === 0 ? {
+                objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
+                  ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
+                  : '50% 50%'
+              } : undefined}
             />
 
             {/* Favorito Button */}
@@ -379,7 +384,16 @@ const AdDetails = () => {
                     currentImageIndex === i ? 'border-indigo-600 scale-95 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt={`Miniatura ${i}`} className="w-full h-full object-cover" />
+                  <img 
+                    src={img} 
+                    alt={`Miniatura ${i}`} 
+                    className="w-full h-full object-cover" 
+                    style={i === 0 ? {
+                      objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
+                        ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
+                        : '50% 50%'
+                    } : undefined}
+                  />
                 </button>
               ))}
             </div>

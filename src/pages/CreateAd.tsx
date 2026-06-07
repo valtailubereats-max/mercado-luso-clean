@@ -44,6 +44,9 @@ const CreateAd = () => {
     sellerPhone: prefill?.sellerPhone || ''
   });
 
+  const [imagePositionX, setImagePositionX] = useState<number>(50);
+  const [imagePositionY, setImagePositionY] = useState<number>(50);
+
   const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido') => {
     const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
     
@@ -122,6 +125,8 @@ const CreateAd = () => {
           externalUrl: data.externalUrl || '',
           sellerPhone: data.sellerPhone || ''
         });
+        setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
+        setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.GET, `ads/${id}`);
@@ -322,7 +327,9 @@ const CreateAd = () => {
         createdAt: id && originalAd ? originalAd.createdAt : serverTimestamp(),
         updatedAt: serverTimestamp(),
         contactEmail: formData.category === 'Imigração' ? (formData.contactEmail || '') : '',
-        externalUrl: formData.category === 'Imigração' ? (formData.externalUrl || '') : ''
+        externalUrl: formData.category === 'Imigração' ? (formData.externalUrl || '') : '',
+        imagePositionX: imagePositionX,
+        imagePositionY: imagePositionY
       };
 
       await setDoc(doc(db, 'ads', adId), adData, { merge: true });
@@ -390,7 +397,12 @@ const CreateAd = () => {
                       exit={{ opacity: 0, scale: 0.8 }}
                       className="aspect-square bg-slate-100 rounded-2xl overflow-hidden relative group border border-slate-200"
                     >
-                      <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                      <img 
+                        src={url} 
+                        alt={`Preview ${index}`} 
+                        className="w-full h-full object-cover" 
+                        style={index === 0 ? { objectPosition: `${imagePositionX}% ${imagePositionY}%` } : undefined} 
+                      />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
@@ -446,6 +458,106 @@ const CreateAd = () => {
             <p className="text-[10px] text-slate-400 font-medium">
               * A primeira imagem será a principal. Máximo 5MB por arquivo. Otimização automática aplicada.
             </p>
+
+            {formData.images.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-5 bg-slate-50 rounded-2xl border border-slate-200/60"
+              >
+                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                  <ImageIcon size={16} className="text-indigo-500" />
+                  Enquadramento da Foto Principal (Ajuste Visual)
+                </h4>
+                <p className="text-xs text-slate-500 mb-4">
+                  Ajuste o foco e o enquadramento usando os sliders abaixo. Isto altera apenas como a foto é exibida na comunidade, sem modificar o ficheiro original.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                  {/* Live Interactive Preview Box */}
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="text-xs font-bold text-slate-400 uppercase mb-2 tracking-tighter">Preview de Proporção (Quadrado / Cartão)</div>
+                    <div className="w-full max-w-[200px] aspect-square bg-slate-200 rounded-2xl overflow-hidden border border-slate-300 shadow-inner relative">
+                      <img 
+                        src={formData.images[0]} 
+                        alt="Ajuste de enquadramento" 
+                        className="w-full h-full object-cover transition-all duration-75"
+                        style={{ objectPosition: `${imagePositionX}% ${imagePositionY}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Slider Controls Box */}
+                  <div className="space-y-4">
+                    {/* Horizontal Slider */}
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">
+                        <span>Ajuste Horizontal</span>
+                        <span className="text-indigo-600 font-mono">{imagePositionX}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={imagePositionX}
+                        onChange={(e) => setImagePositionX(Number(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-ew-resize accent-indigo-600 focus:outline-none"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
+                        <span>Esquerda</span>
+                        <span>Centro</span>
+                        <span>Direita</span>
+                      </div>
+                    </div>
+
+                    {/* Vertical Slider */}
+                    <div>
+                      <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">
+                        <span>Ajuste Vertical</span>
+                        <span className="text-indigo-600 font-mono">{imagePositionY}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={imagePositionY}
+                        onChange={(e) => setImagePositionY(Number(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-ns-resize accent-indigo-600 focus:outline-none"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
+                        <span>Topo</span>
+                        <span>Centro</span>
+                        <span>Fundo</span>
+                      </div>
+                    </div>
+
+                    {/* Reset/Center Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePositionX(50);
+                          setImagePositionY(50);
+                        }}
+                        className="flex-1 py-2 px-3 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
+                      >
+                        Centralizar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePositionX(50);
+                          setImagePositionY(50);
+                        }}
+                        className="flex-1 py-2 px-3 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
+                      >
+                        Repor Ajuste
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

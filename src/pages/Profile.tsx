@@ -674,6 +674,11 @@ const Profile = () => {
                     alt={ad.title} 
                     className="w-full h-full object-contain" 
                     containerClassName="w-24 h-24 rounded-2xl bg-slate-50 overflow-hidden"
+                    style={{
+                      objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
+                        ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
+                        : '50% 50%'
+                    }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">

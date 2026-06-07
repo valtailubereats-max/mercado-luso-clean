@@ -95,6 +95,8 @@ export interface Ad {
   isFeatured?: boolean;
   featuredUntil?: any; // Firestore Timestamp
   pointsEarned?: boolean;
+  imagePositionX?: number;
+  imagePositionY?: number;
 }
 
 export interface Favorite {

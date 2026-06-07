@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { doc, setDoc } from 'firebase/firestore';
-import { db, getDocWithCacheFallback } from '../firebase';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 import { MarketplaceSettings, CATEGORIES } from '../types';
 
 interface SettingsContextType {
@@ -24,15 +24,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const safetyTimer = setTimeout(() => {
       console.warn("Settings fetch took too long, fallback loading initiated.");
       setLoading(false);
-    }, 45000);
+    }, 15000);
 
-    const fetchSettings = async () => {
-      try {
-        const docRef = doc(db, 'settings', 'global');
-        const docSnap = await getDocWithCacheFallback(docRef, 'settings/global');
-        
+    const docRef = doc(db, 'settings', 'global');
+    
+    const unsubscribe = onSnapshot(docRef, 
+      (docSnap) => {
         clearTimeout(safetyTimer);
-        
         if (docSnap.exists()) {
           const data = docSnap.data() as MarketplaceSettings;
           setSettings({
@@ -57,18 +55,18 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
           setSettings(defaultSettings);
         }
-      } catch (error) {
+        setLoading(false);
+      },
+      (error) => {
         clearTimeout(safetyTimer);
-        console.error("Settings fetch error:", error);
-      } finally {
+        console.error("Settings listener error:", error);
         setLoading(false);
       }
-    };
-
-    fetchSettings();
+    );
 
     return () => {
       clearTimeout(safetyTimer);
+      unsubscribe();
     };
   }, []);
 
