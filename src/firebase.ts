@@ -48,39 +48,43 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Configura as buscas para tentarem ler primeiro do Cache e apenas depois do Server se necessário
+// Configura as buscas para tentarem ler primeiro do Servidor e apenas do Cache como Fallback (Offline) para garantir dados sempre atualizados em tempo real estando online
 export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'unknown'): Promise<QuerySnapshot> {
-  console.log(`[Firestore Cache Attempt] Tentando ler do Cache para: ${pathLabel}`);
+  console.log(`[Firestore SERVER FETCH] 🌍 Tentando ler do Servidor para: ${pathLabel}`);
   try {
-    const snap = await getDocsFromCache(q);
-    if (!snap.empty) {
-      console.log(`[Firestore Cache HIT] Recuperado com sucesso do Cache (${snap.size} docs) para: ${pathLabel}`);
-      return snap;
-    }
+    const snap = await getDocsFromServer(q);
+    console.log(`[Firestore Server Success] Recuperado com sucesso do Servidor (${snap.size} docs) para: ${pathLabel}`);
+    return snap;
   } catch (err) {
-    // Silently ignore or log cache miss/error in dev
+    console.warn(`[Firestore Server Fallback] Falha ao ler do servidor para: ${pathLabel}. Tentando ler do Cache local...`, err);
+    try {
+      const snap = await getDocsFromCache(q);
+      console.log(`[Firestore Cache HIT] Recuperado com sucesso do Cache local (${snap.size} docs) como fallback para: ${pathLabel}`);
+      return snap;
+    } catch (cacheErr) {
+      console.error(`[Firestore Fatal Error] Falha de leitura e cache para: ${pathLabel}`, cacheErr);
+      throw err;
+    }
   }
-  
-  console.log(`[Firestore SERVER FETCH] 🌍 Realizando busca real no servidor para: ${pathLabel}`);
-  const snap = await getDocsFromServer(q);
-  return snap;
 }
 
 export async function getDocWithCacheFallback(docRef: DocumentReference, pathLabel: string = 'unknown'): Promise<DocumentSnapshot> {
-  console.log(`[Firestore Cache Attempt] Tentando ler do Cache para o documento: ${pathLabel}`);
+  console.log(`[Firestore SERVER FETCH] 🌍 Tentando ler do Servidor para o documento: ${pathLabel}`);
   try {
-    const snap = await getDocFromCache(docRef);
-    if (snap.exists()) {
-      console.log(`[Firestore Cache HIT] Documento recuperado com sucesso do Cache para: ${pathLabel}`);
-      return snap;
-    }
+    const snap = await getDocFromServer(docRef);
+    console.log(`[Firestore Server Success] Documento recuperado do Servidor para: ${pathLabel}`);
+    return snap;
   } catch (err) {
-    // Silently ignore or log cache miss/error in dev
+    console.warn(`[Firestore Server Fallback] Falha ao ler documento do servidor para: ${pathLabel}. Tentando ler do Cache local...`, err);
+    try {
+      const snap = await getDocFromCache(docRef);
+      console.log(`[Firestore Cache HIT] Documento recuperado do Cache local para: ${pathLabel}`);
+      return snap;
+    } catch (cacheErr) {
+      console.error(`[Firestore Fatal Error] Falha de leitura e cache para documento: ${pathLabel}`, cacheErr);
+      throw err;
+    }
   }
-  
-  console.log(`[Firestore SERVER FETCH] 🌍 Realizando busca real no servidor para o documento: ${pathLabel}`);
-  const snap = await getDocFromServer(docRef);
-  return snap;
 }
 
 export const auth = getAuth(app);

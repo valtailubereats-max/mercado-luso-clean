@@ -481,7 +481,7 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/20 hidden lg:block" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full px-4 sm:px-6 py-3 md:py-8 lg:py-10">
+        <div className="relative z-10 mx-auto w-full px-4 sm:px-6 py-2.5 md:py-6 lg:py-8">
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }}
@@ -490,7 +490,7 @@ const Home = () => {
             <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
 
               {/* Área principal: comunidade ativa */}
-              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[175px] md:min-h-[340px] lg:min-h-[390px] px-2 sm:px-5 lg:px-10 py-2 sm:py-4 lg:py-8">
+              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[140px] md:min-h-[250px] lg:min-h-[300px] px-2 sm:px-5 lg:px-10 py-1.5 sm:py-3 lg:py-4">
 
                 {/* Título com Tipografia Premium */}
                 <h1 
@@ -500,30 +500,30 @@ const Home = () => {
                     setSearchTerm('');
                   }}
                   title="Resetar filtros"
-                  className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.75)] mb-1 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none"
+                  className="text-sm xs:text-base sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.75)] mb-0.5 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none whitespace-nowrap overflow-hidden text-ellipsis"
                 >
                   Mercado da Língua Portuguesa
                 </h1>
-                <p className="text-xs md:text-lg font-medium text-white/90 mb-4 md:mb-6 tracking-widest uppercase drop-shadow-md">
+                <p className="text-[10px] md:text-sm font-medium text-white/90 mb-2 md:mb-4 tracking-widest uppercase drop-shadow-md">
                   Conectando o Mundo Lusófono
                 </p>
 
                 {/* Barra de Pesquisa Minimalista */}
-                <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-3 md:mb-4 group">
+                <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-2.5 md:mb-3.5 group">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onFocus={handleSearchFocus}
                     placeholder="O que procura hoje?"
-                    className={`w-full ${blurClass} rounded-full py-3 pl-6 pr-12 ${txtColorClass} ${placeholderClass} outline-none focus:ring-2 focus:ring-white/30 transition-all shadow-xl text-sm border`}
+                    className={`w-full ${blurClass} rounded-full py-2 sm:py-2.5 pl-5 sm:pl-6 pr-10 sm:pr-12 ${txtColorClass} ${placeholderClass} outline-none focus:ring-2 focus:ring-white/30 transition-all shadow-xl text-xs sm:text-sm border`}
                     style={{
                       backgroundColor: customBg || 'rgba(255,255,255,0.1)',
                       borderColor: customBorder || 'rgba(255,255,255,0.2)',
                     }}
                   />
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    <Search size={18} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors`} />
+                    <Search size={16} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors`} />
                   </div>
                 </div>
 
@@ -746,23 +746,23 @@ const Home = () => {
               </div>
 
               {/* Painel lateral: Comunidade Lusófona */}
-              <aside className="hidden lg:flex lg:basis-[30%] min-h-[390px] rounded-[2rem] overflow-hidden border border-amber-200/20 bg-gradient-to-br from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 shadow-2xl backdrop-blur-2xl">
-                <div className="relative w-full p-6 xl:p-8 flex flex-col justify-center text-center text-white">
+              <aside className="hidden lg:flex lg:basis-[30%] min-h-[300px] rounded-[2rem] overflow-hidden border border-amber-200/20 bg-gradient-to-br from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 shadow-2xl backdrop-blur-2xl">
+                <div className="relative w-full p-4 xl:p-6 flex flex-col justify-center text-center text-white">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.20),transparent_38%)] pointer-events-none" />
                   <div className="relative z-10">
-                    <p className="text-amber-300 text-xs font-black uppercase tracking-[0.22em] mb-4">
+                    <p className="text-amber-300 text-[10px] font-black uppercase tracking-[0.22em] mb-2">
                       🌍 Comunidade Lusófona
                     </p>
-                    <h2 className="text-2xl xl:text-3xl font-black leading-tight mb-2">
+                    <h2 className="text-xl xl:text-2xl font-black leading-tight mb-1">
                       Mais de 300 milhões
                     </h2>
-                    <p className="text-sm xl:text-base font-semibold text-white/85 mb-5">
+                    <p className="text-xs xl:text-sm font-semibold text-white/85 mb-3">
                       de falantes de português no mundo.
                     </p>
 
-                    <div className="h-px w-24 mx-auto bg-amber-300/50 mb-5" />
+                    <div className="h-px w-20 mx-auto bg-amber-300/50 mb-3" />
 
-                    <div className="grid grid-cols-3 gap-3 xl:gap-4">
+                    <div className="grid grid-cols-3 gap-2 xl:gap-2.5">
                       {[
                         { flag: '🇵🇹', name: 'Portugal', code: 'pt' },
                         { flag: '🇧🇷', name: 'Brasil', code: 'br' },
@@ -774,12 +774,12 @@ const Home = () => {
                         { flag: '🇹🇱', name: 'Timor-Leste', code: 'tl' },
                         { flag: '🇬🇶', name: 'Guiné Eq.', code: 'gq' },
                       ].map((item) => (
-                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-2.5 shadow-inner hover:bg-white/12 transition-colors flex flex-col items-center justify-center">
+                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-1.5 xl:p-2 shadow-inner hover:bg-white/12 transition-colors flex flex-col items-center justify-center">
                           <img 
                             src={`https://flagcdn.com/w80/${item.code}.png`} 
                             alt={item.flag} 
                             title={item.name}
-                            className="h-6.5 w-auto object-contain rounded shadow-sm mb-1"
+                            className="h-5 xl:h-6 w-auto object-contain rounded shadow-sm mb-0.5"
                             referrerPolicy="no-referrer"
                           />
                           <div className="text-[10px] font-bold text-white/85 leading-tight">{item.name}</div>
