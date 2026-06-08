@@ -295,10 +295,10 @@ const Home = () => {
     const fetchFeatured = async () => {
       // Verificação de cache de sessão de 5 minutos
       const now = Date.now();
-      const featuredFromCache = getCachedFeaturedAds();
-      const lastFeaturedFetch = getLastFeaturedFetchTime();
+      const featuredFromCache = getCachedFeaturedAds(country);
+      const lastFeaturedFetch = getLastFeaturedFetchTime(country);
       if (featuredFromCache && featuredFromCache.length > 0 && (now - lastFeaturedFetch < 5 * 60 * 1000)) {
-        console.log('[Cache HIT] Recuperou destacados da sessão.');
+        console.log(`[Cache HIT] Recuperou destacados da sessão (${country}).`);
         setFeaturedAds(featuredFromCache);
         return;
       }
@@ -307,13 +307,14 @@ const Home = () => {
           collection(db, 'ads'),
           where('status', '==', 'approved'),
           where('isFeatured', '==', true),
+          where('country', '==', country),
           limit(20)
         );
-        const snapshot = await getDocsWithCacheFallback(q, 'home/featured-ads');
+        const snapshot = await getDocsWithCacheFallback(q, `home/featured-ads/${country}`);
         if (!active) return;
         const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
         
-        setCachedFeaturedAds(docs);
+        setCachedFeaturedAds(docs, country);
         setFeaturedAds(docs);
       } catch (err) {
         console.error('Erro ao buscar anúncios destacados:', err);
@@ -321,7 +322,7 @@ const Home = () => {
     };
     fetchFeatured();
     return () => { active = false; };
-  }, []);
+  }, [country]);
 
   useEffect(() => {
     const search = searchParams.get('search');
@@ -342,10 +343,10 @@ const Home = () => {
     const fetchAds = async () => {
       // Verificação de cache de sessão de 5 minutos
       const now = Date.now();
-      const adsFromCache = getCachedAds();
-      const lastFetch = getLastFetchTime();
+      const adsFromCache = getCachedAds(country);
+      const lastFetch = getLastFetchTime(country);
       if (adsFromCache && adsFromCache.length > 0 && (now - lastFetch < 5 * 60 * 1000)) {
-        console.log('[Cache HIT] Recuperou anúncios gerais da sessão. Total:', adsFromCache.length);
+        console.log(`[Cache HIT] Recuperou anúncios gerais da sessão (${country}). Total:`, adsFromCache.length);
         setAds(adsFromCache);
         setLoading(false);
         return;
@@ -364,19 +365,21 @@ const Home = () => {
           const q = query(
             collection(db, 'ads'),
             where('status', '==', 'approved'),
+            where('country', '==', country),
             // @ts-ignore
             orderBy('createdAt', 'desc'),
             limit(300)
           );
-          snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads-ordered'), 20000);
+          snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-ordered`), 20000);
         } catch (idxErr) {
           console.warn("[Home] Query ordenada falhou (falta de índice composto), recorrendo a query plana e ordenação em memória:", idxErr);
           const q = query(
             collection(db, 'ads'),
             where('status', '==', 'approved'),
+            where('country', '==', country),
             limit(300)
           );
-          snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads-flat'), 20000);
+          snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-flat`), 20000);
         }
 
         if (!active) return;
@@ -391,7 +394,7 @@ const Home = () => {
           return (timeB || 0) - (timeA || 0);
         });
 
-        setCachedAds(adsData);
+        setCachedAds(adsData, country);
         setAds(adsData);
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
@@ -405,7 +408,7 @@ const Home = () => {
 
     fetchAds();
     return () => { active = false; };
-  }, []); // Carrega uma única vez ao montar de forma altamente otimizada, ou depende apenas da montagem
+  }, [country]); // Recarrega sempre que mudar de país de forma altamente otimizada, ou depende de país
 
   const handleLoadMore = () => {
     if (isFetchingMore) return;
