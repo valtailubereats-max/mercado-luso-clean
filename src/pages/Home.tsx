@@ -298,13 +298,10 @@ const Home = () => {
       const featuredFromCache = getCachedFeaturedAds();
       const lastFeaturedFetch = getLastFeaturedFetchTime();
       if (featuredFromCache && featuredFromCache.length > 0 && (now - lastFeaturedFetch < 5 * 60 * 1000)) {
-        console.log('[CACHE] HIT featured');
         console.log('[Cache HIT] Recuperou destacados da sessão.');
         setFeaturedAds(featuredFromCache);
         return;
       }
-
-      console.log('[CACHE] MISS featured');
       try {
         const q = query(
           collection(db, 'ads'),
@@ -348,14 +345,11 @@ const Home = () => {
       const adsFromCache = getCachedAds();
       const lastFetch = getLastFetchTime();
       if (adsFromCache && adsFromCache.length > 0 && (now - lastFetch < 5 * 60 * 1000)) {
-        console.log('[CACHE] HIT ads');
         console.log('[Cache HIT] Recuperou anúncios gerais da sessão. Total:', adsFromCache.length);
         setAds(adsFromCache);
         setLoading(false);
         return;
       }
-
-      console.log('[CACHE] MISS ads');
       setLoading(true);
       setErrorMsg(null);
 
