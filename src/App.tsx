@@ -29,6 +29,7 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
+import Links from './pages/Links';
 
 import { Ad } from './types';
 import { formatDistanceToNow } from 'date-fns';
@@ -45,6 +46,20 @@ const Navbar = () => {
   const [notifications, setNotifications] = React.useState<any[]>([]);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [navSearch, setNavSearch] = React.useState('');
+  const [showUserDropdown, setShowUserDropdown] = React.useState(false);
+  const userDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleNavSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,14 +242,106 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
-              <Link to="/profile" className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
-                <UserIcon size={20}/> Perfil
-                {userNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-pulse">{userNotificationCount}</span>}
-              </Link>
+              {/* User Dropdown de Conta */}
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1.5 p-2 cursor-pointer outline-none transition-all"
+                  id="user-account-dropdown-toggle"
+                >
+                  <div className="w-8 h-8 rounded-full bg-white border border-indigo-200/60 flex items-center justify-center text-indigo-600 shrink-0 select-none shadow-sm">
+                    <UserIcon size={16} />
+                  </div>
+                  <span className="hidden sm:inline">Conta</span>
+                  {userNotificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-pulse">
+                      {userNotificationCount}
+                    </span>
+                  )}
+                </button>
 
-              <button onClick={handleLogout} className="text-slate-600 hover:text-red-600 font-medium flex items-center gap-1 p-2">
-                <LogOut size={20}/> Sair
-              </button>
+                <AnimatePresence>
+                  {showUserDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2.5 z-[100] text-slate-800"
+                      id="desktop-account-menu"
+                    >
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-meu-perfil"
+                      >
+                        Meu Perfil
+                      </Link>
+
+                      <Link
+                        to="/profile?tab=favorites"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-favoritos"
+                      >
+                        Favoritos
+                      </Link>
+
+                      <Link
+                        to="/profile?tab=anuncios"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-meus-anuncios"
+                      >
+                        Meus Anúncios
+                      </Link>
+
+                      <Link
+                        to="/create-ad"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-criar-anuncio"
+                      >
+                        Criar Anúncio
+                      </Link>
+
+                      <Link
+                        to="/sugestoes"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-sugestoes"
+                      >
+                        Sugestões
+                      </Link>
+
+                      <div className="border-t border-slate-100 my-2" />
+
+                      <Link
+                        to="/links"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-50 text-emerald-600 transition-colors text-sm font-black"
+                        id="menu-links-uteis"
+                      >
+                        <span>🔗 Links Úteis</span>
+                      </Link>
+
+                      <div className="border-t border-slate-100 my-2" />
+
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-rose-50 text-rose-600 transition-colors text-sm font-bold"
+                        id="menu-sair"
+                      >
+                        <LogOut size={16} />
+                        <span>Sair</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </> :
             <Link to="/login" className="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-medium">Entrar</Link>}
           </div>
@@ -271,15 +378,49 @@ const Navbar = () => {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="md:hidden bg-white border-t border-slate-100 overflow-hidden">
+          <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="md:hidden bg-white border-t border-slate-100 overflow-hidden shadow-inner">
             <div className="px-4 py-6 space-y-4 flex flex-col">
-              <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700">Explorar</Link>
+              <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Explorar</Link>
+              
               {user ? <>
-                <Link to="/create-ad" onClick={() => setIsOpen(false)} className="text-lg font-medium text-indigo-600">Anunciar</Link>
-                {isAdmin && <Link to="/admin" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">Admin {adminNotificationCount>0 && <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{adminNotificationCount}</span>}</Link>}
-                <Link to="/profile" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">Perfil {userNotificationCount>0 && <span className="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">{userNotificationCount}</span>}</Link>
-                <button onClick={() => {handleLogout(); setIsOpen(false);}} className="text-lg font-medium text-red-600 text-left">Sair</button>
-              </> : <Link to="/login" onClick={() => setIsOpen(false)} className="text-lg font-medium text-indigo-600">Entrar</Link>}
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">
+                    Admin {adminNotificationCount > 0 && <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{adminNotificationCount}</span>}
+                  </Link>
+                )}
+
+                <div className="border-t border-slate-100 pt-4 space-y-3.5 flex flex-col">
+                  <Link to="/profile" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    Meu Perfil
+                  </Link>
+                  <Link to="/profile?tab=favorites" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    Favoritos
+                  </Link>
+                  <Link to="/profile?tab=anuncios" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    Meus Anúncios
+                  </Link>
+                  <Link to="/create-ad" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    Criar Anuncio
+                  </Link>
+                  <Link to="/sugestoes" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    Sugestões
+                  </Link>
+                  
+                  <div className="border-t border-slate-100 pt-4" />
+                  
+                  <Link to="/links" onClick={() => setIsOpen(false)} className="text-md font-black text-emerald-600 flex items-center gap-1">
+                    🔗 Links Úteis
+                  </Link>
+                  
+                  <div className="border-t border-slate-100 pt-4" />
+                  
+                  <button onClick={() => { handleLogout(); setIsOpen(false); }} className="text-md font-bold text-red-600 text-left">
+                    Sair
+                  </button>
+                </div>
+              </> : (
+                <Link to="/login" onClick={() => setIsOpen(false)} className="text-lg font-black text-indigo-600">Entrar</Link>
+              )}
             </div>
           </motion.div>
         )}
@@ -401,6 +542,7 @@ export default function App() {
                 <Route path="/denuncia" element={<Report />} />
                 <Route path="/sugestoes" element={<Suggestions />} />
                 <Route path="/faq" element={<FAQ />} />
+                <Route path="/links" element={<Links />} />
                 <Route path="/admin/suggestions" element={<AdminLayout><AdminSuggestions /></AdminLayout>} />
               </Routes>
             </main>

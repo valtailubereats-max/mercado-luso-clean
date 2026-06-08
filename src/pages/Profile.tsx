@@ -13,13 +13,15 @@ import { pt } from 'date-fns/locale';
 import { formatPrice } from '../utils';
 import OptimizedImage from '../components/OptimizedImage';
 import ReviewModal from '../components/ReviewModal';
+import AdCard from '../components/AdCard';
 import { calculateTotalPoints, calculateProgressPoints, POINTS_THRESHOLD, POINTS_PER_REFERRAL, POINTS_PER_AD } from '../utils/rewards';
 
 const Profile = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, favorites } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightAdId = searchParams.get('highlight');
+  const currentTab = searchParams.get('tab') || 'perfil';
 
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+351');
@@ -36,6 +38,36 @@ const Profile = () => {
   const [referralsCount, setReferralsCount] = useState(0);
   const [referralsLoading, setReferralsLoading] = useState(true);
   const [copiedReferral, setCopiedReferral] = useState(false);
+  const [favoriteAds, setFavoriteAds] = useState<Ad[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchFavoriteAds = async () => {
+      if (!user || !favorites || favorites.length === 0) {
+        setFavoriteAds([]);
+        setFavoritesLoading(false);
+        return;
+      }
+      setFavoritesLoading(true);
+      try {
+        const q = query(
+          collection(db, 'ads'),
+          where('__name__', 'in', favorites.slice(0, 30))
+        );
+        const snapshot = await getDocsWithCacheFallback(q, `favorites/profile-${user.uid}`);
+        const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+        setFavoriteAds(adsData);
+      } catch (err) {
+        console.error('Error loading favorite ads:', err);
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+
+    if (currentTab === 'favorites') {
+      fetchFavoriteAds();
+    }
+  }, [favorites, currentTab, user]);
 
   const updateReferralStatsAndCredits = async () => {
     if (!user || !profile) return;
@@ -306,7 +338,46 @@ const Profile = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-12">
-      <motion.div
+      {/* Tabs Selector Navigation */}
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-fit flex-row" id="profile-tabs-selectors">
+        <button
+          onClick={() => navigate('/profile?tab=perfil')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites'].includes(currentTab)
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-perfil"
+        >
+          Meu Perfil
+        </button>
+        <button
+          onClick={() => navigate('/profile?tab=anuncios')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentTab === 'anuncios'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-anuncios"
+        >
+          Meus Anúncios <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'anuncios' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{ads.length}</span>
+        </button>
+        <button
+          onClick={() => navigate('/profile?tab=favorites')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+            currentTab === 'favorites'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-favorites"
+        >
+          Favoritos <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'favorites' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{favorites?.length || 0}</span>
+        </button>
+      </div>
+
+      {(currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites'].includes(currentTab)) && (
+        <div className="space-y-12" id="profile-perfil-tab-content">
+          <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100"
@@ -593,8 +664,12 @@ const Profile = () => {
           </div>
         </div>
       </motion.div>
+        </div>
+      )}
 
-      {reviews.length > 0 && (
+      {currentTab === 'anuncios' && (
+        <div className="space-y-12" id="profile-anuncios-tab-content">
+          {reviews.length > 0 && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             Avaliações Recebidas
@@ -835,6 +910,38 @@ const Profile = () => {
           </div>
         )}
       </div>
+        </div>
+      )}
+
+      {currentTab === 'favorites' && (
+        <div className="space-y-6" id="favorites-tab-content">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            Anúncios Favoritos
+            <span className="bg-[#bfead0] text-emerald-800 text-sm px-3 py-1 rounded-full font-bold">{favoriteAds.length}</span>
+          </h2>
+
+          {favoritesLoading ? (
+            <div className="text-center py-12 text-slate-400">A carregar anúncios favoritos...</div>
+          ) : favoriteAds.length === 0 ? (
+            <div className="bg-white p-16 rounded-3xl text-center border-2 border-dashed border-slate-200" id="no-favorites-box">
+              <span className="text-4xl">❤️</span>
+              <p className="text-slate-500 mt-4 mb-4 font-semibold">Ainda não marcou nenhum anúncio como favorito.</p>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer shadow-md shadow-indigo-100"
+              >
+                Explorar Anúncios
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" id="favorites-ads-grid">
+              {favoriteAds.map((ad, idx) => (
+                <AdCard key={`fav-ad-card-${ad.id || idx}`} ad={ad} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {selectedAdForReview && (
         <ReviewModal
