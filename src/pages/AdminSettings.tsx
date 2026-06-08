@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { AdminMigrationWidget } from '../components/AdminMigrationWidget';
 
 interface AdminSettingsProps {
   onClose?: () => void;
@@ -444,6 +445,8 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           </button>
         </div>
       </form>
+
+      <AdminMigrationWidget />
     </div>
   );
 };
