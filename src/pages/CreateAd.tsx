@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { clearHomeCache } from '../utils/cache';
 import { CITIES, Ad, MarketplaceSettings, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
@@ -394,6 +395,7 @@ const CreateAd = () => {
       };
 
       await setDoc(doc(db, 'ads', adId), adData, { merge: true });
+      clearHomeCache();
       if (id) {
         if (isAdmin && originalAd?.sellerId !== user.uid) {
           alert('Anúncio atualizado com sucesso (Edição de Administrador).');

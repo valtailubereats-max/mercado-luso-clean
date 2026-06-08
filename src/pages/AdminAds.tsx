@@ -3,6 +3,7 @@ import { collection, query, orderBy, limit, updateDoc, doc, serverTimestamp } fr
 import { useNavigate } from 'react-router-dom';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { Ad } from '../types';
+import { clearHomeCache } from '../utils/cache';
 import { motion, AnimatePresence } from 'motion/react';
 import OptimizedImage from '../components/OptimizedImage';
 import { awardAdApprovalPoints } from '../utils/rewards';
@@ -59,6 +60,7 @@ const AdminAds = () => {
         imageZoom: adminImageZoom,
         updatedAt: serverTimestamp()
       });
+      clearHomeCache();
       setAds(prevAds => prevAds.map(ad => ad.id === selectedAd.id ? { 
         ...ad, 
         imagePositionX: adminImagePositionX, 
@@ -107,6 +109,7 @@ const AdminAds = () => {
         status,
         updatedAt: serverTimestamp()
       });
+      clearHomeCache();
 
       if (status === 'approved' && adToUpdate && adToUpdate.sellerId) {
         try {
@@ -136,6 +139,7 @@ const AdminAds = () => {
         updatedAt: serverTimestamp(),
         userNotified: true
       });
+      clearHomeCache();
       
       // Update local state with a mock timestamp to avoid .toDate() errors in components
       const mockTimestamp = { toDate: () => newExpirationDate };

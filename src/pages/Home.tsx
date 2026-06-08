@@ -5,6 +5,14 @@ import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { 
+  getCachedAds, 
+  setCachedAds, 
+  getLastFetchTime, 
+  getCachedFeaturedAds, 
+  setCachedFeaturedAds, 
+  getLastFeaturedFetchTime 
+} from '../utils/cache';
 import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,11 +22,6 @@ import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
 import londonAerial from '../assets/images/london_aerial_1780755464204.png';
 
 const PAGE_SIZE = 30; 
-
-let lastFetchTime = 0;
-let cachedAds: Ad[] = [];
-let cachedHasMore = false;
-let cachedLimit = PAGE_SIZE;
 
 const Home = () => {
   const { settings, categories } = useSettings();
@@ -290,6 +293,18 @@ const Home = () => {
   useEffect(() => {
     let active = true;
     const fetchFeatured = async () => {
+      // Verificação de cache de sessão de 5 minutos
+      const now = Date.now();
+      const featuredFromCache = getCachedFeaturedAds();
+      const lastFeaturedFetch = getLastFeaturedFetchTime();
+      if (featuredFromCache && featuredFromCache.length > 0 && (now - lastFeaturedFetch < 5 * 60 * 1000)) {
+        console.log('[CACHE] HIT featured');
+        console.log('[Cache HIT] Recuperou destacados da sessão.');
+        setFeaturedAds(featuredFromCache);
+        return;
+      }
+
+      console.log('[CACHE] MISS featured');
       try {
         const q = query(
           collection(db, 'ads'),
@@ -300,6 +315,8 @@ const Home = () => {
         const snapshot = await getDocsWithCacheFallback(q, 'home/featured-ads');
         if (!active) return;
         const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+        
+        setCachedFeaturedAds(docs);
         setFeaturedAds(docs);
       } catch (err) {
         console.error('Erro ao buscar anúncios destacados:', err);
@@ -326,6 +343,19 @@ const Home = () => {
   useEffect(() => {
     let active = true;
     const fetchAds = async () => {
+      // Verificação de cache de sessão de 5 minutos
+      const now = Date.now();
+      const adsFromCache = getCachedAds();
+      const lastFetch = getLastFetchTime();
+      if (adsFromCache && adsFromCache.length > 0 && (now - lastFetch < 5 * 60 * 1000)) {
+        console.log('[CACHE] HIT ads');
+        console.log('[Cache HIT] Recuperou anúncios gerais da sessão. Total:', adsFromCache.length);
+        setAds(adsFromCache);
+        setLoading(false);
+        return;
+      }
+
+      console.log('[CACHE] MISS ads');
       setLoading(true);
       setErrorMsg(null);
 
@@ -335,14 +365,14 @@ const Home = () => {
 
       try {
         let snapshot;
-        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a 1000 documentos
+        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a 300 documentos (otimização de leituras)
         try {
           const q = query(
             collection(db, 'ads'),
             where('status', '==', 'approved'),
             // @ts-ignore
             orderBy('createdAt', 'desc'),
-            limit(1000)
+            limit(300)
           );
           snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads-ordered'), 20000);
         } catch (idxErr) {
@@ -350,7 +380,7 @@ const Home = () => {
           const q = query(
             collection(db, 'ads'),
             where('status', '==', 'approved'),
-            limit(1000)
+            limit(300)
           );
           snapshot = await withTimeout(getDocsWithCacheFallback(q, 'home/approved-ads-flat'), 20000);
         }
@@ -367,6 +397,7 @@ const Home = () => {
           return (timeB || 0) - (timeA || 0);
         });
 
+        setCachedAds(adsData);
         setAds(adsData);
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);

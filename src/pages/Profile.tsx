@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { clearHomeCache } from '../utils/cache';
 import { Ad, UserProfile, COUNTRY_CODES, CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion } from 'motion/react';
@@ -94,6 +95,7 @@ const Profile = () => {
         isFeatured: true,
         featuredUntil: tomorrow
       });
+      clearHomeCache();
       
       await updateDoc(doc(db, 'users', user.uid), {
         referralCredits: credits - 1
@@ -229,6 +231,7 @@ const Profile = () => {
     if (!window.confirm('Tem certeza que deseja excluir este anúncio?')) return;
     try {
       await deleteDoc(doc(db, 'ads', id));
+      clearHomeCache();
       setAds(ads.filter(ad => ad.id !== id));
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `ads/${id}`);
@@ -266,6 +269,7 @@ const Profile = () => {
         userNotified: false,
         createdAt: new Date()
       }, { merge: true });
+      clearHomeCache();
       
       alert('Anúncio enviado para aprovação!');
       fetchUserAds();
@@ -283,6 +287,7 @@ const Profile = () => {
         status: 'approved',
         updatedAt: serverTimestamp()
       });
+      clearHomeCache();
       alert('Anúncio marcado como disponível de novo!');
       fetchUserAds();
     } catch (err) {
