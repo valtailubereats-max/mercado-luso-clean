@@ -137,6 +137,18 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidSellerPublicProfile(data) {
+      return data.keys().hasAll(['displayName', 'country', 'createdAt', 'updatedAt']) &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             (!('city' in data) || (data.city is string && data.city.size() <= 100)) &&
+             data.country is string && data.country.size() > 0 && data.country.size() <= 100 &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 2000)) &&
+             (!('rating' in data) || data.rating is number) &&
+             (!('reviewCount' in data) || data.reviewCount is number) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
     // Rules
     match /settings/{settingsId} {
       allow read: if true;
@@ -148,8 +160,8 @@ service cloud.firestore {
       allow list: if request.query.limit == 0 ||
                     isAdmin() || 
                     (isAuthenticated() && 
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator');
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator');
       allow create: if isOwner(userId) && 
                       (
                         !('role' in request.resource.data) || 
@@ -169,9 +181,26 @@ service cloud.firestore {
                       )) || (isAuthenticated() && isValidRatingUpdate()) || (isAdmin() && isValidUser(request.resource.data, userId));
     }
 
+    match /sellerPublicProfiles/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && 
+                      isValidSellerPublicProfile(request.resource.data) &&
+                      request.resource.data.keys().size() <= 8;
+      allow update: if isOwner(userId) && 
+                      isValidSellerPublicProfile(request.resource.data) &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      request.resource.data.keys().size() <= 8;
+    }
+
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+        request.resource.data.read is bool
+      );
     }
 
     match /ads/{adId} {
@@ -181,15 +210,41 @@ service cloud.firestore {
       
       allow create: if isAuthenticated() && isValidAd(request.resource.data) && request.resource.data.status == 'pending';
       allow update: if (
+        // Counter increments can be done by anyone
         (resource.data.status == 'approved' && isValidAdCounterUpdate()) ||
+        
         (isAuthenticated() && (
-          (resource.data.sellerId == request.auth.uid && 
-           (
-             (resource.data.status == 'pending' && isValidAd(request.resource.data)) ||
-             (isValidAd(request.resource.data) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFeatured', 'featuredUntil']))
-           )
-          ) ||
-          isAdmin()
+          // Admin can do anything
+          isAdmin() ||
+          
+          // Owner actions (always validating the final ad shape via isValidAd)
+          (resource.data.sellerId == request.auth.uid && isValidAd(request.resource.data) && (
+            // A: Update/Edit of a pending ad
+            (resource.data.status == 'pending') ||
+            
+            // B: Lifecycle Action - Sold
+            (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt', 'soldAt']) &&
+              request.resource.data.adStatus == 'sold' &&
+              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+            ) ||
+            
+            // C: Lifecycle Action - Relist / Renew
+            (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'expirationDate', 'userNotified', 'createdAt']) &&
+              request.resource.data.status == 'pending' &&
+              request.resource.data.adStatus == 'active' &&
+              request.resource.data.userNotified == false
+            ) ||
+            
+            // D: Lifecycle Action - Mark as Available
+            (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt']) &&
+              request.resource.data.status == 'approved' &&
+              request.resource.data.adStatus == 'active' &&
+              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+            )
+          ))
         ))
       );
       allow delete: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin());

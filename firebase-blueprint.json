@@ -165,6 +165,22 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "email", "message", "status", "createdAt"]
+    },
+    "SellerPublicProfile": {
+      "title": "SellerPublicProfile",
+      "description": "Public profiles of sellers with non-sensitive information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "country", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -207,6 +223,10 @@
     "/suggestions/{suggestionId}": {
       "schema": "Suggestion",
       "description": "User suggestions and ideas"
+    },
+    "/sellerPublicProfiles/{userId}": {
+      "schema": "SellerPublicProfile",
+      "description": "Public profiles of sellers"
     }
   }
 }
