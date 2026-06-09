@@ -393,7 +393,7 @@ const Home = () => {
 
       try {
         let snapshot;
-        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a 300 documentos (otimização de leituras)
+        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a 48 documentos (otimização de leituras)
         try {
           const q = query(
             collection(db, 'ads'),
@@ -401,7 +401,7 @@ const Home = () => {
             where('country', '==', country),
             // @ts-ignore
             orderBy('createdAt', 'desc'),
-            limit(300)
+            limit(48)
           );
           snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-ordered`), 20000);
         } catch (idxErr) {
@@ -410,7 +410,7 @@ const Home = () => {
             collection(db, 'ads'),
             where('status', '==', 'approved'),
             where('country', '==', country),
-            limit(300)
+            limit(48)
           );
           snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-flat`), 20000);
         }
