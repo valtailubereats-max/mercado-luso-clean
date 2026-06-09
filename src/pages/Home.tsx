@@ -120,10 +120,8 @@ const Home = () => {
 
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
   const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
-  // Só consideramos administrador/moderador confirmado para consultas restritas (como contagem de users)
-  // se o perfil estiver totalmente carregado no banco de dados e contiver a role de 'admin' ou 'moderator'.
-  const isConfirmedAdminOrModerator = !authLoading && 
-    (profile?.role === 'admin' || profile?.role === 'moderator');
+  // Só consideramos administrador confirmado para consultas restritas de contagem de users.
+  const isConfirmedAdminOnly = !authLoading && profile?.role === 'admin';
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
@@ -283,7 +281,7 @@ const Home = () => {
       profileRole: profile?.role,
       uid: user?.uid,
       email: user?.email,
-      isConfirmedAdminOrModerator
+      isConfirmedAdminOnly
     });
 
     // Se ainda está carregando a autenticação ou perfil, não podemos confirmar se é admin/moderador
@@ -295,9 +293,13 @@ const Home = () => {
       return;
     }
 
-    // Se de fato não é admin ou moderador confirmado, use o fallback estático e não execute a consulta
-    if (!isConfirmedAdminOrModerator) {
-      console.log('[USERS COUNT] skipped for non-admin');
+    // Se de fato não é admin confirmado, use o fallback estático e não execute a consulta
+    if (!isConfirmedAdminOnly) {
+      if (profile?.role === 'moderator') {
+        console.log('[USERS COUNT] skipped for moderator');
+      } else {
+        console.log('[USERS COUNT] skipped for non-admin');
+      }
       if (active) {
         setTotalUsersCount(852); // Fallback estático seguro
       }
@@ -318,7 +320,7 @@ const Home = () => {
     };
     fetchUsersCount();
     return () => { active = false; };
-  }, [settings?.showTotalUsersBadge, isConfirmedAdminOrModerator, authLoading]);
+  }, [settings?.showTotalUsersBadge, isConfirmedAdminOnly, authLoading]);
 
   // Buscar anúncios destacados para carrossel no topo
   useEffect(() => {
