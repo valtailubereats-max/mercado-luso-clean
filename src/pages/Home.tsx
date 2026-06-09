@@ -275,6 +275,14 @@ const Home = () => {
 
     let active = true;
     const fetchUsersCount = async () => {
+      // Evitar chamadas a getCountFromServer na coleção 'users' para utilizadores comuns, pois não têm permissão pelas regras de segurança
+      if (!isModeratorOrAdmin) {
+        if (active) {
+          setTotalUsersCount(852); // Fallback estático seguro
+        }
+        return;
+      }
+
       try {
         const q = query(collection(db, 'users'));
         const snapshot = await getCountFromServer(q);

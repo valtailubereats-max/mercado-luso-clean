@@ -140,23 +140,23 @@ service cloud.firestore {
     // Rules
     match /settings/{settingsId} {
       allow read: if true;
-      allow write: if isAdmin() && isValidSettings(request.resource.data);
+      allow write: if isValidSettings(request.resource.data) && isAdmin();
     }
 
     match /users/{userId} {
       allow get: if isAuthenticated();
-      allow list: if isAdmin() || 
+      allow list: if request.query.limit == 0 ||
+                    isAdmin() || 
                     (isAuthenticated() && 
                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator') || 
-                    request.query.limit == 0;
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator');
       allow create: if isOwner(userId) && 
                       (
                         !('role' in request.resource.data) || 
                         request.resource.data.role == 'user' || 
                         request.auth.token.email in ["valtailubereats@gmail.com", "generalsales2021@gmail.com"]
                       );
-      allow update: if (isAdmin() && isValidUser(request.resource.data, userId)) || (isOwner(userId) && 
+      allow update: if (isOwner(userId) && 
                       (
                         isValidUser(request.resource.data, userId) && 
                         request.resource.data.acceptedTerms == resource.data.acceptedTerms &&
@@ -166,7 +166,7 @@ service cloud.firestore {
                           !('role' in resource.data) || 
                           request.resource.data.role == resource.data.role
                         )
-                      )) || (isAuthenticated() && isValidRatingUpdate());
+                      )) || (isAuthenticated() && isValidRatingUpdate()) || (isAdmin() && isValidUser(request.resource.data, userId));
     }
 
     match /notifications/{notificationId} {
@@ -175,14 +175,9 @@ service cloud.firestore {
     }
 
     match /ads/{adId} {
-      // Allow reading approved ads to everyone
-      allow read: if resource.data.status == 'approved';
-      
-      // Allow owners to read their own ads
-      allow read: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
-      
-      // Allow admins to read everything
-      allow read: if isAdmin();
+      // Combine reads to short-circuit expensive isAdmin() call on public/owned resources first
+      allow read: if resource.data.status == 'approved' || 
+                    (isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin()));
       
       allow create: if isAuthenticated() && isValidAd(request.resource.data) && request.resource.data.status == 'pending';
       allow update: if (
@@ -232,9 +227,9 @@ service cloud.firestore {
     match /suggestions/{suggestionId} {
       allow read: if isAdmin();
       allow create: if isValidSuggestion(request.resource.data);
-      allow update: if isAdmin() && 
-                    request.resource.data.status in ['new', 'reviewed', 'archived'] && 
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow update: if request.resource.data.status in ['new', 'reviewed', 'archived'] && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                    isAdmin();
       allow delete: if isAdmin();
     }
   }
