@@ -91,27 +91,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               ratingCount: newCount,
               ratingAverage: finalAvg
             });
-
-            // Sincronizar sellerPublicProfiles na mesma transação
-            const publicRef = doc(db, 'sellerPublicProfiles', sellerId);
-            const publicDoc = await transaction.get(publicRef);
-            if (publicDoc.exists()) {
-              transaction.update(publicRef, {
-                rating: finalAvg,
-                reviewCount: newCount,
-                updatedAt: serverTimestamp()
-              });
-            } else {
-              transaction.set(publicRef, {
-                displayName: data.name || 'Vendedor',
-                city: data.city || '',
-                country: data.country || 'Portugal',
-                rating: finalAvg,
-                reviewCount: newCount,
-                createdAt: data.acceptedTermsAt || serverTimestamp(),
-                updatedAt: serverTimestamp()
-              }, { merge: true });
-            }
           }
         }
 
@@ -128,8 +107,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
       onSuccess();
       onClose();
-    } catch (err) {
-      console.error('Error submitting review:', err);
+    } catch (err: any) {
+      const isPermissionDenied = err?.code === 'permission-denied' || String(err).includes('PERMISSION_DENIED') || String(err).includes('permission-denied');
+      if (isPermissionDenied) {
+        console.error('[ReviewModal] ERRO CRÍTICO: Falha de Permissão Firestore (PERMISSION_DENIED). Verifique as regras de segurança para escrita/update do comprador em reviews, users ou ads:', err);
+      } else {
+        console.error('Error submitting review:', err);
+      }
       alert('Erro ao enviar feedback. Tente novamente.');
     } finally {
       setLoading(false);
