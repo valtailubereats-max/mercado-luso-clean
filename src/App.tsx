@@ -98,24 +98,6 @@ const Navbar = () => {
     return () => unsubscribe();
   }, [user]);
 
-  const handleCreateTestNotification = async () => {
-    if (!user) return;
-    try {
-      console.log('[DEBUG] Criando notificação teste para:', user.uid);
-      await addDoc(collection(db, 'notifications'), {
-        userId: user.uid,
-        title: 'Teste de Notificação',
-        message: 'Esta é uma notificação de teste criada temporariamente por um administrador.',
-        read: false,
-        createdAt: serverTimestamp()
-      });
-      console.log('[DEBUG] Notificação criada com sucesso!');
-    } catch (err) {
-      console.error('Erro ao criar notificação de teste:', err);
-      alert('Apenas administradores podem criar notificações (as regras de segurança bloqueiam escrita de não-admins).');
-    }
-  };
-
   // Notificações do usuário, pending ads do admin e contagem de ads desativados do Firestore globais
   // para blindagem total contra consumo excessivo de leituras. O Navbar agora é 100% estático.
 
@@ -270,17 +252,8 @@ const Navbar = () => {
                 <AnimatePresence>
                   {showNotifications && (
                     <motion.div initial={{ opacity:0,y:10,scale:0.95 }} animate={{ opacity:1,y:0,scale:1 }} exit={{ opacity:0,y:10,scale:0.95 }} className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                      <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                      <div className="p-4 border-b border-slate-50 bg-slate-50/50">
                         <h3 className="font-bold text-slate-900">Notificações</h3>
-                        {isAdmin && (
-                          <button
-                            onClick={handleCreateTestNotification}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-sm"
-                            title="Criar notificação de teste para o seu próprio utilizador"
-                          >
-                            + Teste Admin
-                          </button>
-                        )}
                       </div>
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há novas notificações.</div> :
