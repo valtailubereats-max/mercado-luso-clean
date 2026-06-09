@@ -297,8 +297,8 @@ const Home = () => {
       const now = Date.now();
       const featuredFromCache = getCachedFeaturedAds(country);
       const lastFeaturedFetch = getLastFeaturedFetchTime(country);
-      if (featuredFromCache && featuredFromCache.length > 0 && (now - lastFeaturedFetch < 5 * 60 * 1000)) {
-        console.log(`[Cache HIT] Recuperou destacados da sessão (${country}).`);
+      if (lastFeaturedFetch > 0 && (now - lastFeaturedFetch < 5 * 60 * 1000)) {
+        console.log(`[Cache HIT] Recuperou destacados da sessão (${country}). Total: ${featuredFromCache.length}`);
         setFeaturedAds(featuredFromCache);
         return;
       }

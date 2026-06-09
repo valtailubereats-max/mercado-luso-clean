@@ -30,6 +30,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     const unsubscribe = onSnapshot(docRef, 
       (docSnap) => {
+        console.log('[READ] Settings');
         clearTimeout(safetyTimer);
         if (docSnap.exists()) {
           const data = docSnap.data() as MarketplaceSettings;
