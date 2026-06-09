@@ -94,60 +94,24 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
 
   const fetchSellerProfile = async () => {
     try {
-      let profileData: any = {};
-      try {
-        const docSnap = await getDocWithCacheFallback(doc(db, 'sellerPublicProfiles', ad.sellerId), `sellerPublicProfiles/${ad.sellerId}`);
-        if (docSnap.exists()) {
-          profileData = docSnap.data();
-        } else {
-          profileData = {
-            uid: ad.sellerId,
-            displayName: ad.sellerName || 'Vendedor',
-            city: ad.city || '',
-            country: ad.country || 'Portugal',
-            rating: 0,
-            reviewCount: 0
-          };
-        }
-      } catch (profileErr) {
-        console.error('Error fetching seller public profile:', profileErr);
-        profileData = {
-          uid: ad.sellerId,
-          displayName: ad.sellerName || 'Vendedor',
-          city: ad.city || '',
-          country: ad.country || 'Portugal',
-          rating: 0,
-          reviewCount: 0
-        };
-      }
       setReviewsLoading(true);
-      const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId), limit(5));
-      const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${ad.sellerId}`);
-      const reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      reviewsData.sort((a: any, b: any) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-        return timeB - timeA;
-      });
-      setSellerReviews(reviewsData);
+      const ratingCount = (ad as any).sellerReviewCount !== undefined ? (ad as any).sellerReviewCount : ((ad as any).reviewCount !== undefined ? (ad as any).reviewCount : 0);
+      const ratingAverage = (ad as any).sellerRating !== undefined ? (ad as any).sellerRating : ((ad as any).rating !== undefined ? (ad as any).rating : 0);
 
-      // Calc fallback using either the new 'reviewCount'/'rating' or legacy fields
-      let ratingCount = profileData.reviewCount !== undefined ? profileData.reviewCount : (profileData.ratingCount !== undefined ? profileData.ratingCount : 0);
-      let ratingAverage = profileData.rating !== undefined ? profileData.rating : (profileData.ratingAverage !== undefined ? profileData.ratingAverage : 0);
-
-      if (reviewsData.length > 0 && (ratingCount === 0 || ratingAverage === 0)) {
-        ratingCount = reviewsData.length;
-        const totalStars = reviewsData.reduce((sum: number, rev: any) => sum + (rev.rating || 0), 0);
-        ratingAverage = parseFloat((totalStars / ratingCount).toFixed(1));
-      }
-
-      setSellerProfile({
-        ...profileData,
+      const profileData: any = {
+        uid: ad.sellerId,
+        displayName: ad.sellerName || 'Vendedor',
+        city: ad.city || '',
+        country: ad.country || 'Portugal',
         ratingAverage,
         ratingCount
-      });
+      };
+
+      console.log(`[AdCard] Evitando consultas Firestore para o vendedor ${ad.sellerId}. Usando dados integrados no documento de anúncio.`);
+      setSellerProfile(profileData);
+      setSellerReviews([]);
     } catch (err) {
-      console.error('Error fetching seller profile or reviews:', err);
+      console.error('Error configuring seller profile fallback:', err);
     } finally {
       setReviewsLoading(false);
     }

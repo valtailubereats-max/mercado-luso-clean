@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc, limit } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   MessageSquare, Calendar, Mail, User, CheckCircle2, 
@@ -30,7 +30,8 @@ const AdminSuggestions = () => {
     try {
       const q = query(
         collection(db, 'suggestions'),
-        orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'desc'),
+        limit(100)
       );
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({

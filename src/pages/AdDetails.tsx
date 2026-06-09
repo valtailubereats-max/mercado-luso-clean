@@ -103,64 +103,55 @@ const AdDetails = () => {
     try {
       setReviewsLoading(true);
       
-      // Carregar perfil do vendedor de sellerPublicProfiles
-      const userRef = doc(db, 'sellerPublicProfiles', sellerId);
-      let profileData: any = {};
-      try {
-        const userSnap = await getDocWithCacheFallback(userRef, `sellerPublicProfiles/${sellerId}`);
-        if (userSnap.exists()) {
-          profileData = userSnap.data();
-        } else {
-          console.warn(`[AdDetails] Perfil público do vendedor ${sellerId} não encontrado. Usando anunciante fallback.`);
-          profileData = {
-            uid: sellerId,
-            displayName: ad?.sellerName || 'Vendedor',
-            city: ad?.city || '',
-            country: ad?.country || 'Portugal',
-            rating: 0,
-            reviewCount: 0
-          };
-        }
-      } catch (profileErr) {
-        console.error('Erro ao buscar perfil público no sellerPublicProfiles:', profileErr);
-        profileData = {
-          uid: sellerId,
-          displayName: ad?.sellerName || 'Vendedor',
-          city: ad?.city || '',
-          country: ad?.country || 'Portugal',
-          rating: 0,
-          reviewCount: 0
-        };
-      }
+      const ratingAverage = (ad as any)?.sellerRating !== undefined ? (ad as any).sellerRating : ((ad as any)?.rating !== undefined ? (ad as any).rating : 0);
+      const ratingCount = (ad as any)?.sellerReviewCount !== undefined ? (ad as any).sellerReviewCount : ((ad as any)?.reviewCount !== undefined ? (ad as any).reviewCount : 0);
 
-      // Carregar reviews enviadas à este vendedor
-      const q = query(collection(db, 'reviews'), where('sellerId', '==', sellerId), limit(8));
-      const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${sellerId}`);
-      const reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-      
-      // Ordenação decrescente de data
-      reviewsData.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-        return timeB - timeA;
-      });
+      const profileData: any = {
+        uid: sellerId,
+        displayName: ad?.sellerName || 'Vendedor',
+        city: ad?.city || '',
+        country: ad?.country || 'Portugal',
+        ratingAverage,
+        ratingCount
+      };
+
+      console.log(`[AdDetails] Evitando fetch de sellerPublicProfiles para o vendedor ${sellerId} para poupar leituras Firestore.`);
+
+      // Carregar reviews enviadas a este vendedor se o utilizador estiver autenticado
+      let reviewsData: Review[] = [];
+      if (user) {
+        try {
+          const q = query(collection(db, 'reviews'), where('sellerId', '==', sellerId), limit(8));
+          const snap = await getDocsWithCacheFallback(q, `reviews/sellerId-${sellerId}`);
+          reviewsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+          
+          // Ordenação decrescente de data
+          reviewsData.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return timeB - timeA;
+          });
+        } catch (reviewErr) {
+          console.warn('Erro ao carregar avaliações do vendedor:', reviewErr);
+        }
+      }
 
       setSellerReviews(reviewsData);
 
       // Calcular fallback de estatísticas se campos inexistirem no doc principal
-      let ratingCount = profileData.reviewCount !== undefined ? profileData.reviewCount : (profileData.ratingCount !== undefined ? profileData.ratingCount : 0);
-      let ratingAverage = profileData.rating !== undefined ? profileData.rating : (profileData.ratingAverage !== undefined ? profileData.ratingAverage : 0);
+      let finalCount = profileData.ratingCount;
+      let finalAverage = profileData.ratingAverage;
 
-      if (reviewsData.length > 0 && (ratingCount === 0 || ratingAverage === 0)) {
-        ratingCount = reviewsData.length;
+      if (reviewsData.length > 0 && (finalCount === 0 || finalAverage === 0)) {
+        finalCount = reviewsData.length;
         const totalStars = reviewsData.reduce((sum, rev) => sum + (rev.rating || 0), 0);
-        ratingAverage = parseFloat((totalStars / ratingCount).toFixed(1));
+        finalAverage = parseFloat((totalStars / finalCount).toFixed(1));
       }
 
       setSellerProfile({
         ...profileData,
-        ratingAverage,
-        ratingCount
+        ratingAverage: finalAverage,
+        ratingCount: finalCount
       } as UserProfile);
 
     } catch (err) {
