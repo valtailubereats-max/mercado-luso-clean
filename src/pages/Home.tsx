@@ -118,8 +118,9 @@ const Home = () => {
     };
   };
 
-  const { profile, isAdmin } = useAuth();
+  const { profile, isAdmin, loading: authLoading } = useAuth();
   const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
+  const isConfirmedAdminOrModerator = !authLoading && isModeratorOrAdmin;
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
@@ -270,19 +271,28 @@ const Home = () => {
 
   // Buscar total de utilizadores no banco de dados se permitido/configurado
   useEffect(() => {
-    const shouldFetch = settings?.showTotalUsersBadge || isModeratorOrAdmin;
-    if (!shouldFetch) return;
-
     let active = true;
-    const fetchUsersCount = async () => {
-      // Evitar chamadas a getCountFromServer na coleção 'users' para utilizadores comuns, pois não têm permissão pelas regras de segurança
-      if (!isModeratorOrAdmin) {
-        if (active) {
-          setTotalUsersCount(852); // Fallback estático seguro
-        }
-        return;
-      }
 
+    // Se ainda está carregando a autenticação ou perfil, não podemos confirmar se é admin/moderador
+    if (authLoading) {
+      console.log('[USERS COUNT] skipped for non-admin (auth loading incerteza)');
+      if (active) {
+        setTotalUsersCount(852); // Fallback estático seguro
+      }
+      return;
+    }
+
+    // Se de fato não é admin ou moderador confirmado, use o fallback estático e não execute a consulta
+    if (!isConfirmedAdminOrModerator) {
+      console.log('[USERS COUNT] skipped for non-admin');
+      if (active) {
+        setTotalUsersCount(852); // Fallback estático seguro
+      }
+      return;
+    }
+
+    const fetchUsersCount = async () => {
+      console.log('[USERS COUNT] running for admin');
       try {
         const q = query(collection(db, 'users'));
         const snapshot = await getCountFromServer(q);
@@ -295,7 +305,7 @@ const Home = () => {
     };
     fetchUsersCount();
     return () => { active = false; };
-  }, [settings?.showTotalUsersBadge, isModeratorOrAdmin]);
+  }, [settings?.showTotalUsersBadge, isConfirmedAdminOrModerator, authLoading]);
 
   // Buscar anúncios destacados para carrossel no topo
   useEffect(() => {
