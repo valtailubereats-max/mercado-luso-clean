@@ -192,6 +192,10 @@ const Home = () => {
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Refs de controle para evitar chamadas de rede duplicadas consecutivas para o mesmo país
+  const lastFetchedAdsCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+  const lastFetchedFeaturedCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+
   // Helpers for country flags and labels
   const getCountryFlag = (countryVal: 'Portugal' | 'Reino Unido') => {
     return countryVal === 'Portugal' ? '🇵🇹' : '🇬🇧';
@@ -344,6 +348,13 @@ const Home = () => {
       return;
     }
 
+    // Se já iniciamos ou concluímos o carregamento de destacados para este país, evitamos duplo fetch
+    if (lastFetchedFeaturedCountry.current === country) {
+      console.log(`[FEATURED ADS] Prevendo fetch duplicado para o país: ${country}`);
+      return;
+    }
+    lastFetchedFeaturedCountry.current = country;
+
     let active = true;
     const fetchFeatured = async () => {
       // Verificação de cache de sessão de 5 minutos
@@ -371,6 +382,8 @@ const Home = () => {
         setFeaturedAds(docs);
       } catch (err) {
         console.error('Erro ao buscar anúncios destacados:', err);
+        // Se der erro, limpamos a ref para permitir nova tentativa
+        lastFetchedFeaturedCountry.current = null;
       }
     };
     fetchFeatured();
@@ -400,6 +413,13 @@ const Home = () => {
       console.log('[ADS] loading delayed until auth load complete');
       return;
     }
+
+    // Se já iniciamos ou concluímos o carregamento de anúncios gerais para este país, evitamos duplo fetch
+    if (lastFetchedAdsCountry.current === country) {
+      console.log(`[ADS] Prevendo fetch duplicado para o país: ${country}`);
+      return;
+    }
+    lastFetchedAdsCountry.current = country;
 
     let active = true;
     const fetchAds = async () => {
@@ -461,6 +481,8 @@ const Home = () => {
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
         if (active) setErrorMsg("Erro ao carregar anúncios.");
+        // Se der erro, limpamos a ref para permitir nova tentativa
+        lastFetchedAdsCountry.current = null;
       } finally {
         if (active) {
           setLoading(false);
