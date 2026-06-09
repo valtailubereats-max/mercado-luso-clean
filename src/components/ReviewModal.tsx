@@ -85,11 +85,33 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             
             const newCount = currentCount + 1;
             const newAvg = (currentAvg * currentCount + rating) / newCount;
+            const finalAvg = parseFloat(newAvg.toFixed(1));
             
             transaction.update(sellerRef, {
               ratingCount: newCount,
-              ratingAverage: parseFloat(newAvg.toFixed(1))
+              ratingAverage: finalAvg
             });
+
+            // Sincronizar sellerPublicProfiles na mesma transação
+            const publicRef = doc(db, 'sellerPublicProfiles', sellerId);
+            const publicDoc = await transaction.get(publicRef);
+            if (publicDoc.exists()) {
+              transaction.update(publicRef, {
+                rating: finalAvg,
+                reviewCount: newCount,
+                updatedAt: serverTimestamp()
+              });
+            } else {
+              transaction.set(publicRef, {
+                displayName: data.name || 'Vendedor',
+                city: data.city || '',
+                country: data.country || 'Portugal',
+                rating: finalAvg,
+                reviewCount: newCount,
+                createdAt: data.acceptedTermsAt || serverTimestamp(),
+                updatedAt: serverTimestamp()
+              }, { merge: true });
+            }
           }
         }
 

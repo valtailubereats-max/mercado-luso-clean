@@ -103,12 +103,34 @@ const AdDetails = () => {
     try {
       setReviewsLoading(true);
       
-      // Carregar perfil do vendedor
-      const userRef = doc(db, 'users', sellerId);
-      const userSnap = await getDocWithCacheFallback(userRef, `users/${sellerId}`);
+      // Carregar perfil do vendedor de sellerPublicProfiles
+      const userRef = doc(db, 'sellerPublicProfiles', sellerId);
       let profileData: any = {};
-      if (userSnap.exists()) {
-        profileData = userSnap.data();
+      try {
+        const userSnap = await getDocWithCacheFallback(userRef, `sellerPublicProfiles/${sellerId}`);
+        if (userSnap.exists()) {
+          profileData = userSnap.data();
+        } else {
+          console.warn(`[AdDetails] Perfil público do vendedor ${sellerId} não encontrado. Usando anunciante fallback.`);
+          profileData = {
+            uid: sellerId,
+            displayName: ad?.sellerName || 'Vendedor',
+            city: ad?.city || '',
+            country: ad?.country || 'Portugal',
+            rating: 0,
+            reviewCount: 0
+          };
+        }
+      } catch (profileErr) {
+        console.error('Erro ao buscar perfil público no sellerPublicProfiles:', profileErr);
+        profileData = {
+          uid: sellerId,
+          displayName: ad?.sellerName || 'Vendedor',
+          city: ad?.city || '',
+          country: ad?.country || 'Portugal',
+          rating: 0,
+          reviewCount: 0
+        };
       }
 
       // Carregar reviews enviadas à este vendedor
@@ -126,8 +148,8 @@ const AdDetails = () => {
       setSellerReviews(reviewsData);
 
       // Calcular fallback de estatísticas se campos inexistirem no doc principal
-      let ratingCount = profileData.ratingCount !== undefined ? profileData.ratingCount : 0;
-      let ratingAverage = profileData.ratingAverage !== undefined ? profileData.ratingAverage : (profileData.rating !== undefined ? profileData.rating : 0);
+      let ratingCount = profileData.reviewCount !== undefined ? profileData.reviewCount : (profileData.ratingCount !== undefined ? profileData.ratingCount : 0);
+      let ratingAverage = profileData.rating !== undefined ? profileData.rating : (profileData.ratingAverage !== undefined ? profileData.ratingAverage : 0);
 
       if (reviewsData.length > 0 && (ratingCount === 0 || ratingAverage === 0)) {
         ratingCount = reviewsData.length;

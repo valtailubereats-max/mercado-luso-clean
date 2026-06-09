@@ -95,9 +95,30 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const fetchSellerProfile = async () => {
     try {
       let profileData: any = {};
-      const docSnap = await getDocWithCacheFallback(doc(db, 'users', ad.sellerId), `users/${ad.sellerId}`);
-      if (docSnap.exists()) {
-        profileData = docSnap.data();
+      try {
+        const docSnap = await getDocWithCacheFallback(doc(db, 'sellerPublicProfiles', ad.sellerId), `sellerPublicProfiles/${ad.sellerId}`);
+        if (docSnap.exists()) {
+          profileData = docSnap.data();
+        } else {
+          profileData = {
+            uid: ad.sellerId,
+            displayName: ad.sellerName || 'Vendedor',
+            city: ad.city || '',
+            country: ad.country || 'Portugal',
+            rating: 0,
+            reviewCount: 0
+          };
+        }
+      } catch (profileErr) {
+        console.error('Error fetching seller public profile:', profileErr);
+        profileData = {
+          uid: ad.sellerId,
+          displayName: ad.sellerName || 'Vendedor',
+          city: ad.city || '',
+          country: ad.country || 'Portugal',
+          rating: 0,
+          reviewCount: 0
+        };
       }
       setReviewsLoading(true);
       const q = query(collection(db, 'reviews'), where('sellerId', '==', ad.sellerId), limit(5));
@@ -110,9 +131,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       });
       setSellerReviews(reviewsData);
 
-      // Calc fallback
-      let ratingCount = profileData.ratingCount !== undefined ? profileData.ratingCount : 0;
-      let ratingAverage = profileData.ratingAverage !== undefined ? profileData.ratingAverage : (profileData.rating !== undefined ? profileData.rating : 0);
+      // Calc fallback using either the new 'reviewCount'/'rating' or legacy fields
+      let ratingCount = profileData.reviewCount !== undefined ? profileData.reviewCount : (profileData.ratingCount !== undefined ? profileData.ratingCount : 0);
+      let ratingAverage = profileData.rating !== undefined ? profileData.rating : (profileData.ratingAverage !== undefined ? profileData.ratingAverage : 0);
 
       if (reviewsData.length > 0 && (ratingCount === 0 || ratingAverage === 0)) {
         ratingCount = reviewsData.length;

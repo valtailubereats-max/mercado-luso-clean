@@ -5,7 +5,7 @@ import { auth, db, getDocsWithCacheFallback } from './firebase';
 import { signOut } from 'firebase/auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
-import { collection, query, where, orderBy, doc, updateDoc, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, updateDoc, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -66,6 +66,53 @@ const Navbar = () => {
     if (navSearch.trim()) {
       navigate(`/?search=${encodeURIComponent(navSearch.trim())}`);
       setNavSearch('');
+    }
+  };
+
+  React.useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as any[];
+      // Filtra não lidas e ordena por criação decrescente
+      const unreadList = list
+        .filter(n => n.read === false)
+        .sort((a, b) => {
+          const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+          const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+          return timeB - timeA;
+        });
+      setNotifications(unreadList);
+    }, (err) => {
+      console.error('Erro ao ouvir notificações:', err);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleCreateTestNotification = async () => {
+    if (!user) return;
+    try {
+      console.log('[DEBUG] Criando notificação teste para:', user.uid);
+      await addDoc(collection(db, 'notifications'), {
+        userId: user.uid,
+        title: 'Teste de Notificação',
+        message: 'Esta é uma notificação de teste criada temporariamente por um administrador.',
+        read: false,
+        createdAt: serverTimestamp()
+      });
+      console.log('[DEBUG] Notificação criada com sucesso!');
+    } catch (err) {
+      console.error('Erro ao criar notificação de teste:', err);
+      alert('Apenas administradores podem criar notificações (as regras de segurança bloqueiam escrita de não-admins).');
     }
   };
 
@@ -223,8 +270,17 @@ const Navbar = () => {
                 <AnimatePresence>
                   {showNotifications && (
                     <motion.div initial={{ opacity:0,y:10,scale:0.95 }} animate={{ opacity:1,y:0,scale:1 }} exit={{ opacity:0,y:10,scale:0.95 }} className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                      <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+                      <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
                         <h3 className="font-bold text-slate-900">Notificações</h3>
+                        {isAdmin && (
+                          <button
+                            onClick={handleCreateTestNotification}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-sm"
+                            title="Criar notificação de teste para o seu próprio utilizador"
+                          >
+                            + Teste Admin
+                          </button>
+                        )}
                       </div>
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há novas notificações.</div> :

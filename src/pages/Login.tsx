@@ -111,6 +111,18 @@ const Login = () => {
             acceptedTerms: true,
             acceptedTermsAt: serverTimestamp()
           });
+          
+          // Sincronizar sellerPublicProfiles:
+          try {
+            await setDoc(doc(db, 'sellerPublicProfiles', user.uid), {
+              displayName: user.displayName || 'Utilizador',
+              country: finalCountry,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (syncErr) {
+            console.error('[Sync] Falha ao criar sellerPublicProfiles em Google Login:', syncErr);
+          }
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
@@ -177,6 +189,18 @@ const Login = () => {
             acceptedTerms: true,
             acceptedTermsAt: serverTimestamp()
           });
+          
+          // Sincronizar sellerPublicProfiles:
+          try {
+            await setDoc(doc(db, 'sellerPublicProfiles', user.uid), {
+              displayName: name,
+              country: profileCountry,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (syncErr) {
+            console.error('[Sync] Falha ao criar sellerPublicProfiles em Email register:', syncErr);
+          }
           // Synchronize locally too
           localStorage.setItem('selectedCountry', profileCountry);
         } catch (err) {

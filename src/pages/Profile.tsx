@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { clearHomeCache } from '../utils/cache';
@@ -249,6 +249,26 @@ const Profile = () => {
       const fullPhone = `${countryCode}${digitsOnly}`;
       // Use setDoc with merge: true to avoid "No document to update" if creation failed
       await setDoc(docRef, { name, phone: fullPhone, city, country }, { merge: true });
+      
+      // Sincronizar para o perfil público (sellerPublicProfiles)
+      try {
+        const publicRef = doc(db, 'sellerPublicProfiles', user.uid);
+        const publicSnap = await getDoc(publicRef);
+        const now = new Date();
+        const fallbackCreated = profile?.acceptedTermsAt ? (profile.acceptedTermsAt.toDate ? profile.acceptedTermsAt.toDate() : profile.acceptedTermsAt) : now;
+        
+        await setDoc(publicRef, {
+          displayName: name,
+          city: city,
+          country: country,
+          createdAt: publicSnap.exists() && publicSnap.data().createdAt ? publicSnap.data().createdAt : fallbackCreated,
+          updatedAt: now
+        }, { merge: true });
+        console.log('[Sync] Sincronizou sellerPublicProfiles com sucesso.');
+      } catch (syncErr) {
+        console.error('[Sync] Erro ao sincronizar para sellerPublicProfiles:', syncErr);
+      }
+
       localStorage.setItem('selectedCountry', country);
       await refreshProfile();
       navigate('/');

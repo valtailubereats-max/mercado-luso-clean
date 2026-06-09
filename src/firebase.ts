@@ -64,6 +64,8 @@ function logAuditRead(pathLabel: string) {
     } else {
       console.log('[READ] AdDetails seller');
     }
+  } else if (label.startsWith('sellerpublicprofiles/')) {
+    console.log('[READ] AdDetails seller');
   } else if (label.startsWith('reviews/')) {
     console.log('[READ] Reviews');
   } else if (label.startsWith('favorites/')) {
