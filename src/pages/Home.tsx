@@ -192,9 +192,19 @@ const Home = () => {
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Refs de controle para evitar chamadas de rede duplicadas consecutivas para o mesmo país
-  const lastFetchedAdsCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
-  const lastFetchedFeaturedCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+  // Manter controle atualizado do país selecionado em uma ref mutável para o cleanup do useEffect
+  const countryRef = useRef(country);
+  useEffect(() => {
+    countryRef.current = country;
+  }, [country]);
+
+  // Controle de requisições de anúncios gerais
+  const inFlightAdsCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+  const fetchedAdsCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+
+  // Controle de requisições de anúncios destacados
+  const inFlightFeaturedCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+  const fetchedFeaturedCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
 
   // Helpers for country flags and labels
   const getCountryFlag = (countryVal: 'Portugal' | 'Reino Unido') => {
@@ -348,12 +358,18 @@ const Home = () => {
       return;
     }
 
-    // Se já iniciamos ou concluímos o carregamento de destacados para este país, evitamos duplo fetch
-    if (lastFetchedFeaturedCountry.current === country) {
-      console.log(`[FEATURED ADS] Prevendo fetch duplicado para o país: ${country}`);
+    // Se já foi buscado com sucesso para este país, evitamos chamar novamente
+    if (fetchedFeaturedCountry.current === country) {
+      console.log(`[FEATURED ADS] Já carregado com sucesso para o país: ${country}`);
       return;
     }
-    lastFetchedFeaturedCountry.current = country;
+
+    // Se já existe uma requisição em andamento para este mesmo país, não iniciamos outra
+    if (inFlightFeaturedCountry.current === country) {
+      console.log(`[FEATURED ADS] Fetch em andamento para o país: ${country}`);
+      return;
+    }
+    inFlightFeaturedCountry.current = country;
 
     let active = true;
     const fetchFeatured = async () => {
@@ -364,6 +380,8 @@ const Home = () => {
       if (lastFeaturedFetch > 0 && (now - lastFeaturedFetch < 5 * 60 * 1000)) {
         console.log(`[Cache HIT] Recuperou destacados da sessão (${country}). Total: ${featuredFromCache.length}`);
         setFeaturedAds(featuredFromCache);
+        fetchedFeaturedCountry.current = country;
+        inFlightFeaturedCountry.current = null;
         return;
       }
       try {
@@ -380,14 +398,25 @@ const Home = () => {
         
         setCachedFeaturedAds(docs, country);
         setFeaturedAds(docs);
+        fetchedFeaturedCountry.current = country;
       } catch (err) {
         console.error('Erro ao buscar anúncios destacados:', err);
-        // Se der erro, limpamos a ref para permitir nova tentativa
-        lastFetchedFeaturedCountry.current = null;
+        // Se der erro, limpamos as refs para permitir nova tentativa
+        fetchedFeaturedCountry.current = null;
+      } finally {
+        if (active) {
+          inFlightFeaturedCountry.current = null;
+        }
       }
     };
     fetchFeatured();
-    return () => { active = false; };
+    return () => { 
+      // Apenas consideramos inativo se houver real mudança de país.
+      if (countryRef.current !== country) {
+        active = false;
+        inFlightFeaturedCountry.current = null;
+      }
+    };
   }, [country, authLoading]);
 
   useEffect(() => {
@@ -414,12 +443,18 @@ const Home = () => {
       return;
     }
 
-    // Se já iniciamos ou concluímos o carregamento de anúncios gerais para este país, evitamos duplo fetch
-    if (lastFetchedAdsCountry.current === country) {
-      console.log(`[ADS] Prevendo fetch duplicado para o país: ${country}`);
+    // Se já foi carregado com sucesso para este país, evitamos chamar novamente
+    if (fetchedAdsCountry.current === country) {
+      console.log(`[ADS] Já carregado com sucesso para o país: ${country}`);
       return;
     }
-    lastFetchedAdsCountry.current = country;
+
+    // Se já existe uma requisição em andamento para este mesmo país, não iniciamos outra
+    if (inFlightAdsCountry.current === country) {
+      console.log(`[ADS] Fetch em andamento para o país: ${country}`);
+      return;
+    }
+    inFlightAdsCountry.current = country;
 
     let active = true;
     const fetchAds = async () => {
@@ -431,6 +466,8 @@ const Home = () => {
         console.log(`[Cache HIT] Recuperou anúncios gerais da sessão (${country}). Total:`, adsFromCache.length);
         setAds(adsFromCache);
         setLoading(false);
+        fetchedAdsCountry.current = country;
+        inFlightAdsCountry.current = null;
         return;
       }
       setLoading(true);
@@ -478,20 +515,28 @@ const Home = () => {
 
         setCachedAds(adsData, country);
         setAds(adsData);
+        fetchedAdsCountry.current = country;
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
         if (active) setErrorMsg("Erro ao carregar anúncios.");
-        // Se der erro, limpamos a ref para permitir nova tentativa
-        lastFetchedAdsCountry.current = null;
+        // Se der erro, limpamos as refs para permitir nova tentativa
+        fetchedAdsCountry.current = null;
       } finally {
         if (active) {
           setLoading(false);
+          inFlightAdsCountry.current = null;
         }
       }
     };
 
     fetchAds();
-    return () => { active = false; };
+    return () => { 
+      // Apenas consideramos inativo se houver real mudança de país.
+      if (countryRef.current !== country) {
+        active = false;
+        inFlightAdsCountry.current = null;
+      }
+    };
   }, [country, authLoading]); // Recarrega sempre que mudar de país de forma altamente otimizada, ou depende de país e estado de auth
 
   const handleLoadMore = () => {
