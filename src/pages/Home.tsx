@@ -118,9 +118,12 @@ const Home = () => {
     };
   };
 
-  const { profile, isAdmin, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, loading: authLoading } = useAuth();
   const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
-  const isConfirmedAdminOrModerator = !authLoading && isModeratorOrAdmin;
+  // Só consideramos administrador/moderador confirmado para consultas restritas (como contagem de users)
+  // se o perfil estiver totalmente carregado no banco de dados e contiver a role de 'admin' ou 'moderator'.
+  const isConfirmedAdminOrModerator = !authLoading && 
+    (profile?.role === 'admin' || profile?.role === 'moderator');
   const [searchParams] = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
@@ -272,6 +275,16 @@ const Home = () => {
   // Buscar total de utilizadores no banco de dados se permitido/configurado
   useEffect(() => {
     let active = true;
+
+    // Log de diagnóstico temporário para confirmar quem e por que está executando a contagem de users
+    console.log('[ROLE DEBUG]', {
+      authLoading,
+      isAdmin,
+      profileRole: profile?.role,
+      uid: user?.uid,
+      email: user?.email,
+      isConfirmedAdminOrModerator
+    });
 
     // Se ainda está carregando a autenticação ou perfil, não podemos confirmar se é admin/moderador
     if (authLoading) {
