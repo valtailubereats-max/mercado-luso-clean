@@ -22,6 +22,8 @@ export interface Review {
   comment: string;
   success: boolean; // "Correu tudo bem com a negociação?"
   createdAt: any; // Firestore Timestamp
+  reviewerId?: string;
+  revieweeId?: string;
 }
 
 export interface MarketplaceSettings {
