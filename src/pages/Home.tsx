@@ -131,11 +131,22 @@ const Home = () => {
   const [city, setCity] = useState('Todas');
   
   const [country, setCountry] = useState<'Portugal' | 'Reino Unido'>(() => {
-    // 1. Check localStorage first
+    // 1. Check URL parameters first for initial load precision
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlCountry = params.get('country') as 'Portugal' | 'Reino Unido' | null;
+      if (urlCountry === 'Portugal' || urlCountry === 'Reino Unido') {
+        return urlCountry;
+      }
+    } catch (e) {
+      console.warn("Could not determine country from URL parameters:", e);
+    }
+
+    // 2. Check localStorage second
     const saved = localStorage.getItem('selectedCountry') as 'Portugal' | 'Reino Unido' | null;
     if (saved === 'Portugal' || saved === 'Reino Unido') return saved;
     
-    // 2. Try safe detection based on browser timezone and language
+    // 3. Try safe detection based on browser timezone and language
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const lang = navigator.language;
@@ -158,7 +169,7 @@ const Home = () => {
       console.warn("Could not determine timezone:", e);
     }
     
-    // 3. Fallback per instructions: Reino Unido
+    // 4. Fallback per instructions: Reino Unido
     return 'Reino Unido';
   });
 
@@ -324,6 +335,15 @@ const Home = () => {
 
   // Buscar anúncios destacados para carrossel no topo
   useEffect(() => {
+    // Se ainda está carregando a autenticação e não temos país explícito definido pelo utilizador, 
+    // esperamos para não disparar consultas desnecessárias de Reino Unido (fallback) antes do perfil estar pronto
+    const hasExplicitCountry = localStorage.getItem('selectedCountry') || 
+      new URLSearchParams(window.location.search).get('country');
+    if (authLoading && !hasExplicitCountry) {
+      console.log('[FEATURED ADS] loading delayed until auth load complete');
+      return;
+    }
+
     let active = true;
     const fetchFeatured = async () => {
       // Verificação de cache de sessão de 5 minutos
@@ -355,7 +375,7 @@ const Home = () => {
     };
     fetchFeatured();
     return () => { active = false; };
-  }, [country]);
+  }, [country, authLoading]);
 
   useEffect(() => {
     const search = searchParams.get('search');
@@ -372,6 +392,15 @@ const Home = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    // Se ainda está carregando a autenticação e não temos país explícito definido pelo utilizador, 
+    // esperamos para não disparar consultas desnecessárias de Reino Unido (fallback) antes do perfil estar pronto
+    const hasExplicitCountry = localStorage.getItem('selectedCountry') || 
+      new URLSearchParams(window.location.search).get('country');
+    if (authLoading && !hasExplicitCountry) {
+      console.log('[ADS] loading delayed until auth load complete');
+      return;
+    }
+
     let active = true;
     const fetchAds = async () => {
       // Verificação de cache de sessão de 5 minutos
@@ -441,7 +470,7 @@ const Home = () => {
 
     fetchAds();
     return () => { active = false; };
-  }, [country]); // Recarrega sempre que mudar de país de forma altamente otimizada, ou depende de país
+  }, [country, authLoading]); // Recarrega sempre que mudar de país de forma altamente otimizada, ou depende de país e estado de auth
 
   const handleLoadMore = () => {
     if (isFetchingMore) return;
