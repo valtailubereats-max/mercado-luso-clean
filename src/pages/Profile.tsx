@@ -43,74 +43,46 @@ const Profile = () => {
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
-  const interestsListenersRef = useRef<Record<string, any>>({});
 
-  useEffect(() => {
-    return () => {
-      // Clean up all active real-time listeners on unmount
-      Object.values(interestsListenersRef.current).forEach(unsub => {
-        try {
-          if (typeof unsub === 'function') {
-            unsub();
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      });
-    };
-  }, []);
-
-  const handleToggleInterests = (adId: string) => {
+  const handleToggleInterests = async (adId: string) => {
     if (expandedInterestsAdId === adId) {
       setExpandedInterestsAdId(null);
-      // Clean up unsubscribe for this ad to save active Firestore connections/reads
-      const unsub = interestsListenersRef.current[adId];
-      if (typeof unsub === 'function') {
-        try {
-          unsub();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      delete interestsListenersRef.current[adId];
       return;
     }
     setExpandedInterestsAdId(adId);
 
     if (!user) return;
 
-    if (!interestsListenersRef.current[adId]) {
-      setAdInterests(prev => ({ ...prev, [adId]: { loading: true, data: [] } }));
-      try {
-        const q = query(
-          collection(db, 'adInterests'),
-          where('adId', '==', adId),
-          where('sellerId', '==', user.uid),
-          limit(50)
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const list = snapshot.docs.map(doc => doc.data());
-          console.log(`[Profile] Real-time adInterests update for adId ${adId} - count: ${list.length}`);
-          setAdInterests(prev => ({
-            ...prev,
-            [adId]: { loading: false, data: list }
-          }));
-        }, (err) => {
-          console.error('[Profile] Error in adInterests real-time subscription:', err);
-          setAdInterests(prev => ({
-            ...prev,
-            [adId]: { loading: false, data: [] }
-          }));
-          handleFirestoreError(err, OperationType.LIST, `adInterests/${adId}`);
-        });
-        interestsListenersRef.current[adId] = unsubscribe;
-      } catch (err) {
-        console.error('[Profile] Exception setting up real-time listener:', err);
-        setAdInterests(prev => ({
-          ...prev,
-          [adId]: { loading: false, data: [] }
-        }));
-      }
+    setAdInterests(prev => ({ ...prev, [adId]: { loading: true, data: [] } }));
+    try {
+      const q = query(
+        collection(db, 'adInterests'),
+        where('adId', '==', adId),
+        where('sellerId', '==', user.uid),
+        limit(50)
+      );
+      
+      console.log(`[Profile] Iniciando busca manual de adInterests para o anúncio: "${adId}".`);
+      console.log(`[Profile] Usuário/Vendedor autenticado: "${user.uid}".`);
+      console.log(`[Profile] Query Firestore: collection(db, 'adInterests'), where('adId', '==', '${adId}'), where('sellerId', '==', '${user.uid}'), limit(50)`);
+
+      const snapshot = await getDocs(q);
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      console.log(`[Profile] Busca manual concluída com sucesso. Quantidade retornada: ${list.length}`);
+      console.log(`[Profile] Dados retornados:`, JSON.stringify(list, null, 2));
+
+      setAdInterests(prev => ({
+        ...prev,
+        [adId]: { loading: false, data: list }
+      }));
+    } catch (err) {
+      console.error('[Profile] Erro ao buscar manual adInterests:', err);
+      setAdInterests(prev => ({
+        ...prev,
+        [adId]: { loading: false, data: [] }
+      }));
+      handleFirestoreError(err, OperationType.GET, `adInterests/${adId}`);
     }
   };
 

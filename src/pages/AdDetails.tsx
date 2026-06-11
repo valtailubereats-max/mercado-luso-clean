@@ -214,9 +214,13 @@ const AdDetails = () => {
       console.log('[AdDetails] Safety terms already accepted. Registering interest directly.');
       incrementWhatsappClicks();
       showToastMsg('loading', 'A registar o seu interesse no anúncio...');
-      registerInterest().then((res) => {
+      registerInterest().then((res: any) => {
         if (res.success) {
-          showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+          if (res.bypassed) {
+            showToastMsg('success', 'A abrir o WhatsApp...', 2000);
+          } else {
+            showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+          }
           setTimeout(() => {
             window.open(getWhatsappUrl(), '_blank');
           }, 1000);
@@ -232,54 +236,73 @@ const AdDetails = () => {
     }
   };
 
-  const registerInterest = async (): Promise<{ success: boolean; error?: string }> => {
+  const registerInterest = async (): Promise<{ success: boolean; error?: string; bypassed?: boolean }> => {
     if (!user || !ad) {
       console.warn('[AdDetails] Cannot register interest: user or ad is missing.');
       return { success: false, error: 'Sessão expirada ou anúncio indisponível.' };
     }
 
-    try {
-      const docId = `${ad.id}_${user.uid}`;
-      const rawName = (profile?.name || user.displayName || user.email || '').trim();
-      const sanitizedName = rawName.length > 0 ? rawName : 'Utilizador do Mercado Luso';
-      const truncatedName = sanitizedName.substring(0, 95); // Ensure it's under 100 character limit of rules
-      
-      const interestData = {
-        id: docId,
-        adId: ad.id,
-        sellerId: ad.sellerId || '',
-        interestedUserId: user.uid,
-        interestedUserName: truncatedName,
-        createdAt: serverTimestamp(),
-        source: 'whatsapp'
-      };
-      
-      console.log('[AdDetails] Registering raw interest in Firestore:', interestData);
-      await setDoc(doc(db, 'adInterests', docId), interestData);
-      console.log('[AdDetails] Interest successfully registered/updated in Firestore!');
+    // 3. Em adInterests: não usar sellerId vazio. se ad.sellerId estiver ausente, não gravar adInterest e registrar erro claro no console. não tentar notification. abrir WhatsApp normalmente.
+    if (!ad.sellerId || !ad.sellerId.trim()) {
+      console.error(`[AdDetails] Erro de Integridade: ad.sellerId está ausente ou vazio para o anúncio ID "${ad.id}". Registro de adInterests cancelado e abertura de WhatsApp liberada.`);
+      return { success: true, bypassed: true };
+    }
 
-      // Criar notificação para o vendedor do anúncio
-      if (ad.sellerId && ad.sellerId !== user.uid) {
-        const notifId = `interest_${ad.id}_${user.uid}_${Date.now()}`;
-        const notifData = {
-          userId: ad.sellerId,
-          title: 'Novo interesse em ' + ad.title.substring(0, 25) + '...',
-          message: `${truncatedName} clicou no botão para o contactar via WhatsApp para o anúncio "${ad.title}".`,
-          createdAt: serverTimestamp(),
-          read: false,
-          adId: ad.id,
-          type: 'whatsapp_interest'
-        };
-        console.log('[AdDetails] Creating notification in Firestore:', notifData);
-        await setDoc(doc(db, 'notifications', notifId), notifData);
-        console.log('[AdDetails] Notification successfully created!');
-      }
+    const docId = `${ad.id}_${user.uid}`;
+    const rawName = (profile?.name || user.displayName || user.email || '').trim();
+    const sanitizedName = rawName.length > 0 ? rawName : 'Utilizador do Mercado Luso';
+    const truncatedName = sanitizedName.substring(0, 95); // Ensure it's under 100 character limit of rules
+    
+    const interestData = {
+      id: docId,
+      adId: ad.id,
+      sellerId: ad.sellerId.trim(),
+      interestedUserId: user.uid,
+      interestedUserName: truncatedName,
+      createdAt: serverTimestamp(),
+      source: 'whatsapp'
+    };
+    
+    // 5. Logs obrigatórios
+    console.log(`[AdDetails] Iniciando gravação de adInterest.`);
+    console.log(`- user.uid: "${user.uid}"`);
+    console.log(`- ad.id: "${ad.id}"`);
+    console.log(`- ad.sellerId: "${ad.sellerId.trim()}"`);
+    console.log(`- interestId: "${docId}"`);
+    console.log(`- payload:`, JSON.stringify(interestData, null, 2));
+
+    try {
+      await setDoc(doc(db, 'adInterests', docId), interestData);
+      console.log(`[AdDetails] Sucesso ao gravar adInterest na coleção: "${docId}".`);
 
       const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
       localStorage.setItem(cacheKey, 'true');
+
+      // 2. Separar completamente: gravar adInterest e criar notification. O erro de notification NÃO pode impedir o registro de adInterest.
+      // Tentar criar notification em bloco separado; se notification falhar, apenas console.warn
+      if (ad.sellerId && ad.sellerId.trim() !== user.uid) {
+        try {
+          const notifId = `interest_${ad.id}_${user.uid}_${Date.now()}`;
+          const notifData = {
+            userId: ad.sellerId.trim(),
+            title: 'Novo interesse em ' + ad.title.substring(0, 25) + '...',
+            message: `${truncatedName} clicou no botão para o contactar via WhatsApp para o anúncio "${ad.title}".`,
+            createdAt: serverTimestamp(),
+            read: false,
+            adId: ad.id,
+            type: 'whatsapp_interest'
+          };
+          console.log('[AdDetails] Tentando criar notificação em bloco separado:', notifData);
+          await setDoc(doc(db, 'notifications', notifId), notifData);
+          console.log('[AdDetails] Notificação gravada com sucesso!');
+        } catch (notifErr) {
+          console.warn('[AdDetails] Falha não bloqueante ao criar notificação de interesse:', notifErr);
+        }
+      }
+
       return { success: true };
     } catch (err) {
-      console.error('[AdDetails] Detailed error registering adInterest:', err);
+      console.error(`[AdDetails] Erro ao gravar adInterest com ID ${docId}:`, err);
       const errMsg = err instanceof Error ? err.message : String(err);
       return { success: false, error: errMsg };
     }
@@ -293,7 +316,11 @@ const AdDetails = () => {
         showToastMsg('loading', 'A registar o seu interesse no anúncio...');
         const res = await registerInterest();
         if (res.success) {
-          showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+          if (res.bypassed) {
+            showToastMsg('success', 'A abrir o WhatsApp...', 2000);
+          } else {
+            showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+          }
           setTimeout(() => {
             window.open(getWhatsappUrl(), '_blank');
           }, 1000);
