@@ -143,10 +143,10 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (currentTab === 'compras') {
-      fetchPurchasedAds();
-    }
-  }, [currentTab, user]);
+  if (user) {
+    fetchPurchasedAds();
+  }
+}, [user]);
 
   const updateReferralStatsAndCredits = async () => {
     if (!user || !profile) return;
