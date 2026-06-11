@@ -287,6 +287,17 @@ const Login = () => {
           </p>
         </div>
 
+        {searchParams.get('message') && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-indigo-50 text-indigo-700 p-4 rounded-2xl mb-6 text-sm font-semibold border border-indigo-100 flex items-start gap-2.5"
+          >
+            <ShieldCheck size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+            <span>{searchParams.get('message')}</span>
+          </motion.div>
+        )}
+
         {error && (
           <motion.div 
             initial={{ opacity: 0, x: -10 }}

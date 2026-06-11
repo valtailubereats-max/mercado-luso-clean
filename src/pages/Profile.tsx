@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit, getDocs } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { clearHomeCache } from '../utils/cache';
@@ -40,6 +40,41 @@ const Profile = () => {
   const [copiedReferral, setCopiedReferral] = useState(false);
   const [favoriteAds, setFavoriteAds] = useState<Ad[]>([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
+
+  const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
+  const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
+
+  const handleToggleInterests = async (adId: string) => {
+    if (expandedInterestsAdId === adId) {
+      setExpandedInterestsAdId(null);
+      return;
+    }
+    setExpandedInterestsAdId(adId);
+
+    if (!adInterests[adId]) {
+      setAdInterests(prev => ({ ...prev, [adId]: { loading: true, data: [] } }));
+      try {
+        const q = query(
+          collection(db, 'adInterests'),
+          where('adId', '==', adId),
+          limit(50)
+        );
+        const querySnapshot = await getDocs(q);
+        const list = querySnapshot.docs.map(doc => doc.data());
+        console.log(`[Profile] manual query resolved for adId ${adId} - count: ${list.length}`);
+        setAdInterests(prev => ({
+          ...prev,
+          [adId]: { loading: false, data: list }
+        }));
+      } catch (err) {
+        console.error('[Profile] Error getDocs for adInterests:', err);
+        setAdInterests(prev => ({
+          ...prev,
+          [adId]: { loading: false, data: [] }
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchFavoriteAds = async () => {
@@ -922,6 +957,50 @@ const Profile = () => {
                       <RefreshCcw size={14} /> 
                       {ad.adStatus === 'near_expiration' ? 'Renovar Anúncio' : 'Relistar Anúncio'}
                     </button>
+                  )}
+
+                  {/* Interessados Section */}
+                  <button
+                    onClick={() => handleToggleInterests(ad.id)}
+                    className="mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-indigo-50/50 text-indigo-700 hover:bg-indigo-50 border border-slate-200 transition-all cursor-pointer"
+                  >
+                    <span>👥</span>
+                    <span>
+                      {expandedInterestsAdId === ad.id ? 'Ocultar Interessados' : 'Ver Interessados'}
+                    </span>
+                  </button>
+
+                  {/* Expanded Interests List */}
+                  {expandedInterestsAdId === ad.id && (
+                    <div className="mt-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
+                      <div className="flex justify-between items-center mb-2 font-bold text-slate-700">
+                        <span>Interessados ({adInterests[ad.id]?.data?.length || 0})</span>
+                      </div>
+                      {adInterests[ad.id]?.loading ? (
+                        <div className="py-3 text-center text-slate-400">Aprimorando consulta...</div>
+                      ) : !adInterests[ad.id]?.data || adInterests[ad.id]?.data.length === 0 ? (
+                        <div className="py-3 text-center text-slate-400">Ainda sem interessados registados neste anúncio.</div>
+                      ) : (
+                        <div className="max-h-40 overflow-y-auto space-y-2">
+                          {adInterests[ad.id].data.map((interest: any, subIdx: number) => {
+                            const contactDate = interest.createdAt?.toDate 
+                              ? format(interest.createdAt.toDate(), "dd/MM/yyyy HH:mm")
+                              : 'Recentemente';
+                            return (
+                              <div key={interest.id || subIdx} className="bg-white p-2 rounded-xl border border-slate-100 flex justify-between items-center gap-2">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-slate-800 truncate">{interest.interestedUserName}</p>
+                                  <p className="text-[10px] text-slate-400">Contacto: {contactDate}</p>
+                                </div>
+                                <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shrink-0">
+                                  WhatsApp
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </motion.div>

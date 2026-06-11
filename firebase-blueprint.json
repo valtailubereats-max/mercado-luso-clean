@@ -181,6 +181,21 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["displayName", "country", "createdAt", "updatedAt"]
+    },
+    "AdInterest": {
+      "title": "AdInterest",
+      "description": "Expressed user interest in an advertisement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "adId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "interestedUserId": { "type": "string" },
+        "interestedUserName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "source": { "type": "string", "enum": ["whatsapp"] }
+      },
+      "required": ["id", "adId", "sellerId", "interestedUserId", "interestedUserName", "createdAt", "source"]
     }
   },
   "firestore": {
@@ -227,6 +242,10 @@
     "/sellerPublicProfiles/{userId}": {
       "schema": "SellerPublicProfile",
       "description": "Public profiles of sellers"
+    },
+    "/adInterests/{interestId}": {
+      "schema": "AdInterest",
+      "description": "User expressions of interest"
     }
   }
 }

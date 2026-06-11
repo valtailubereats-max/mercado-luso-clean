@@ -9,7 +9,7 @@ import { formatPrice, getAdUrl } from '../utils';
 import OptimizedImage from './OptimizedImage';
 import ReviewModal from './ReviewModal';
 
-import { doc, updateDoc, increment, setDoc, deleteDoc, collection, query, where, limit } from 'firebase/firestore';
+import { doc, updateDoc, increment, setDoc, deleteDoc, collection, query, where, limit, serverTimestamp } from 'firebase/firestore';
 import { db, getDocWithCacheFallback, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,7 +19,7 @@ interface AdCardProps {
 }
 
 const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
-  const { user, favorites, toggleFavoriteGlobal } = useAuth();
+  const { user, profile, favorites, toggleFavoriteGlobal } = useAuth();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -179,12 +179,47 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const handleContactClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) {
+      navigate(`/login?message=${encodeURIComponent('Para contactar o vendedor, faça login ou crie uma conta gratuita.')}`);
+      return;
+    }
     setShowContactWarning(true);
   };
 
-  const confirmContact = () => {
+  const registerInterest = async () => {
+    if (!user) return;
+    const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
+    if (localStorage.getItem(cacheKey) === 'true') {
+      console.log('[AdCard] Interest already registered for this ad/user in session:', ad.id);
+      return;
+    }
+
+    try {
+      const docId = `${ad.id}_${user.uid}`;
+      const interestData = {
+        id: docId,
+        adId: ad.id,
+        sellerId: ad.sellerId,
+        interestedUserId: user.uid,
+        interestedUserName: profile?.name || user.displayName || user.email || 'Utilizador do Mercado Luso',
+        createdAt: serverTimestamp(),
+        source: 'whatsapp'
+      };
+      
+      console.log('[AdCard] Registering interest in Firestore:', interestData);
+      await setDoc(doc(db, 'adInterests', docId), interestData);
+      localStorage.setItem(cacheKey, 'true');
+    } catch (err) {
+      console.error('[AdCard] Error registering adInterest:', err);
+    }
+  };
+
+  const confirmContact = async () => {
     if (acceptedContactTerms) {
       incrementClicks();
+      if (user) {
+        await registerInterest();
+      }
       window.open(whatsappUrl, '_blank');
       setShowContactWarning(false);
     }

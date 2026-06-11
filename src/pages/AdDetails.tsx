@@ -7,7 +7,7 @@ import {
   Trash2, Edit, AlertCircle, ShieldAlert, ShoppingBag, Eye, Award, Calendar, Share2
 } from 'lucide-react';
 import { 
-  doc, updateDoc, increment, setDoc, collection, query, where, limit, getDoc 
+  doc, updateDoc, increment, setDoc, collection, query, where, limit, getDoc, serverTimestamp 
 } from 'firebase/firestore';
 import { db, getDocWithCacheFallback, getDocsWithCacheFallback, parseFirestoreDate } from '../firebase';
 import { Ad, UserProfile, Review } from '../types';
@@ -19,7 +19,7 @@ import ReviewModal from '../components/ReviewModal';
 
 const AdDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, favorites, toggleFavoriteGlobal, isAdmin } = useAuth();
+  const { user, profile, favorites, toggleFavoriteGlobal, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const [ad, setAd] = useState<Ad | null>(null);
@@ -192,12 +192,47 @@ const AdDetails = () => {
   };
 
   const handleContactClick = () => {
+    if (!user) {
+      navigate(`/login?message=${encodeURIComponent('Para contactar o vendedor, faça login ou crie uma conta gratuita.')}`);
+      return;
+    }
     setShowContactWarning(true);
   };
 
-  const handleConfirmWhatsapp = () => {
+  const registerInterest = async () => {
+    if (!user || !ad) return;
+    const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
+    if (localStorage.getItem(cacheKey) === 'true') {
+      console.log('[AdDetails] Interest already registered for this ad/user in session:', ad.id);
+      return;
+    }
+
+    try {
+      const docId = `${ad.id}_${user.uid}`;
+      const interestData = {
+        id: docId,
+        adId: ad.id,
+        sellerId: ad.sellerId,
+        interestedUserId: user.uid,
+        interestedUserName: profile?.name || user.displayName || user.email || 'Utilizador do Mercado Luso',
+        createdAt: serverTimestamp(),
+        source: 'whatsapp'
+      };
+      
+      console.log('[AdDetails] Registering interest in Firestore:', interestData);
+      await setDoc(doc(db, 'adInterests', docId), interestData);
+      localStorage.setItem(cacheKey, 'true');
+    } catch (err) {
+      console.error('[AdDetails] Error registering adInterest:', err);
+    }
+  };
+
+  const handleConfirmWhatsapp = async () => {
     if (acceptedContactTerms && ad) {
       incrementWhatsappClicks();
+      if (user) {
+        await registerInterest();
+      }
       window.open(getWhatsappUrl(), '_blank');
       setShowContactWarning(false);
     }

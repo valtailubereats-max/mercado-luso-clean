@@ -276,3 +276,14 @@ export const COUNTRY_CODES = [
   { code: '+239', country: 'São Tomé e Príncipe', flag: '🇸🇹' },
   { code: '+670', country: 'Timor-Leste', flag: '🇹🇱' },
 ];
+
+export interface AdInterest {
+  id: string; // deterministic ID: `${adId}_${interestedUserId}`
+  adId: string;
+  sellerId: string;
+  interestedUserId: string;
+  interestedUserName: string;
+  createdAt: any; // Firestore Timestamp
+  source: 'whatsapp';
+}
+
