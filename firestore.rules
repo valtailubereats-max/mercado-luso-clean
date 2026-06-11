@@ -111,13 +111,20 @@ service cloud.firestore {
     }
 
     function isValidReview(data) {
-      return data.keys().hasAll(['id', 'adId', 'adTitle', 'sellerId', 'buyerName', 'rating', 'comment', 'success', 'createdAt']) &&
+      return data.keys().hasAll(['id', 'adId', 'adTitle', 'sellerId', 'buyerName', 'rating', 'comment', 'success', 'createdAt', 'buyerId', 'reviewerId', 'revieweeId']) &&
              data.id is string &&
              data.adId is string &&
+             data.adTitle is string &&
+             (!('adCategory' in data) || data.adCategory is string) &&
              data.sellerId is string &&
+             data.buyerId is string &&
+             data.buyerName is string &&
              data.rating is number && data.rating >= 1 && data.rating <= 5 &&
-             data.comment is string && data.comment.size() < 1000 &&
+             data.comment is string && data.comment.size() <= 1000 &&
              data.success is bool &&
+             data.reviewerId is string &&
+             data.revieweeId is string &&
+             data.sellerId != data.buyerId &&
              data.createdAt is timestamp;
     }
 
@@ -232,15 +239,17 @@ service cloud.firestore {
           isAdmin() ||
           
           // Owner actions (always validating the final ad shape via isValidAd)
-          (resource.data.sellerId == request.auth.uid && isValidAd(request.resource.data) && (
+          (resource.data.sellerId == request.auth.uid && (
             // A: Update/Edit of a pending ad
-            (resource.data.status == 'pending') ||
+            (resource.data.status == 'pending' && isValidAd(request.resource.data)) ||
             
             // B: Lifecycle Action - Sold
             (
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt', 'soldAt']) &&
               request.resource.data.adStatus == 'sold' &&
-              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+              request.resource.data.status == 'approved' &&
+              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time) &&
+              isValidAd(request.resource.data)
             ) ||
             
             // C: Lifecycle Action - Relist / Renew
@@ -248,7 +257,8 @@ service cloud.firestore {
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'expirationDate', 'userNotified', 'createdAt']) &&
               request.resource.data.status == 'pending' &&
               request.resource.data.adStatus == 'active' &&
-              request.resource.data.userNotified == false
+              request.resource.data.userNotified == false &&
+              isValidAd(request.resource.data)
             ) ||
             
             // D: Lifecycle Action - Mark as Available
@@ -256,7 +266,8 @@ service cloud.firestore {
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt']) &&
               request.resource.data.status == 'approved' &&
               request.resource.data.adStatus == 'active' &&
-              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time) &&
+              isValidAd(request.resource.data)
             )
           ))
         ))
@@ -295,7 +306,7 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isAuthenticated() && isValidReview(request.resource.data) && request.resource.data.buyerId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidReview(request.resource.data) && request.resource.data.reviewerId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
