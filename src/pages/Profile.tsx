@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit, getDocs, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { clearHomeCache } from '../utils/cache';
@@ -43,17 +43,43 @@ const Profile = () => {
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
+  const interestsListenersRef = useRef<Record<string, any>>({});
 
-  const handleToggleInterests = async (adId: string) => {
+  useEffect(() => {
+    return () => {
+      // Clean up all active real-time listeners on unmount
+      Object.values(interestsListenersRef.current).forEach(unsub => {
+        try {
+          if (typeof unsub === 'function') {
+            unsub();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    };
+  }, []);
+
+  const handleToggleInterests = (adId: string) => {
     if (expandedInterestsAdId === adId) {
       setExpandedInterestsAdId(null);
+      // Clean up unsubscribe for this ad to save active Firestore connections/reads
+      const unsub = interestsListenersRef.current[adId];
+      if (typeof unsub === 'function') {
+        try {
+          unsub();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      delete interestsListenersRef.current[adId];
       return;
     }
     setExpandedInterestsAdId(adId);
 
     if (!user) return;
 
-    if (!adInterests[adId]) {
+    if (!interestsListenersRef.current[adId]) {
       setAdInterests(prev => ({ ...prev, [adId]: { loading: true, data: [] } }));
       try {
         const q = query(
@@ -62,20 +88,28 @@ const Profile = () => {
           where('sellerId', '==', user.uid),
           limit(50)
         );
-        const querySnapshot = await getDocs(q);
-        const list = querySnapshot.docs.map(doc => doc.data());
-        console.log(`[Profile] manual query resolved for adId ${adId} - count: ${list.length}`);
-        setAdInterests(prev => ({
-          ...prev,
-          [adId]: { loading: false, data: list }
-        }));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const list = snapshot.docs.map(doc => doc.data());
+          console.log(`[Profile] Real-time adInterests update for adId ${adId} - count: ${list.length}`);
+          setAdInterests(prev => ({
+            ...prev,
+            [adId]: { loading: false, data: list }
+          }));
+        }, (err) => {
+          console.error('[Profile] Error in adInterests real-time subscription:', err);
+          setAdInterests(prev => ({
+            ...prev,
+            [adId]: { loading: false, data: [] }
+          }));
+          handleFirestoreError(err, OperationType.LIST, `adInterests/${adId}`);
+        });
+        interestsListenersRef.current[adId] = unsubscribe;
       } catch (err) {
-        console.error('[Profile] Error getDocs for adInterests:', err);
+        console.error('[Profile] Exception setting up real-time listener:', err);
         setAdInterests(prev => ({
           ...prev,
           [adId]: { loading: false, data: [] }
         }));
-        handleFirestoreError(err, OperationType.LIST, `adInterests/${adId}`);
       }
     }
   };

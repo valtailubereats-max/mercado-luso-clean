@@ -39,6 +39,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewsSection, setShowReviewsSection] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; type: 'success' | 'error' | 'loading'; message: string } | null>(null);
+
+  const showToastMsg = (type: 'success' | 'error' | 'loading', message: string, duration = 4000) => {
+    setToast({ show: true, type, message });
+    if (type !== 'loading') {
+      setTimeout(() => {
+        setToast(prev => prev && prev.message === message ? null : prev);
+      }, duration);
+    }
+  };
 
   const isFavorite = favorites.includes(ad.id);
 
@@ -190,17 +200,29 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
     if (accepted) {
       console.log('[AdCard] Safety terms already accepted. Registering interest directly.');
       incrementClicks();
-      registerInterest();
-      window.open(whatsappUrl, '_blank');
+      showToastMsg('loading', 'A registar o seu interesse no anúncio...');
+      registerInterest().then((success) => {
+        if (success) {
+          showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+          setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+          }, 1000);
+        } else {
+          showToastMsg('error', '⚠️ Falha ao registar na base de dados, a abrir o WhatsApp do anunciante...', 4000);
+          setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+          }, 1500);
+        }
+      });
     } else {
       setShowContactWarning(true);
     }
   };
 
-  const registerInterest = async () => {
+  const registerInterest = async (): Promise<boolean> => {
     if (!user) {
       console.warn('[AdCard] Cannot register interest: No authenticated user.');
-      return;
+      return false;
     }
 
     try {
@@ -212,7 +234,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       const interestData = {
         id: docId,
         adId: ad.id,
-        sellerId: ad.sellerId,
+        sellerId: ad.sellerId || '',
         interestedUserId: user.uid,
         interestedUserName: truncatedName,
         createdAt: serverTimestamp(),
@@ -224,8 +246,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       console.log('[AdCard] Interest successfully registered/updated in Firestore!');
       const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
       localStorage.setItem(cacheKey, 'true');
+      return true;
     } catch (err) {
       console.error('[AdCard] Detailed error registering adInterest:', err);
+      return false;
     }
   };
 
@@ -234,9 +258,22 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       localStorage.setItem('safety_terms_accepted', 'true');
       incrementClicks();
       if (user) {
-        await registerInterest();
+        showToastMsg('loading', 'A registar o seu interesse no anúncio...');
+        const success = await registerInterest();
+        if (success) {
+          showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+          setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+          }, 1000);
+        } else {
+          showToastMsg('error', '⚠️ Falha ao registar o interesse, a abrir o WhatsApp mesmo assim...', 4000);
+          setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+          }, 1500);
+        }
+      } else {
+        window.open(whatsappUrl, '_blank');
       }
-      window.open(whatsappUrl, '_blank');
       setShowContactWarning(false);
     }
   };
@@ -731,6 +768,27 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Floating Toast Proof of Interest */}
+      {toast && toast.show && (
+        <div className="fixed top-24 right-4 z-[400] max-w-sm w-full bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-2xl p-4 flex items-center gap-3 animate-bounce">
+          {toast.type === 'loading' && (
+            <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0"></div>
+          )}
+          {toast.type === 'success' && (
+            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white shrink-0 font-bold text-xs">✓</div>
+          )}
+          {toast.type === 'error' && (
+            <div className="w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-white shrink-0 font-bold text-xs text-center">✕</div>
+          )}
+          <div className="flex-1">
+            <p className="text-xs font-bold tracking-tight">{toast.message}</p>
+            {toast.type === 'success' && (
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">O vendedor foi notificado no Mercado Luso.</p>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };
