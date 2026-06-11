@@ -121,11 +121,11 @@ const Profile = () => {
     if (!user) return;
     setPurchasedAdsLoading(true);
     try {
-      const q = query(
-        collection(db, 'ads'),
-        where('buyerId', '==', user.uid),
-        where('adStatus', '==', 'sold'),
-        limit(50)
+const q = query(
+  collection(db, 'ads'),
+  where('buyerId', '==', user.uid),
+  limit(50)
+);
       );
       const querySnapshot = await getDocs(q);
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
