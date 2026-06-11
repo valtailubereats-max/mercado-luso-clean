@@ -43,6 +43,7 @@ const Profile = () => {
   const [purchasedAds, setPurchasedAds] = useState<Ad[]>([]);
   const [purchasedAdsLoading, setPurchasedAdsLoading] = useState(true);
   const [isBuyerRating, setIsBuyerRating] = useState(false);
+  const [reviewedAds, setReviewedAds] = useState<string[]>([]);
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
@@ -130,7 +131,16 @@ const Profile = () => {
     );
 
     const querySnapshot = await getDocs(q);
+const reviewsQuery = query(
+  collection(db, 'reviews'),
+  where('reviewerId', '==', user.uid)
+);
 
+const reviewsSnapshot = await getDocs(reviewsQuery);
+
+setReviewedAds(
+  reviewsSnapshot.docs.map(doc => doc.data().adId)
+);
     console.log('[COMPRAS] user.uid =', user.uid);
     console.log('[COMPRAS] docs encontrados =', querySnapshot.size);
 
@@ -1191,17 +1201,23 @@ const Profile = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          setSelectedAdForReview(ad);
-                          setIsBuyerRating(true);
-                          setShowReviewModal(true);
-                        }}
-                        className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
-                      >
-                        <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" /> 
-                        Avaliar vendedor
-                      </button>
+                      {reviewedAds.includes(ad.id) ? (
+  <div className="mt-4 w-full text-center py-3 rounded-2xl text-xs font-black bg-green-50 text-green-700 border border-green-200">
+    Já avaliado
+  </div>
+) : (
+  <button
+    onClick={() => {
+      setSelectedAdForReview(ad);
+      setIsBuyerRating(true);
+      setShowReviewModal(true);
+    }}
+    className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
+  >
+    <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" />
+    Avaliar vendedor
+  </button>
+)}
                     </div>
                   </div>
                 );
