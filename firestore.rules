@@ -1,49 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: /users/{userId}
-    // Document ID: userId (UID from Auth)
-    // Fields:
-    //   - uid: string (required) - UID from Auth
-    //   - name: string (required) - User's name
-    //   - email: string (required) - User's email
-    //   - phone: string (required) - User's phone number
-    //   - role: string (required) - 'user' or 'admin'
-    //   - acceptedTerms: boolean (required) - Whether user accepted terms
-    //   - acceptedTermsAt: timestamp (required) - When user accepted terms
-    //
-    // Collection: /ads/{adId}
-    // Document ID: adId (Randomly generated)
-    // Fields:
-    //   - id: string (required) - Ad ID
-    //   - title: string (required) - Ad title
-    //   - description: string (required) - Ad description
-    //   - price: number (optional) - Ad price
-    //   - imageUrl: string (required) - Ad image URL (primary)
-    //   - images: list (optional) - List of all image URLs
-    //   - city: string (required) - Ad city
-    //   - category: string (required) - Ad category
-    //   - sellerId: string (required) - Seller's UID
-    //   - sellerPhone: string (required) - Seller's phone
-    //   - sellerName: string (required) - Seller's name
-    //   - status: string (required) - 'pending', 'approved', 'rejected'
-    //   - createdAt: timestamp (required) - Ad creation time
-    //
-    // Collection: /settings/{settingsId}
-    // Document ID: 'global'
-    // Fields:
-    //   - planDurations: map (required) - {free, intermediate, premium}
-    //   - maxImages: map (required) - {free, intermediate, premium}
-    //   - expirationAction: string (required) - 'archive' or 'delete'
-    //   - warningDays: number (required) - Days before expiration to warn
-    //
-    // ===============================================================
 
-    // Helper Functions
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -57,61 +15,51 @@ service cloud.firestore {
         (
           request.auth.token.email == "valtailubereats@gmail.com" ||
           request.auth.token.email == "generalsales2021@gmail.com" ||
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+          (
+            exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+          )
         );
     }
 
     function isValidUser(data, userId) {
       return (!('uid' in data) || data.uid == userId) &&
              (!('name' in data) || (data.name is string && data.name.size() > 0 && data.name.size() < 100)) &&
-             (!('email' in data) || (data.email is string)) &&
-             (!('role' in data) || (data.role in ['user', 'admin', 'moderator'])) &&
+             (!('email' in data) || data.email is string) &&
+             (!('role' in data) || data.role in ['user', 'admin', 'moderator']) &&
              (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
-             (!('acceptedTerms' in data) || (data.acceptedTerms is bool)) &&
-             (!('acceptedTermsAt' in data) || (data.acceptedTermsAt is timestamp));
+             (!('acceptedTerms' in data) || data.acceptedTerms is bool) &&
+             (!('acceptedTermsAt' in data) || data.acceptedTermsAt is timestamp);
     }
 
     function isValidAd(data) {
       return data.keys().hasAll(['id', 'title', 'description', 'imageUrl', 'city', 'category', 'sellerId', 'sellerPhone', 'sellerName', 'status', 'createdAt']) &&
-             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
-             data.title is string && data.title.size() > 0 && data.title.size() < 150 &&
-             data.description is string && data.description.size() > 0 && data.description.size() < 5000 &&
-             (!('price' in data) || data.price is number) &&
-             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1100000 &&
-             (!('images' in data) || (data.images is list && data.images.size() <= 20)) &&
-             data.city is string && data.city.size() > 0 && data.city.size() < 100 &&
-             data.category is string && data.category.size() > 0 && data.category.size() < 100 &&
+             data.id is string &&
+             data.title is string &&
+             data.description is string &&
+             data.imageUrl is string &&
+             data.city is string &&
+             data.category is string &&
              data.sellerId == request.auth.uid &&
-             data.sellerPhone is string && data.sellerPhone.size() > 0 && data.sellerPhone.size() < 40 &&
-             data.sellerName is string && data.sellerName.size() > 0 && data.sellerName.size() < 100 &&
+             data.sellerPhone is string &&
+             data.sellerName is string &&
              data.status in ['pending', 'approved', 'rejected', 'expired', 'archived', 'sold'] &&
              (!('adStatus' in data) || data.adStatus in ['active', 'near_expiration', 'expired', 'archived', 'sold']) &&
-             (!('plan' in data) || data.plan in ['free', 'intermediate', 'premium']) &&
-             (!('contactEmail' in data) || data.contactEmail is string) &&
-             (!('externalUrl' in data) || data.externalUrl is string) &&
-             (!('buyerId' in data) || (data.buyerId is string && data.buyerId.size() <= 128)) &&
-             (!('buyerName' in data) || (data.buyerName is string && data.buyerName.size() <= 100)) &&
-             (!('soldAt' in data) || data.soldAt is timestamp) &&
-             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              data.createdAt is timestamp;
     }
 
     function isValidSettings(data) {
       return data.keys().hasAll(['id', 'planDurations', 'expirationAction', 'warningDays']) &&
              data.planDurations is map &&
-             (!('maxImages' in data) || data.maxImages is map) &&
              data.expirationAction in ['archive', 'delete'] &&
              data.warningDays is number;
     }
 
     function isValidAdCounterUpdate() {
-      // Allow incrementing views or whatsappClicks by exactly 1
-      // Ensure NO other fields are modified
       let affected = request.resource.data.diff(resource.data).affectedKeys();
       return affected.hasOnly(['views', 'whatsappClicks']) &&
-             (!('views' in affected) || request.resource.data.views == resource.data.get('views', 0) + 1) &&
-             (!('whatsappClicks' in affected) || request.resource.data.whatsappClicks == resource.data.get('whatsappClicks', 0) + 1);
+             (!affected.hasAny(['views']) || request.resource.data.views == resource.data.get('views', 0) + 1) &&
+             (!affected.hasAny(['whatsappClicks']) || request.resource.data.whatsappClicks == resource.data.get('whatsappClicks', 0) + 1);
     }
 
     function isValidReview(data) {
@@ -133,7 +81,6 @@ service cloud.firestore {
     }
 
     function isValidRatingUpdate() {
-      // Allow updating ratingAverage and ratingCount
       let affected = request.resource.data.diff(resource.data).affectedKeys();
       return affected.hasOnly(['ratingAverage', 'ratingCount']) &&
              request.resource.data.ratingCount == resource.data.get('ratingCount', 0) + 1;
@@ -141,36 +88,21 @@ service cloud.firestore {
 
     function isValidSuggestion(data) {
       return data.keys().hasAll(['name', 'email', 'message', 'status', 'createdAt']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
-             data.message is string && data.message.size() > 0 && data.message.size() < 5000 &&
+             data.name is string &&
+             data.email is string &&
+             data.message is string &&
              data.status == 'new' &&
              data.createdAt is timestamp;
     }
 
     function isValidSellerPublicProfile(data) {
       return data.keys().hasAll(['displayName', 'country', 'createdAt', 'updatedAt']) &&
-             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
-             (!('city' in data) || (data.city is string && data.city.size() <= 100)) &&
-             data.country is string && data.country.size() > 0 && data.country.size() <= 100 &&
-             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 2000)) &&
-             (!('rating' in data) || data.rating is number) &&
-             (!('reviewCount' in data) || data.reviewCount is number) &&
+             data.displayName is string &&
+             data.country is string &&
              data.createdAt is timestamp &&
              data.updatedAt is timestamp;
     }
 
-    function isValidAdInterest(data) {
-      return data.id is string &&
-             data.adId is string &&
-             data.sellerId is string &&
-             data.interestedUserId == request.auth.uid &&
-             data.id == data.adId + "_" + data.interestedUserId &&
-             data.interestedUserName is string &&
-             data.source == 'whatsapp';
-    }
-
-    // Rules
     match /settings/{settingsId} {
       allow read: if true;
       allow write: if isValidSettings(request.resource.data) && isAdmin();
@@ -178,105 +110,79 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isAuthenticated();
-      allow list: if request.query.limit == 0 ||
-                    isAdmin() || 
-                    (isAuthenticated() && 
-                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator');
-      allow create: if isOwner(userId) && 
-                      (
-                        !('role' in request.resource.data) || 
-                        request.resource.data.role == 'user' || 
-                        request.auth.token.email in ["valtailubereats@gmail.com", "generalsales2021@gmail.com"]
-                      );
-      allow update: if (isOwner(userId) && 
-                      (
-                        isValidUser(request.resource.data, userId) && 
-                        request.resource.data.acceptedTerms == resource.data.acceptedTerms &&
-                        request.resource.data.acceptedTermsAt == resource.data.acceptedTermsAt &&
-                        (
-                          !('role' in request.resource.data) || 
-                          !('role' in resource.data) || 
-                          request.resource.data.role == resource.data.role
-                        )
-                      )) || (isAuthenticated() && isValidRatingUpdate()) || (isAdmin() && isValidUser(request.resource.data, userId));
+      allow list: if request.query.limit == 0 || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if
+        (isOwner(userId) && isValidUser(request.resource.data, userId)) ||
+        (isAuthenticated() && isValidRatingUpdate()) ||
+        (isAdmin() && isValidUser(request.resource.data, userId));
     }
 
     match /sellerPublicProfiles/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId) && 
-                      isValidSellerPublicProfile(request.resource.data) &&
-                      request.resource.data.keys().size() <= 8;
-      allow update: if isOwner(userId) && 
-                      isValidSellerPublicProfile(request.resource.data) &&
-                      request.resource.data.createdAt == resource.data.createdAt &&
-                      request.resource.data.keys().size() <= 8;
+      allow create: if isOwner(userId) && isValidSellerPublicProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidSellerPublicProfile(request.resource.data);
     }
 
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && 
-                    request.resource.data.userId is string && 
-                    request.resource.data.userId.size() > 0 &&
+      allow create: if isAuthenticated() &&
+                    request.resource.data.userId is string &&
                     request.resource.data.read == false;
-      allow delete: if isAdmin();
       allow update: if isAdmin() || (
         isAuthenticated() &&
         resource.data.userId == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
         request.resource.data.read is bool
       );
+      allow delete: if isAdmin();
     }
 
     match /ads/{adId} {
-      // Combine reads to short-circuit expensive isAdmin() call on public/owned resources first
-      allow read: if resource.data.status == 'approved' || 
-                    (isAuthenticated() && (resource.data.sellerId == request.auth.uid || resource.data.get('buyerId', '') == request.auth.uid || isAdmin()));
-      
-      allow create: if isAuthenticated() && isValidAd(request.resource.data) && request.resource.data.status == 'pending';
+      allow read: if resource.data.status == 'approved' ||
+                    (
+                      isAuthenticated() &&
+                      (
+                        resource.data.sellerId == request.auth.uid ||
+                        resource.data.get('buyerId', '') == request.auth.uid ||
+                        isAdmin()
+                      )
+                    );
+
+      allow create: if isAuthenticated() &&
+                    isValidAd(request.resource.data) &&
+                    request.resource.data.status == 'pending';
+
       allow update: if (
-        // Counter increments can be done by anyone
         (resource.data.status == 'approved' && isValidAdCounterUpdate()) ||
-        
-        (isAuthenticated() && (
-          // Admin can do anything
-          isAdmin() ||
-          
-          // Owner actions (always validating the final ad shape via isValidAd)
-          (resource.data.sellerId == request.auth.uid && (
-            // A: Update/Edit of a pending ad
-            (resource.data.status == 'pending' && isValidAd(request.resource.data)) ||
-            
-            // B: Lifecycle Action - Sold
-            (
-              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt', 'soldAt', 'buyerId', 'buyerName']) &&
-              request.resource.data.adStatus == 'sold' &&
-              request.resource.data.status == 'approved' &&
-              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time) &&
-              isValidAd(request.resource.data)
-            ) ||
-            
-            // C: Lifecycle Action - Relist / Renew
-            (
-              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'expirationDate', 'userNotified', 'createdAt']) &&
-              request.resource.data.status == 'pending' &&
-              request.resource.data.adStatus == 'active' &&
-              request.resource.data.userNotified == false &&
-              isValidAd(request.resource.data)
-            ) ||
-            
-            // D: Lifecycle Action - Mark as Available
-            (
-              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt']) &&
-              request.resource.data.status == 'approved' &&
-              request.resource.data.adStatus == 'active' &&
-              (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time) &&
-              isValidAd(request.resource.data)
-            )
-          ))
-        ))
+
+        (
+          isAuthenticated() &&
+          resource.data.sellerId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'adStatus', 'buyerId', 'buyerName', 'soldAt', 'updatedAt']) &&
+          request.resource.data.status == 'approved' &&
+          request.resource.data.adStatus == 'sold' &&
+          request.resource.data.buyerId is string &&
+          request.resource.data.buyerName is string &&
+          request.resource.data.soldAt == request.time &&
+          request.resource.data.updatedAt == request.time
+        ) ||
+
+        (
+          isAuthenticated() &&
+          resource.data.sellerId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'adStatus', 'updatedAt']) &&
+          request.resource.data.status == 'approved' &&
+          request.resource.data.adStatus == 'active'
+        ) ||
+
+        isAdmin()
       );
-      allow delete: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin());
+
+      allow delete: if isAuthenticated() &&
+                    (resource.data.sellerId == request.auth.uid || isAdmin());
     }
 
     match /favorites/{favoriteId} {
@@ -310,14 +216,16 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isAuthenticated() && isValidReview(request.resource.data) && request.resource.data.reviewerId == request.auth.uid;
+      allow create: if isAuthenticated() &&
+                    isValidReview(request.resource.data) &&
+                    request.resource.data.reviewerId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
     match /suggestions/{suggestionId} {
       allow read: if isAdmin();
       allow create: if isValidSuggestion(request.resource.data);
-      allow update: if request.resource.data.status in ['new', 'reviewed', 'archived'] && 
+      allow update: if request.resource.data.status in ['new', 'reviewed', 'archived'] &&
                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
                     isAdmin();
       allow delete: if isAdmin();
