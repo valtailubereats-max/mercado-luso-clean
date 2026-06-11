@@ -187,10 +187,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   };
 
   const registerInterest = async () => {
-    if (!user) return;
-    const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
-    if (localStorage.getItem(cacheKey) === 'true') {
-      console.log('[AdCard] Interest already registered for this ad/user in session:', ad.id);
+    if (!user) {
+      console.warn('[AdCard] Cannot register interest: No authenticated user.');
       return;
     }
 
@@ -206,11 +204,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         source: 'whatsapp'
       };
       
-      console.log('[AdCard] Registering interest in Firestore:', interestData);
+      console.log('[AdCard] Registering raw interest in Firestore:', interestData);
       await setDoc(doc(db, 'adInterests', docId), interestData);
+      console.log('[AdCard] Interest successfully registered/updated in Firestore!');
+      const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
       localStorage.setItem(cacheKey, 'true');
     } catch (err) {
-      console.error('[AdCard] Error registering adInterest:', err);
+      console.error('[AdCard] Detailed error registering adInterest:', err);
     }
   };
 

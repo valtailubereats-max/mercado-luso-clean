@@ -200,10 +200,8 @@ const AdDetails = () => {
   };
 
   const registerInterest = async () => {
-    if (!user || !ad) return;
-    const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
-    if (localStorage.getItem(cacheKey) === 'true') {
-      console.log('[AdDetails] Interest already registered for this ad/user in session:', ad.id);
+    if (!user || !ad) {
+      console.warn('[AdDetails] Cannot register interest: user or ad is missing.');
       return;
     }
 
@@ -219,11 +217,13 @@ const AdDetails = () => {
         source: 'whatsapp'
       };
       
-      console.log('[AdDetails] Registering interest in Firestore:', interestData);
+      console.log('[AdDetails] Registering raw interest in Firestore:', interestData);
       await setDoc(doc(db, 'adInterests', docId), interestData);
+      console.log('[AdDetails] Interest successfully registered/updated in Firestore!');
+      const cacheKey = `interest_reg_${ad.id}_${user.uid}`;
       localStorage.setItem(cacheKey, 'true');
     } catch (err) {
-      console.error('[AdDetails] Error registering adInterest:', err);
+      console.error('[AdDetails] Detailed error registering adInterest:', err);
     }
   };
 
