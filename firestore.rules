@@ -288,8 +288,8 @@ service cloud.firestore {
     }
 
     match /adInterests/{interestId} {
-      allow read: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || resource.data.interestedUserId == request.auth.uid || isAdmin());
-      allow create, update: if isAuthenticated() && isValidAdInterest(request.resource.data) && interestId == request.resource.data.id;
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
       allow delete: if isAdmin();
     }
 
