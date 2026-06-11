@@ -158,7 +158,7 @@ service cloud.firestore {
              data.interestedUserId == request.auth.uid &&
              data.interestedUserName is string && data.interestedUserName.size() > 0 && data.interestedUserName.size() < 100 &&
              data.source == 'whatsapp' &&
-             data.createdAt == request.time;
+             data.createdAt is timestamp;
     }
 
     // Rules

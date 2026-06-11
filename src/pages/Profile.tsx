@@ -51,12 +51,15 @@ const Profile = () => {
     }
     setExpandedInterestsAdId(adId);
 
+    if (!user) return;
+
     if (!adInterests[adId]) {
       setAdInterests(prev => ({ ...prev, [adId]: { loading: true, data: [] } }));
       try {
         const q = query(
           collection(db, 'adInterests'),
           where('adId', '==', adId),
+          where('sellerId', '==', user.uid),
           limit(50)
         );
         const querySnapshot = await getDocs(q);
@@ -72,6 +75,7 @@ const Profile = () => {
           ...prev,
           [adId]: { loading: false, data: [] }
         }));
+        handleFirestoreError(err, OperationType.LIST, `adInterests/${adId}`);
       }
     }
   };
