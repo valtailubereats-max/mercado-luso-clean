@@ -150,8 +150,7 @@ service cloud.firestore {
     }
 
     function isValidAdInterest(data) {
-      return data.keys().hasAll(['id', 'adId', 'sellerId', 'interestedUserId', 'interestedUserName', 'createdAt', 'source']) &&
-             data.id is string &&
+      return data.id is string &&
              data.adId is string &&
              data.sellerId is string &&
              data.interestedUserId == request.auth.uid &&
