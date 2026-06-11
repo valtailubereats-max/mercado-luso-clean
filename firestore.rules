@@ -152,13 +152,13 @@ service cloud.firestore {
     function isValidAdInterest(data) {
       return data.keys().hasAll(['id', 'adId', 'sellerId', 'interestedUserId', 'interestedUserName', 'createdAt', 'source']) &&
              data.keys().size() == 7 &&
-             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
-             data.adId is string && data.adId.size() > 0 && data.adId.size() < 100 &&
-             data.sellerId is string && data.sellerId.size() > 0 && data.sellerId.size() < 100 &&
+             data.id is string &&
+             data.adId is string &&
+             data.sellerId is string &&
              data.interestedUserId == request.auth.uid &&
-             data.interestedUserName is string && data.interestedUserName.size() > 0 && data.interestedUserName.size() < 100 &&
-             data.source == 'whatsapp' &&
-             data.createdAt is timestamp;
+             data.id == data.adId + "_" + request.auth.uid &&
+             data.interestedUserName is string &&
+             data.source == 'whatsapp';
     }
 
     // Rules
@@ -291,7 +291,7 @@ service cloud.firestore {
 
     match /adInterests/{interestId} {
       allow read: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || resource.data.interestedUserId == request.auth.uid || isAdmin());
-      allow create, update: if isAuthenticated() && isValidAdInterest(request.resource.data) && interestId == request.resource.data.adId + "_" + request.auth.uid;
+      allow create, update: if isAuthenticated() && isValidAdInterest(request.resource.data) && interestId == request.resource.data.id;
       allow delete: if isAdmin();
     }
 

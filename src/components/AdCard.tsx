@@ -247,7 +247,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
 
       // Criar notificação para o vendedor do anúncio
       if (ad.sellerId && ad.sellerId !== user.uid) {
-        const notifId = `interest_${ad.id}_${user.uid}`;
+        const notifId = `interest_${ad.id}_${user.uid}_${Date.now()}`;
         const notifData = {
           userId: ad.sellerId,
           title: 'Novo interesse em ' + ad.title.substring(0, 25) + '...',
