@@ -165,8 +165,8 @@ service cloud.firestore {
           request.resource.data.adStatus == 'sold' &&
           request.resource.data.buyerId is string &&
           request.resource.data.buyerName is string &&
-          request.resource.data.soldAt == request.time &&
-          request.resource.data.updatedAt == request.time
+          request.resource.data.soldAt is timestamp &&
+          request.resource.data.updatedAt is timestamp
         ) ||
 
         (
