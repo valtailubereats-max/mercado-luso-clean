@@ -118,28 +118,50 @@ const Profile = () => {
   }, [favorites, currentTab, user]);
 
   const fetchPurchasedAds = async () => {
-    if (!user) return;
-    setPurchasedAdsLoading(true);
-    try {
-const q = query(
-  collection(db, 'ads'),
-  where('buyerId', '==', user.uid),
-  limit(50)
-);
-      const querySnapshot = await getDocs(q);
-      const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
-      adsData.sort((a, b) => {
-        const timeA = a.soldAt?.seconds ? a.soldAt.seconds * 1000 : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
-        const timeB = b.soldAt?.seconds ? b.soldAt.seconds * 1000 : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
-        return (timeB || 0) - (timeA || 0);
-      });
-      setPurchasedAds(adsData);
-    } catch (err) {
-      console.error('Error fetching purchased ads:', err);
-    } finally {
-      setPurchasedAdsLoading(false);
-    }
-  };
+  if (!user) return;
+
+  setPurchasedAdsLoading(true);
+
+  try {
+    const q = query(
+      collection(db, 'ads'),
+      where('buyerId', '==', user.uid),
+      limit(50)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    console.log('[COMPRAS] user.uid =', user.uid);
+    console.log('[COMPRAS] docs encontrados =', querySnapshot.size);
+
+    querySnapshot.docs.forEach(doc => {
+      console.log('[COMPRAS] doc', doc.id, doc.data());
+    });
+
+    const adsData = querySnapshot.docs.map(
+      doc => ({ id: doc.id, ...doc.data() } as Ad)
+    );
+
+    adsData.sort((a, b) => {
+      const timeA = a.soldAt?.seconds
+        ? a.soldAt.seconds * 1000
+        : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+
+      const timeB = b.soldAt?.seconds
+        ? b.soldAt.seconds * 1000
+        : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+
+      return (timeB || 0) - (timeA || 0);
+    });
+
+    setPurchasedAds(adsData);
+
+  } catch (err) {
+    console.error('Error fetching purchased ads:', err);
+  } finally {
+    setPurchasedAdsLoading(false);
+  }
+};
 
   useEffect(() => {
   if (user) {
