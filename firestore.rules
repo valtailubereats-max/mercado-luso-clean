@@ -149,14 +149,7 @@ match /ads/{adId} {
       )
     );
 
-  allow list: if resource.data.status == 'approved' ||
-    (
-      isAuthenticated() &&
-      (
-        request.query.limit <= 50 ||
-        isAdmin()
-      )
-    );
+  allow list: if isAuthenticated();
 
       allow create: if isAuthenticated() &&
                     isValidAd(request.resource.data) &&
