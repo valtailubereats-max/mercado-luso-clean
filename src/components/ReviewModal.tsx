@@ -168,44 +168,48 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       };
 
       await runTransaction(db, async (transaction) => {
-        // Create review
-        const reviewRef = doc(db, 'reviews', reviewId);
-        transaction.set(reviewRef, reviewData);
 
-        // Update Seller statistics ONLY if it's a buyer rating
-        if (isBuyerRating) {
-          const sellerRef = doc(db, 'users', sellerId);
-          const sellerDoc = await transaction.get(sellerRef);
-          
-          if (sellerDoc.exists()) {
-            const data = sellerDoc.data() as UserProfile;
-            const currentAvg = data.ratingAverage || 0;
-            const currentCount = data.ratingCount || 0;
-            
-            const newCount = currentCount + 1;
-            const newAvg = (currentAvg * currentCount + rating) / newCount;
-            const finalAvg = parseFloat(newAvg.toFixed(1));
-            
-            transaction.update(sellerRef, {
-              ratingCount: newCount,
-              ratingAverage: finalAvg
-            });
-          }
-        }
+  if (isBuyerRating) {
+    const sellerRef = doc(db, 'users', sellerId);
+    const sellerDoc = await transaction.get(sellerRef);
 
-        // Update AD status to sold if requested by seller
-        if (!isBuyerRating) {
-          const adRef = doc(db, 'ads', adId);
-          transaction.update(adRef, {
-            status: 'approved',
-            adStatus: 'sold',
-            buyerId: determinedBuyerId,
-            buyerName: buyerName,
-            soldAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-        }
+    const reviewRef = doc(db, 'reviews', reviewId);
+
+    transaction.set(reviewRef, reviewData);
+
+    if (sellerDoc.exists()) {
+      const data = sellerDoc.data() as UserProfile;
+      const currentAvg = data.ratingAverage || 0;
+      const currentCount = data.ratingCount || 0;
+
+      const newCount = currentCount + 1;
+      const newAvg = (currentAvg * currentCount + rating) / newCount;
+      const finalAvg = parseFloat(newAvg.toFixed(1));
+
+      transaction.update(sellerRef, {
+        ratingCount: newCount,
+        ratingAverage: finalAvg
       });
+    }
+
+  } else {
+
+    const reviewRef = doc(db, 'reviews', reviewId);
+
+    transaction.set(reviewRef, reviewData);
+
+    const adRef = doc(db, 'ads', adId);
+
+    transaction.update(adRef, {
+      status: 'approved',
+      adStatus: 'sold',
+      buyerId: determinedBuyerId,
+      buyerName: buyerName,
+      soldAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  }
+});
 
       onSuccess();
       onClose();
