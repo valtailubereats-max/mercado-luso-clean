@@ -126,7 +126,6 @@ const q = query(
   where('buyerId', '==', user.uid),
   limit(50)
 );
-      );
       const querySnapshot = await getDocs(q);
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       adsData.sort((a, b) => {
