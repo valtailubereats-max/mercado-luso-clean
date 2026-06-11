@@ -151,12 +151,11 @@ service cloud.firestore {
 
     function isValidAdInterest(data) {
       return data.keys().hasAll(['id', 'adId', 'sellerId', 'interestedUserId', 'interestedUserName', 'createdAt', 'source']) &&
-             data.keys().size() == 7 &&
              data.id is string &&
              data.adId is string &&
              data.sellerId is string &&
              data.interestedUserId == request.auth.uid &&
-             data.id == data.adId + "_" + request.auth.uid &&
+             data.id == data.adId + "_" + data.interestedUserId &&
              data.interestedUserName is string &&
              data.source == 'whatsapp';
     }
