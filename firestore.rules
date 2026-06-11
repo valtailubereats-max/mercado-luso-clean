@@ -138,16 +138,25 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /ads/{adId} {
-      allow read: if resource.data.status == 'approved' ||
-                    (
-                      isAuthenticated() &&
-                      (
-                        resource.data.sellerId == request.auth.uid ||
-                        resource.data.get('buyerId', '') == request.auth.uid ||
-                        isAdmin()
-                      )
-                    );
+match /ads/{adId} {
+  allow get: if resource.data.status == 'approved' ||
+    (
+      isAuthenticated() &&
+      (
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.get('buyerId', '') == request.auth.uid ||
+        isAdmin()
+      )
+    );
+
+  allow list: if resource.data.status == 'approved' ||
+    (
+      isAuthenticated() &&
+      (
+        request.query.limit <= 50 ||
+        isAdmin()
+      )
+    );
 
       allow create: if isAuthenticated() &&
                     isValidAd(request.resource.data) &&
