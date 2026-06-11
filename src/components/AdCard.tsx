@@ -29,7 +29,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reporting, setReporting] = useState(false);
-  const [acceptedContactTerms, setAcceptedContactTerms] = useState(false);
+  const [acceptedContactTerms, setAcceptedContactTerms] = useState(() => {
+    return localStorage.getItem('safety_terms_accepted') === 'true';
+  });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [sellerProfile, setSellerProfile] = useState<any>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -183,7 +185,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       navigate(`/login?message=${encodeURIComponent('Para contactar o vendedor, faça login ou crie uma conta gratuita.')}`);
       return;
     }
-    setShowContactWarning(true);
+
+    const accepted = localStorage.getItem('safety_terms_accepted') === 'true';
+    if (accepted) {
+      console.log('[AdCard] Safety terms already accepted. Registering interest directly.');
+      incrementClicks();
+      registerInterest();
+      window.open(whatsappUrl, '_blank');
+    } else {
+      setShowContactWarning(true);
+    }
   };
 
   const registerInterest = async () => {
@@ -194,12 +205,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
 
     try {
       const docId = `${ad.id}_${user.uid}`;
+      const rawName = (profile?.name || user.displayName || user.email || '').trim();
+      const sanitizedName = rawName.length > 0 ? rawName : 'Utilizador do Mercado Luso';
+      const truncatedName = sanitizedName.substring(0, 95); // Ensure it's under 100 character limit of rules
+      
       const interestData = {
         id: docId,
         adId: ad.id,
         sellerId: ad.sellerId,
         interestedUserId: user.uid,
-        interestedUserName: profile?.name || user.displayName || user.email || 'Utilizador do Mercado Luso',
+        interestedUserName: truncatedName,
         createdAt: serverTimestamp(),
         source: 'whatsapp'
       };
@@ -216,6 +231,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
 
   const confirmContact = async () => {
     if (acceptedContactTerms) {
+      localStorage.setItem('safety_terms_accepted', 'true');
       incrementClicks();
       if (user) {
         await registerInterest();

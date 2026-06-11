@@ -41,7 +41,9 @@ const AdDetails = () => {
 
   // Segurança de Contacto WhatsApp
   const [showContactWarning, setShowContactWarning] = useState(false);
-  const [acceptedContactTerms, setAcceptedContactTerms] = useState(false);
+  const [acceptedContactTerms, setAcceptedContactTerms] = useState(() => {
+    return localStorage.getItem('safety_terms_accepted') === 'true';
+  });
 
   // Denúncia
   const [showReportModal, setShowReportModal] = useState(false);
@@ -196,7 +198,16 @@ const AdDetails = () => {
       navigate(`/login?message=${encodeURIComponent('Para contactar o vendedor, faça login ou crie uma conta gratuita.')}`);
       return;
     }
-    setShowContactWarning(true);
+
+    const accepted = localStorage.getItem('safety_terms_accepted') === 'true';
+    if (accepted && ad) {
+      console.log('[AdDetails] Safety terms already accepted. Registering interest directly.');
+      incrementWhatsappClicks();
+      registerInterest();
+      window.open(getWhatsappUrl(), '_blank');
+    } else {
+      setShowContactWarning(true);
+    }
   };
 
   const registerInterest = async () => {
@@ -207,12 +218,16 @@ const AdDetails = () => {
 
     try {
       const docId = `${ad.id}_${user.uid}`;
+      const rawName = (profile?.name || user.displayName || user.email || '').trim();
+      const sanitizedName = rawName.length > 0 ? rawName : 'Utilizador do Mercado Luso';
+      const truncatedName = sanitizedName.substring(0, 95); // Ensure it's under 100 character limit of rules
+      
       const interestData = {
         id: docId,
         adId: ad.id,
         sellerId: ad.sellerId,
         interestedUserId: user.uid,
-        interestedUserName: profile?.name || user.displayName || user.email || 'Utilizador do Mercado Luso',
+        interestedUserName: truncatedName,
         createdAt: serverTimestamp(),
         source: 'whatsapp'
       };
@@ -229,6 +244,7 @@ const AdDetails = () => {
 
   const handleConfirmWhatsapp = async () => {
     if (acceptedContactTerms && ad) {
+      localStorage.setItem('safety_terms_accepted', 'true');
       incrementWhatsappClicks();
       if (user) {
         await registerInterest();
