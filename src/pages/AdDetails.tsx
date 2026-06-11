@@ -204,6 +204,10 @@ const AdDetails = () => {
   };
 
   const handleContactClick = () => {
+    if (ad?.adStatus === 'sold' || ad?.status === 'sold') {
+      showToastMsg('error', 'Este anúncio já foi vendido. Não é possível contactar o vendedor.');
+      return;
+    }
     if (!user) {
       navigate(`/login?message=${encodeURIComponent('Para contactar o vendedor, faça login ou crie uma conta gratuita.')}`);
       return;
@@ -309,6 +313,10 @@ const AdDetails = () => {
   };
 
   const handleConfirmWhatsapp = async () => {
+    if (ad?.adStatus === 'sold' || ad?.status === 'sold') {
+      showToastMsg('error', 'Este anúncio já foi vendido. Não é possível contactar o vendedor.');
+      return;
+    }
     if (acceptedContactTerms && ad) {
       localStorage.setItem('safety_terms_accepted', 'true');
       incrementWhatsappClicks();
@@ -673,13 +681,20 @@ const AdDetails = () => {
               {/* CTAs */}
               <div className="flex flex-col gap-3">
                 {/* WhatsApp Button */}
-                <button
-                  onClick={handleContactClick}
-                  className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 px-6 rounded-2xl font-black transition-all shadow-md active:scale-[0.98] w-full text-center"
-                >
-                  <MessageCircle size={20} className="flex-shrink-0" />
-                  <span className="leading-tight">Contactar via WhatsApp</span>
-                </button>
+                {ad.adStatus === 'sold' || ad.status === 'sold' ? (
+                  <div className="flex items-center justify-center gap-2 bg-slate-100 text-slate-500 py-3.5 px-6 rounded-2xl font-black text-sm border border-slate-200">
+                    <ShoppingBag size={20} className="flex-shrink-0 text-slate-400" />
+                    <span className="leading-tight">Anúncio Vendido</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleContactClick}
+                    className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 px-6 rounded-2xl font-black transition-all shadow-md active:scale-[0.98] w-full text-center"
+                  >
+                    <MessageCircle size={20} className="flex-shrink-0" />
+                    <span className="leading-tight">Contactar via WhatsApp</span>
+                  </button>
+                )}
 
                 <div className="flex gap-2">
                   {/* Share button */}

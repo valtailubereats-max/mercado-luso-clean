@@ -199,6 +199,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           transaction.update(adRef, {
             status: 'approved',
             adStatus: 'sold',
+            buyerId: determinedBuyerId,
+            buyerName: buyerName,
+            soldAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           });
         }

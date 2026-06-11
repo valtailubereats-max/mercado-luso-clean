@@ -40,6 +40,9 @@ const Profile = () => {
   const [copiedReferral, setCopiedReferral] = useState(false);
   const [favoriteAds, setFavoriteAds] = useState<Ad[]>([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [purchasedAds, setPurchasedAds] = useState<Ad[]>([]);
+  const [purchasedAdsLoading, setPurchasedAdsLoading] = useState(true);
+  const [isBuyerRating, setIsBuyerRating] = useState(false);
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
@@ -113,6 +116,37 @@ const Profile = () => {
       fetchFavoriteAds();
     }
   }, [favorites, currentTab, user]);
+
+  const fetchPurchasedAds = async () => {
+    if (!user) return;
+    setPurchasedAdsLoading(true);
+    try {
+      const q = query(
+        collection(db, 'ads'),
+        where('buyerId', '==', user.uid),
+        where('adStatus', '==', 'sold'),
+        limit(50)
+      );
+      const querySnapshot = await getDocs(q);
+      const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+      adsData.sort((a, b) => {
+        const timeA = a.soldAt?.seconds ? a.soldAt.seconds * 1000 : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const timeB = b.soldAt?.seconds ? b.soldAt.seconds * 1000 : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        return (timeB || 0) - (timeA || 0);
+      });
+      setPurchasedAds(adsData);
+    } catch (err) {
+      console.error('Error fetching purchased ads:', err);
+    } finally {
+      setPurchasedAdsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentTab === 'compras') {
+      fetchPurchasedAds();
+    }
+  }, [currentTab, user]);
 
   const updateReferralStatsAndCredits = async () => {
     if (!user || !profile) return;
@@ -404,11 +438,11 @@ const Profile = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-12">
       {/* Tabs Selector Navigation */}
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-fit flex-row" id="profile-tabs-selectors">
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-fit flex-row overflow-x-auto max-w-full" id="profile-tabs-selectors">
         <button
           onClick={() => navigate('/profile?tab=perfil')}
-          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites'].includes(currentTab)
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras'].includes(currentTab)
               ? 'bg-white text-indigo-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-800'
           }`}
@@ -418,7 +452,7 @@ const Profile = () => {
         </button>
         <button
           onClick={() => navigate('/profile?tab=anuncios')}
-          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
             currentTab === 'anuncios'
               ? 'bg-white text-indigo-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-800'
@@ -428,8 +462,19 @@ const Profile = () => {
           Meus Anúncios <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'anuncios' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{ads.length}</span>
         </button>
         <button
+          onClick={() => navigate('/profile?tab=compras')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            currentTab === 'compras'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-compras"
+        >
+          Compras <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'compras' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{purchasedAds.length}</span>
+        </button>
+        <button
           onClick={() => navigate('/profile?tab=favorites')}
-          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
             currentTab === 'favorites'
               ? 'bg-white text-indigo-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-800'
@@ -440,7 +485,7 @@ const Profile = () => {
         </button>
       </div>
 
-      {(currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites'].includes(currentTab)) && (
+      {(currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras'].includes(currentTab)) && (
         <div className="space-y-12" id="profile-perfil-tab-content">
           <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -924,6 +969,7 @@ const Profile = () => {
                       <button
                         onClick={() => {
                           setSelectedAdForReview(ad);
+                          setIsBuyerRating(false);
                           setShowReviewModal(true);
                         }}
                         className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100"
@@ -1052,6 +1098,98 @@ const Profile = () => {
         </div>
       )}
 
+      {currentTab === 'compras' && (
+        <div className="space-y-6" id="compras-tab-content">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            Minhas Compras
+            <span className="bg-indigo-100 text-indigo-800 text-sm px-3 py-1 rounded-full font-bold">{purchasedAds.length}</span>
+          </h2>
+
+          {purchasedAdsLoading ? (
+            <div className="text-center py-12 text-slate-400">A carregar o seu histórico de compras...</div>
+          ) : purchasedAds.length === 0 ? (
+            <div className="bg-white p-16 rounded-3xl text-center border-2 border-dashed border-slate-200" id="no-compras-box">
+              <span className="text-4xl">🛍️</span>
+              <p className="text-slate-500 mt-4 mb-4 font-semibold">Ainda não efetuou nenhuma compra na plataforma.</p>
+              <button
+                onClick={() => navigate('/')}
+                className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer shadow-md shadow-indigo-100"
+              >
+                Explorar Anúncios
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" id="purchased-ads-grid">
+              {purchasedAds.map((ad, idx) => {
+                const soldDate = ad.soldAt?.toDate ? ad.soldAt.toDate() : (ad.soldAt ? new Date(ad.soldAt) : null);
+                const dateLabel = soldDate 
+                  ? format(soldDate, "dd 'de' MMMM 'de' yyyy", { locale: pt }) 
+                  : 'Recém-adquirido';
+
+                return (
+                  <div key={`purchased-ad-${ad.id || idx}`} className="bg-white rounded-3xl border border-slate-100 shadow-lg hover:shadow-xl transition-all overflow-hidden flex flex-col h-full">
+                    <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
+                      {ad.imageUrl ? (
+                        <OptimizedImage 
+                          src={ad.imageUrl} 
+                          alt={ad.title} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-400">
+                          Sem Imagem
+                        </div>
+                      )}
+                      <span className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-lg">
+                        Adquirido
+                      </span>
+                    </div>
+
+                    <div className="p-6 flex flex-col flex-1 gap-2">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex justify-between">
+                        <span>{ad.category}</span>
+                        <span>{ad.city}</span>
+                      </div>
+                      
+                      <h3 className="font-bold text-slate-900 text-lg line-clamp-1">{ad.title}</h3>
+                      
+                      {ad.price !== undefined && (
+                        <p className="font-extrabold text-[#006600] text-xl">
+                          {formatPrice(ad.price, ad.country || 'Portugal')}
+                        </p>
+                      )}
+
+                      <div className="border-t border-slate-100 my-2 pt-3 flex flex-col gap-1 text-xs text-slate-500">
+                        <div className="flex justify-between">
+                          <span>Vendedor:</span>
+                          <span className="font-bold text-slate-800">{ad.sellerName || 'Vendedor'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Data da compra:</span>
+                          <span className="font-medium text-slate-400">{dateLabel}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSelectedAdForReview(ad);
+                          setIsBuyerRating(true);
+                          setShowReviewModal(true);
+                        }}
+                        className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
+                      >
+                        <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" /> 
+                        Avaliar vendedor
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {selectedAdForReview && (
         <ReviewModal
           isOpen={showReviewModal}
@@ -1062,11 +1200,17 @@ const Profile = () => {
           adId={selectedAdForReview.id}
           adTitle={selectedAdForReview.title}
           adCategory={selectedAdForReview.category}
-          sellerId={user.uid}
-          sellerName={profile?.name || ''}
+          sellerId={selectedAdForReview.sellerId || user?.uid || ''}
+          sellerName={selectedAdForReview.sellerName || ''}
+          isBuyerRating={isBuyerRating}
           onSuccess={() => {
-            fetchUserAds();
-            alert('Parabéns pela venda! O seu anúncio foi finalizado com sucesso.');
+            if (isBuyerRating) {
+              fetchPurchasedAds();
+              alert('Obrigado! Avaliação enviada com sucesso.');
+            } else {
+              fetchUserAds();
+              alert('Parabéns pela venda! O seu anúncio foi finalizado com sucesso.');
+            }
           }}
         />
       )}

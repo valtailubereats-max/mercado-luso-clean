@@ -100,6 +100,9 @@ export interface Ad {
   imagePositionX?: number;
   imagePositionY?: number;
   imageZoom?: number;
+  buyerId?: string;
+  buyerName?: string;
+  soldAt?: any; // Firestore Timestamp
 }
 
 export interface Favorite {

@@ -90,6 +90,10 @@ service cloud.firestore {
              (!('plan' in data) || data.plan in ['free', 'intermediate', 'premium']) &&
              (!('contactEmail' in data) || data.contactEmail is string) &&
              (!('externalUrl' in data) || data.externalUrl is string) &&
+             (!('buyerId' in data) || (data.buyerId is string && data.buyerId.size() <= 128)) &&
+             (!('buyerName' in data) || (data.buyerName is string && data.buyerName.size() <= 100)) &&
+             (!('soldAt' in data) || data.soldAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              data.createdAt is timestamp;
     }
 
@@ -227,7 +231,7 @@ service cloud.firestore {
     match /ads/{adId} {
       // Combine reads to short-circuit expensive isAdmin() call on public/owned resources first
       allow read: if resource.data.status == 'approved' || 
-                    (isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin()));
+                    (isAuthenticated() && (resource.data.sellerId == request.auth.uid || resource.data.get('buyerId', '') == request.auth.uid || isAdmin()));
       
       allow create: if isAuthenticated() && isValidAd(request.resource.data) && request.resource.data.status == 'pending';
       allow update: if (
@@ -245,7 +249,7 @@ service cloud.firestore {
             
             // B: Lifecycle Action - Sold
             (
-              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt', 'soldAt']) &&
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adStatus', 'updatedAt', 'soldAt', 'buyerId', 'buyerName']) &&
               request.resource.data.adStatus == 'sold' &&
               request.resource.data.status == 'approved' &&
               (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time) &&

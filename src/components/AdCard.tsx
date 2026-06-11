@@ -191,6 +191,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const handleContactClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (ad.adStatus === 'sold') {
+      showToastMsg('error', 'Este anúncio já foi vendido. Não é possível contactar o vendedor.');
+      return;
+    }
     if (!user) {
       navigate(`/login?message=${encodeURIComponent('Para contactar o vendedor, faça login ou crie uma conta gratuita.')}`);
       return;
@@ -296,6 +300,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   };
 
   const confirmContact = async () => {
+    if (ad.adStatus === 'sold') {
+      showToastMsg('error', 'Este anúncio já foi vendido. Não é possível contactar o vendedor.');
+      return;
+    }
     if (acceptedContactTerms) {
       localStorage.setItem('safety_terms_accepted', 'true');
       incrementClicks();
@@ -391,6 +399,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
               <span>✨</span>
             </div>
           )}
+          {(ad.status === 'sold' || ad.adStatus === 'sold') && (
+            <div className="absolute inset-x-0 bottom-0 top-0 bg-slate-900/60 z-20 flex items-center justify-center backdrop-blur-[1.5px] pointer-events-none">
+              <span className="bg-rose-600 text-white text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-lg border border-rose-500 flex items-center gap-1.5 animate-scale-in">
+                <ShoppingBag size={12} className="fill-current text-white shrink-0" /> VENDIDO
+              </span>
+            </div>
+          )}
           <OptimizedImage
             src={ad.imageUrl}
             alt={ad.title}
@@ -468,7 +483,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
             </button>
 
             {/* WhatsApp */}
-            {ad.sellerPhone && ad.sellerPhone.trim() !== '' && (
+            {ad.sellerPhone && ad.sellerPhone.trim() !== '' && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
               <button
                 onClick={handleContactClick}
                 className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600 ${
@@ -671,13 +686,20 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                       </div>
 
                       <div className="flex flex-col gap-3">
-                        <button
-                          onClick={handleContactClick}
-                          className="flex items-center justify-center gap-2 bg-emerald-500 text-white py-3 px-4 rounded-xl font-bold hover:bg-emerald-600 transition-all shadow-md text-sm active:scale-95 text-center"
-                        >
-                          <MessageCircle size={18} className="flex-shrink-0" />
-                          <span className="leading-tight">Contactar via WhatsApp</span>
-                        </button>
+                        {ad.status === 'sold' || ad.adStatus === 'sold' ? (
+                          <div className="flex items-center justify-center gap-2 bg-slate-100 text-slate-500 py-3.5 px-4 rounded-xl font-bold text-sm border border-slate-200">
+                            <ShoppingBag size={18} className="flex-shrink-0 text-slate-400" />
+                            <span className="leading-tight">Anúncio Vendido</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handleContactClick}
+                            className="flex items-center justify-center gap-2 bg-emerald-500 text-white py-3 px-4 rounded-xl font-bold hover:bg-emerald-600 transition-all shadow-md text-sm active:scale-95 text-center"
+                          >
+                            <MessageCircle size={18} className="flex-shrink-0" />
+                            <span className="leading-tight">Contactar via WhatsApp</span>
+                          </button>
+                        )}
                       </div>
 
                       {sellerReviews.length > 0 && (

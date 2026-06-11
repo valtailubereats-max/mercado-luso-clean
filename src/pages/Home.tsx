@@ -569,7 +569,7 @@ const Home = () => {
 
       const search = searchTerm.toLowerCase().trim();
       const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
-      const matchesStatus = !ad.adStatus || ad.adStatus !== 'expired';
+      const matchesStatus = ad.status === 'approved' && (ad.adStatus === 'active' || ad.adStatus === 'sold' || !ad.adStatus);
       return matchesSearch && matchesStatus;
     });
 
@@ -593,7 +593,8 @@ const Home = () => {
     let result = ads.filter(ad => {
       const search = searchTerm.toLowerCase().trim();
       const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
-      return matchesSearch && (!ad.adStatus || ad.adStatus !== 'expired');
+      const matchesStatus = ad.status === 'approved' && (ad.adStatus === 'active' || ad.adStatus === 'sold' || !ad.adStatus);
+      return matchesSearch && matchesStatus;
     });
     result = result.filter(ad => {
       const adCountry = ad.country || 'Portugal';
@@ -608,8 +609,8 @@ const Home = () => {
   const totalApprovedCount = useMemo(() => {
     return ads.filter(ad => {
       const adCountry = ad.country || 'Portugal';
-      const isNotExpired = !ad.adStatus || ad.adStatus !== 'expired';
-      return adCountry === country && isNotExpired;
+      const isActive = ad.status === 'approved' && (ad.adStatus === 'active' || ad.adStatus === 'sold' || !ad.adStatus);
+      return adCountry === country && isActive;
     }).length;
   }, [ads, country]);
 
