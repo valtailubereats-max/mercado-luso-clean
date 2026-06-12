@@ -43,6 +43,7 @@ const Profile = () => {
   const [purchasedAds, setPurchasedAds] = useState<Ad[]>([]);
   const [purchasedAdsLoading, setPurchasedAdsLoading] = useState(true);
   const [isBuyerRating, setIsBuyerRating] = useState(false);
+  const [reviewedAdIds, setReviewedAdIds] = useState<Set<string>>(new Set());
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
@@ -114,6 +115,15 @@ const Profile = () => {
     if (!user) return;
     setPurchasedAdsLoading(true);
     try {
+      // Fetch reviewed ads by this user (to show "Já avaliado")
+      const revQuery = query(
+        collection(db, 'reviews'),
+        where('reviewerId', '==', user.uid)
+      );
+      const revSnap = await getDocs(revQuery);
+      const reviewedIds = new Set(revSnap.docs.map(doc => doc.data().adId));
+      setReviewedAdIds(reviewedIds);
+
       const q = query(
         collection(db, 'ads'),
         where('buyerId', '==', user.uid),
@@ -1160,17 +1170,27 @@ const Profile = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          setSelectedAdForReview(ad);
-                          setIsBuyerRating(true);
-                          setShowReviewModal(true);
-                        }}
-                        className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
-                      >
-                        <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" /> 
-                        Avaliar vendedor
-                      </button>
+                      {reviewedAdIds.has(ad.id) ? (
+                        <button
+                          disabled
+                          className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                        >
+                          <CheckCircle size={14} className="text-slate-400" /> 
+                          Já avaliado
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedAdForReview(ad);
+                            setIsBuyerRating(true);
+                            setShowReviewModal(true);
+                          }}
+                          className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
+                        >
+                          <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" /> 
+                          Avaliar vendedor
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1190,7 +1210,7 @@ const Profile = () => {
           adId={selectedAdForReview.id}
           adTitle={selectedAdForReview.title}
           adCategory={selectedAdForReview.category}
-          sellerId={selectedAdForReview.sellerId || user?.uid || ''}
+          sellerId={selectedAdForReview.sellerId || ''}
           sellerName={selectedAdForReview.sellerName || ''}
           isBuyerRating={isBuyerRating}
           onSuccess={() => {

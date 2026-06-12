@@ -124,6 +124,17 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       return;
     }
 
+    if (isBuyerRating) {
+      if (!sellerId) {
+        alert('Erro: O ID do vendedor está em falta.');
+        return;
+      }
+      if (sellerId === user?.uid) {
+        alert('Erro: Não pode avaliar-se a si próprio.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -213,10 +224,11 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       const isPermissionDenied = err?.code === 'permission-denied' || String(err).includes('PERMISSION_DENIED') || String(err).includes('permission-denied');
       if (isPermissionDenied) {
         console.error('[ReviewModal] ERRO CRÍTICO: Falha de Permissão Firestore (PERMISSION_DENIED). Verifique as regras de segurança para escrita/update do comprador em reviews, users ou ads:', err);
+        alert('Erro ao enviar feedback: Sem permissões para gravar esta avaliação no servidor.');
       } else {
         console.error('Error submitting review:', err);
+        alert('Erro ao enviar feedback: ' + (err?.message || err || 'Tente novamente.'));
       }
-      alert('Erro ao enviar feedback. Tente novamente.');
     } finally {
       setLoading(false);
     }
