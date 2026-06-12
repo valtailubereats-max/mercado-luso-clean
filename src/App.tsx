@@ -76,21 +76,20 @@ const Navbar = () => {
     }
     const q = query(
       collection(db, 'notifications'),
-      where('userId', '==', user.uid)
+      where('userId', '==', user.uid),
+      where('read', '==', false)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
-      // Filtra não lidas e ordena por criação decrescente
-      const unreadList = list
-        .filter(n => n.read === false)
-        .sort((a, b) => {
-          const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-          const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
-          return timeB - timeA;
-        });
+      // Ordena por criação decrescente (já estão filtradas por read == false)
+      const unreadList = list.sort((a, b) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        return timeB - timeA;
+      });
       setNotifications(unreadList);
     }, (err) => {
       console.error('Erro ao ouvir notificações:', err);
@@ -102,15 +101,17 @@ const Navbar = () => {
   // para blindagem total contra consumo excessivo de leituras. O Navbar agora é 100% estático.
 
   const handleMarkAsRead = async (id: string, adId?: string) => {
+    // Atualiza o estado local imediatamente para sumir da lista de forma instantânea
+    setNotifications(prev => prev.filter(n => n.id !== id));
     try { 
       await updateDoc(doc(db, 'notifications', id), { read: true });
+      if (adId) {
+        navigate(`/profile?highlight=${adId}`);
+        setShowNotifications(false);
+      }
     }
     catch (err) { 
       console.error('Error marking as read:', err); 
-    }
-    if (adId) {
-      navigate(`/profile?highlight=${adId}`);
-      setShowNotifications(false);
     }
   };
 
