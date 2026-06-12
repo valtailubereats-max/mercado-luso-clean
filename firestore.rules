@@ -147,7 +147,7 @@ service cloud.firestore {
     }
 
     match /ads/{adId} {
-      allow read: if resource.data.status == 'approved' ||
+      allow get: if resource.data.status == 'approved' ||
                     (
                       isAuthenticated() &&
                       (
@@ -157,6 +157,11 @@ service cloud.firestore {
                         isModerator()
                       )
                     );
+
+      allow list: if resource.data.status == 'approved';
+      allow list: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
+      allow list: if isAuthenticated() && resource.data.buyerId == request.auth.uid;
+      allow list: if isAdmin() || isModerator();
 
       allow create: if isAuthenticated() &&
                     isValidAd(request.resource.data) &&

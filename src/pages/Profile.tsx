@@ -21,7 +21,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightAdId = searchParams.get('highlight');
-  const currentTab = searchParams.get('tab') || 'perfil';
+  const rawTab = searchParams.get('tab') || 'perfil';
+  const currentTab = rawTab === 'ads' ? 'anuncios' : rawTab;
 
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+351');

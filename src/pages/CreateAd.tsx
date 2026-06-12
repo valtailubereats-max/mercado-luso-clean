@@ -467,11 +467,11 @@ const CreateAd = () => {
           navigate('/admin/ads');
         } else {
           alert('Anúncio atualizado! O seu anúncio voltou para a fila de aprovação do administrador.');
-          navigate('/profile');
+          navigate('/profile?tab=anuncios');
         }
       } else {
         alert('Anúncio enviado! Receberá um alerta quando o seu anúncio estiver aprovado.');
-        navigate('/profile');
+        navigate('/profile?tab=anuncios');
       }
     } catch (err) {
       handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, `ads/${id || 'new'}`);
