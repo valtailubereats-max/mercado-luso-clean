@@ -868,7 +868,7 @@ const Home = () => {
                 </div>
 
                 {/* Painel Lusófono compacto no mobile */}
-                <div className="lg:hidden mt-4 mx-auto w-full max-w-md rounded-[1.5rem] bg-emerald-950/80 border border-amber-300/25 backdrop-blur-2xl p-3 shadow-2xl">
+                <div className="lg:hidden mt-4 mx-auto w-full max-w-md rounded-[1.5rem] bg-[#046a38]/85 border border-amber-300/25 backdrop-blur-2xl p-3 shadow-2xl">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 mb-2">
                     🌍 Comunidade Lusófona
                   </p>
@@ -902,7 +902,7 @@ const Home = () => {
               </div>
 
               {/* Painel lateral: Comunidade Lusófona */}
-              <aside className="hidden lg:flex lg:basis-[30%] min-h-[300px] rounded-[2rem] overflow-hidden border border-amber-200/20 bg-gradient-to-br from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 shadow-2xl backdrop-blur-2xl">
+              <aside className="hidden lg:flex lg:basis-[30%] min-h-[300px] rounded-[2rem] overflow-hidden border border-amber-200/20 bg-gradient-to-br from-[#046a38]/95 via-[#03552d]/95 to-[#024022]/95 shadow-2xl backdrop-blur-2xl">
                 <div className="relative w-full p-4 xl:p-6 flex flex-col justify-center text-center text-white">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.20),transparent_38%)] pointer-events-none" />
                   <div className="relative z-10">
