@@ -103,6 +103,7 @@ export interface Ad {
   buyerId?: string;
   buyerName?: string;
   soldAt?: any; // Firestore Timestamp
+  soldOutsidePlatform?: boolean;
 }
 
 export interface Favorite {

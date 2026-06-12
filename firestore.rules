@@ -182,6 +182,18 @@ service cloud.firestore {
           isAuthenticated() &&
           resource.data.sellerId == request.auth.uid &&
           request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'adStatus', 'soldOutsidePlatform', 'soldAt', 'updatedAt']) &&
+          request.resource.data.status == 'approved' &&
+          request.resource.data.adStatus == 'sold' &&
+          request.resource.data.soldOutsidePlatform == true &&
+          request.resource.data.soldAt is timestamp &&
+          request.resource.data.updatedAt is timestamp
+        ) ||
+
+        (
+          isAuthenticated() &&
+          resource.data.sellerId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['status', 'adStatus', 'updatedAt']) &&
           request.resource.data.status == 'approved' &&
           request.resource.data.adStatus == 'active'

@@ -440,6 +440,25 @@ const Profile = () => {
     }
   };
 
+  const handleMarkAsSoldOutside = async (adId: string) => {
+    if (!window.confirm('Deseja marcar este anúncio como vendido fora da plataforma? O anúncio ficará com status de vendido e não exigirá avaliações.')) return;
+    try {
+      const adRef = doc(db, 'ads', adId);
+      await updateDoc(adRef, {
+        adStatus: 'sold',
+        status: 'approved',
+        soldOutsidePlatform: true,
+        soldAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      clearHomeCache();
+      alert('Anúncio marcado como vendido fora da plataforma!');
+      fetchUserAds();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `ads/${adId}`);
+    }
+  };
+
   if (!user) return <div className="text-center py-20">Por favor, faça login para ver seu perfil.</div>;
 
   const pointsFromAds = (profile as any)?.pointsFromAds || 0;
@@ -980,16 +999,24 @@ const Profile = () => {
                     </div>
 
                     {(ad.status === 'approved' || ad.adStatus === 'active' || ad.adStatus === 'near_expiration') && ad.adStatus !== 'sold' && ad.category !== 'Imigração' && ad.price !== undefined && Number(ad.price) > 0 && (
-                      <button
-                        onClick={() => {
-                          setSelectedAdForReview(ad);
-                          setIsBuyerRating(false);
-                          setShowReviewModal(true);
-                        }}
-                        className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100"
-                      >
-                        <ShoppingBag size={14} /> Marcar como Vendido
-                      </button>
+                      <div className="flex flex-col gap-2 mt-3 text-center">
+                        <button
+                          onClick={() => {
+                            setSelectedAdForReview(ad);
+                            setIsBuyerRating(false);
+                            setShowReviewModal(true);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100 cursor-pointer"
+                        >
+                          <ShoppingBag size={14} /> Marcar como Vendido (com avaliação)
+                        </button>
+                        <button
+                          onClick={() => handleMarkAsSoldOutside(ad.id)}
+                          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all border border-slate-200 cursor-pointer"
+                        >
+                          <Globe size={14} /> Vendido fora da plataforma
+                        </button>
+                      </div>
                     )}
 
                     {ad.status === 'approved' && ad.adStatus === 'active' && !isAdFeatured && (

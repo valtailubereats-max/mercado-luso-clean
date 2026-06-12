@@ -46,7 +46,8 @@
         "whatsappClicks": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "isFeatured": { "type": "boolean" },
-        "featuredUntil": { "type": "string", "format": "date-time" }
+        "featuredUntil": { "type": "string", "format": "date-time" },
+        "soldOutsidePlatform": { "type": "boolean" }
       },
       "required": ["id", "title", "description", "imageUrl", "city", "category", "sellerId", "sellerPhone", "sellerName", "status", "createdAt"]
     },
