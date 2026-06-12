@@ -43,7 +43,6 @@ const Profile = () => {
   const [purchasedAds, setPurchasedAds] = useState<Ad[]>([]);
   const [purchasedAdsLoading, setPurchasedAdsLoading] = useState(true);
   const [isBuyerRating, setIsBuyerRating] = useState(false);
-  const [reviewedAds, setReviewedAds] = useState<string[]>([]);
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
@@ -119,59 +118,29 @@ const Profile = () => {
   }, [favorites, currentTab, user]);
 
   const fetchPurchasedAds = async () => {
-  if (!user) return;
-
-  setPurchasedAdsLoading(true);
-
-  try {
-    const q = query(
-      collection(db, 'ads'),
-      where('buyerId', '==', user.uid),
-      limit(50)
-    );
-
-    const querySnapshot = await getDocs(q);
-const reviewsQuery = query(
-  collection(db, 'reviews'),
-  where('reviewerId', '==', user.uid)
-);
-
-const reviewsSnapshot = await getDocs(reviewsQuery);
-
-setReviewedAds(
-  reviewsSnapshot.docs.map(doc => doc.data().adId)
-);
-    console.log('[COMPRAS] user.uid =', user.uid);
-    console.log('[COMPRAS] docs encontrados =', querySnapshot.size);
-
-    querySnapshot.docs.forEach(doc => {
-      console.log('[COMPRAS] doc', doc.id, doc.data());
-    });
-
-    const adsData = querySnapshot.docs.map(
-      doc => ({ id: doc.id, ...doc.data() } as Ad)
-    );
-
-    adsData.sort((a, b) => {
-      const timeA = a.soldAt?.seconds
-        ? a.soldAt.seconds * 1000
-        : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
-
-      const timeB = b.soldAt?.seconds
-        ? b.soldAt.seconds * 1000
-        : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
-
-      return (timeB || 0) - (timeA || 0);
-    });
-
-    setPurchasedAds(adsData);
-
-  } catch (err) {
-    console.error('Error fetching purchased ads:', err);
-  } finally {
-    setPurchasedAdsLoading(false);
-  }
-};
+    if (!user) return;
+    setPurchasedAdsLoading(true);
+    try {
+      const q = query(
+        collection(db, 'ads'),
+        where('buyerId', '==', user.uid),
+       
+        limit(50)
+      );
+      const querySnapshot = await getDocs(q);
+      const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+      adsData.sort((a, b) => {
+        const timeA = a.soldAt?.seconds ? a.soldAt.seconds * 1000 : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const timeB = b.soldAt?.seconds ? b.soldAt.seconds * 1000 : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        return (timeB || 0) - (timeA || 0);
+      });
+      setPurchasedAds(adsData);
+    } catch (err) {
+      console.error('Error fetching purchased ads:', err);
+    } finally {
+      setPurchasedAdsLoading(false);
+    }
+  };
 
   useEffect(() => {
   if (user) {
@@ -1201,23 +1170,17 @@ setReviewedAds(
                         </div>
                       </div>
 
-                      {reviewedAds.includes(ad.id) ? (
-  <div className="mt-4 w-full text-center py-3 rounded-2xl text-xs font-black bg-green-50 text-green-700 border border-green-200">
-    Já avaliado
-  </div>
-) : (
-  <button
-    onClick={() => {
-      setSelectedAdForReview(ad);
-      setIsBuyerRating(true);
-      setShowReviewModal(true);
-    }}
-    className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
-  >
-    <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" />
-    Avaliar vendedor
-  </button>
-)}
+                      <button
+                        onClick={() => {
+                          setSelectedAdForReview(ad);
+                          setIsBuyerRating(true);
+                          setShowReviewModal(true);
+                        }}
+                        className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 group"
+                      >
+                        <Star size={14} className="fill-indigo-100 group-hover:fill-indigo-200 group-hover:scale-110 transition-all text-indigo-600" /> 
+                        Avaliar vendedor
+                      </button>
                     </div>
                   </div>
                 );
