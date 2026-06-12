@@ -9,6 +9,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isModerator: boolean;
   favorites: string[]; // Novo: Lista global de IDs favoritos
   refreshProfile: () => Promise<void>;
   toggleFavoriteGlobal: (adId: string) => Promise<void>; // Novo: Função para atualizar a lista localmente
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  isModerator: false,
   favorites: [],
   refreshProfile: async () => {},
   toggleFavoriteGlobal: async () => {},
@@ -281,15 +283,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user?.email === 'valtailubereats@gmail.com' || 
     user?.email === 'generalsales2021@gmail.com';
 
+  const isModerator = profile?.role === 'moderator';
+
   const value = React.useMemo(() => ({
     user,
     profile,
     loading,
     isAdmin,
+    isModerator,
     favorites,
     refreshProfile,
     toggleFavoriteGlobal
-  }), [user, profile, loading, isAdmin, favorites]);
+  }), [user, profile, loading, isAdmin, isModerator, favorites]);
 
   return (
     <AuthContext.Provider value={value}>

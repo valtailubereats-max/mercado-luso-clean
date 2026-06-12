@@ -22,6 +22,14 @@ service cloud.firestore {
         );
     }
 
+    function isModerator() {
+      return isAuthenticated() &&
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator'
+        );
+    }
+
     function isValidUser(data, userId) {
       return (!('uid' in data) || data.uid == userId) &&
              (!('name' in data) || (data.name is string && data.name.size() > 0 && data.name.size() < 100)) &&
@@ -145,7 +153,8 @@ service cloud.firestore {
                       (
                         resource.data.sellerId == request.auth.uid ||
                         resource.data.get('buyerId', '') == request.auth.uid ||
-                        isAdmin()
+                        isAdmin() ||
+                        isModerator()
                       )
                     );
 
@@ -178,11 +187,12 @@ service cloud.firestore {
           request.resource.data.adStatus == 'active'
         ) ||
 
-        isAdmin()
+        isAdmin() ||
+        isModerator()
       );
 
       allow delete: if isAuthenticated() &&
-                    (resource.data.sellerId == request.auth.uid || isAdmin());
+                    (resource.data.sellerId == request.auth.uid || isAdmin() || isModerator());
     }
 
     match /favorites/{favoriteId} {

@@ -23,10 +23,18 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { isAdmin, loading, user } = useAuth();
+  const { isAdmin, isModerator, loading, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const isStaff = isAdmin || isModerator;
+
+  React.useEffect(() => {
+    if (!loading && isStaff && isModerator && location.pathname !== '/admin/ads') {
+      navigate('/admin/ads', { replace: true });
+    }
+  }, [isModerator, isStaff, loading, location.pathname, navigate]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
@@ -47,7 +55,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
@@ -80,25 +88,27 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </div>
 
       <nav className="flex-1 space-y-1">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all group ${
-                isActive 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'} />
-              <span className="flex-1">{item.label}</span>
-              {isActive && <ChevronRight size={16} />}
-            </Link>
-          );
-        })}
+        {menuItems
+          .filter((item) => !isModerator || item.path === '/admin/ads')
+          .map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all group ${
+                  isActive 
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'} />
+                <span className="flex-1">{item.label}</span>
+                {isActive && <ChevronRight size={16} />}
+              </Link>
+            );
+          })}
       </nav>
 
       <div className="mt-auto pt-6 border-t border-slate-100">
@@ -108,7 +118,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">{user?.email?.split('@')[0]}</p>
-            <p className="text-[10px] text-slate-400 truncate">Administrador</p>
+            <p className="text-[10px] text-slate-400 truncate">{isAdmin ? 'Administrador' : 'Moderador'}</p>
           </div>
         </div>
         <button 
