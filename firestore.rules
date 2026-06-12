@@ -147,20 +147,20 @@ service cloud.firestore {
     }
 
     match /ads/{adId} {
-      allow get: if resource.data.status == 'approved' ||
+      allow get: if resource.data.get('status', '') == 'approved' ||
                     (
                       isAuthenticated() &&
                       (
-                        resource.data.sellerId == request.auth.uid ||
+                        resource.data.get('sellerId', '') == request.auth.uid ||
                         resource.data.get('buyerId', '') == request.auth.uid ||
                         isAdmin() ||
                         isModerator()
                       )
                     );
 
-      allow list: if resource.data.status == 'approved';
-      allow list: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
-      allow list: if isAuthenticated() && resource.data.buyerId == request.auth.uid;
+      allow list: if resource.data.get('status', '') == 'approved';
+      allow list: if isAuthenticated() && resource.data.get('sellerId', '') == request.auth.uid;
+      allow list: if isAuthenticated() && resource.data.get('buyerId', '') == request.auth.uid;
       allow list: if isAdmin() || isModerator();
 
       allow create: if isAuthenticated() &&

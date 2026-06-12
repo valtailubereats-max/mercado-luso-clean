@@ -93,6 +93,7 @@ const Profile = () => {
       }
       setFavoritesLoading(true);
       try {
+        console.log('[PROFILE ADS QUERY] fetchFavoriteAds | path: ads | favorites count:', favorites.slice(0, 30).length, 'favorites:', favorites.slice(0, 30));
         const q = query(
           collection(db, 'ads'),
           where('__name__', 'in', favorites.slice(0, 30))
@@ -101,7 +102,8 @@ const Profile = () => {
         const adsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
         setFavoriteAds(adsData);
       } catch (err) {
-        console.error('Error loading favorite ads:', err);
+        console.error('[PROFILE ADS QUERY ERROR] Error loading favorite ads:', err);
+        handleFirestoreError(err, OperationType.LIST, 'ads');
       } finally {
         setFavoritesLoading(false);
       }
@@ -125,6 +127,7 @@ const Profile = () => {
       const reviewedIds = new Set(revSnap.docs.map(doc => doc.data().adId));
       setReviewedAdIds(reviewedIds);
 
+      console.log('[PROFILE ADS QUERY] fetchPurchasedAds | path: ads | buyerId:', user.uid);
       const q = query(
         collection(db, 'ads'),
         where('buyerId', '==', user.uid),
@@ -140,7 +143,8 @@ const Profile = () => {
       });
       setPurchasedAds(adsData);
     } catch (err) {
-      console.error('Error fetching purchased ads:', err);
+      console.error('[PROFILE ADS QUERY ERROR] Error fetching purchased ads:', err);
+      handleFirestoreError(err, OperationType.LIST, 'ads');
     } finally {
       setPurchasedAdsLoading(false);
     }
@@ -290,6 +294,7 @@ const Profile = () => {
     if (!user) return;
     setAdsLoading(true);
     try {
+      console.log('[PROFILE ADS QUERY] fetchUserAds | path: ads | sellerId:', user.uid);
       const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid), limit(5));
       const querySnapshot = await getDocsWithCacheFallback(q, `ads/sellerId-${user.uid}`);
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
@@ -305,6 +310,7 @@ const Profile = () => {
         await batch.commit();
       }
     } catch (err) {
+      console.error('[PROFILE ADS QUERY ERROR] Error in fetchUserAds:', err);
       handleFirestoreError(err, OperationType.LIST, 'ads');
     } finally {
       setAdsLoading(false);
