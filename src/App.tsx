@@ -101,17 +101,22 @@ const Navbar = () => {
   // para blindagem total contra consumo excessivo de leituras. O Navbar agora é 100% estático.
 
   const handleMarkAsRead = async (id: string, adId?: string) => {
-    // Atualiza o estado local imediatamente para sumir da lista de forma instantânea
+    // 2. Remover a notificação do estado local imediatamente.
     setNotifications(prev => prev.filter(n => n.id !== id));
+
+    // 3 & 4. Se existir adId, navegar para /profile?tab=anuncios&highlight=<adId>. Se não, apenas fechar o menu.
+    if (adId) {
+      navigate(`/profile?tab=anuncios&highlight=${adId}`);
+    }
+    setShowNotifications(false);
+
     try { 
+      // 1. Ao clicar, atualizar Firestore: read = true.
       await updateDoc(doc(db, 'notifications', id), { read: true });
-      if (adId) {
-        navigate(`/profile?highlight=${adId}`);
-        setShowNotifications(false);
-      }
     }
     catch (err) { 
-      console.error('Error marking as read:', err); 
+      // 5. Mostrar no console se updateDoc falhar.
+      console.error('Error marking notification as read in Firestore:', err); 
     }
   };
 
