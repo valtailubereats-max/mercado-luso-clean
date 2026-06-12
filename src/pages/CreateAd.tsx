@@ -399,6 +399,7 @@ const CreateAd = () => {
 
       // Notificação interna automática para admins e moderadores quando um novo anúncio for criado como pendente
       if (!id && adData.status === 'pending') {
+        console.log('[PENDING EMAIL] start');
         try {
           // 3. está buscando corretamente users onde role in ["admin", "moderator"];
           const staffQuery = query(
@@ -417,6 +418,8 @@ const CreateAd = () => {
             }
           });
 
+          console.log('[PENDING EMAIL] staff emails found:', staffEmails);
+
           // 4. está criando documentos na collection "notifications";
           for (const staffUid of staffUids) {
             const notifId = `pending_${adId}_${staffUid}_${Date.now()}`;
@@ -434,15 +437,26 @@ const CreateAd = () => {
 
           // Enviar email para admins/moderadores se houver algum email cadastrado
           if (staffEmails.length > 0) {
-            sendEmailGeneric('anuncio_pendente_staff', staffEmails, {
-              staffEmails: staffEmails,
-              adTitle: adData.title,
-              adId: adId,
-              sellerName: adData.sellerName || 'Anunciante'
-            }).catch(err => console.warn('[CreateAd] Falha não impeditiva ao enviar email de anúncio pendente:', err));
+            for (const email of staffEmails) {
+              try {
+                const res = await sendEmailGeneric('anuncio_pendente_staff', email, {
+                  staffEmails: [email],
+                  adTitle: adData.title,
+                  adId: adId,
+                  sellerName: adData.sellerName || 'Anunciante'
+                });
+                if (res.success) {
+                  console.log('[PENDING EMAIL] sent to:', email);
+                } else {
+                  console.warn('[PENDING EMAIL] error:', res.error || 'Failed to send email generic response not success');
+                }
+              } catch (err: any) {
+                console.warn('[PENDING EMAIL] error:', err.message || err);
+              }
+            }
           }
-        } catch (notifErr) {
-          // Silenciosamente capturar sem poluir o console de produção
+        } catch (notifErr: any) {
+          console.warn('[PENDING EMAIL] error:', notifErr.message || notifErr);
         }
       }
 
