@@ -100,12 +100,17 @@ const Navbar = () => {
   // Notificações do usuário, pending ads do admin e contagem de ads desativados do Firestore globais
   // para blindagem total contra consumo excessivo de leituras. O Navbar agora é 100% estático.
 
-  const handleMarkAsRead = async (id: string, adId?: string) => {
+  const handleMarkAsRead = async (id: string, adId?: string, type?: string) => {
     // 2. Remover a notificação do estado local imediatamente.
     setNotifications(prev => prev.filter(n => n.id !== id));
 
-    // 3 & 4. Se existir adId, navegar para /profile?tab=anuncios&highlight=<adId>. Se não, apenas fechar o menu.
-    if (adId) {
+    const notificationObject = notifications.find(n => n.id === id);
+    const notificationType = type || notificationObject?.type;
+
+    // 3 & 4. Se existir adId, navegar para /profile?tab=anuncios&highlight=<adId>. Se for ad_pending, ir para /admin/ads. Se não, apenas fechar o menu.
+    if (notificationType === 'ad_pending') {
+      navigate('/admin/ads');
+    } else if (adId) {
       navigate(`/profile?tab=anuncios&highlight=${adId}`);
     }
     setShowNotifications(false);
@@ -264,7 +269,7 @@ const Navbar = () => {
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há novas notificações.</div> :
                           notifications.map((notif, idx) => (
-                            <div key={`nav-notif-${notif.id || idx}-${idx}`} onClick={() => handleMarkAsRead(notif.id, notif.adId)} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer">
+                            <div key={`nav-notif-${notif.id || idx}-${idx}`} onClick={() => handleMarkAsRead(notif.id, notif.adId, notif.type)} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer">
                               <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">{notif.title}</p>
                               <p className="text-sm text-slate-700 leading-relaxed">{notif.message}</p>
                               <p className="text-[10px] text-slate-400 mt-2">{notif.createdAt?.toDate ? formatDistanceToNow(notif.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}</p>

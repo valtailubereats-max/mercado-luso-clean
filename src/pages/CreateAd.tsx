@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -395,6 +395,44 @@ const CreateAd = () => {
       };
 
       await setDoc(doc(db, 'ads', adId), adData, { merge: true });
+
+      // Notificação interna automática para admins e moderadores quando um novo anúncio for criado como pendente
+      if (!id && adData.status === 'pending') {
+        try {
+          const usersSnapshot = await getDocs(collection(db, 'users'));
+          const staffUids = new Set<string>();
+
+          usersSnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+            const role = userData.role;
+            const email = userData.email?.toLowerCase();
+            const isAdminEmail = email === 'valtailubereats@gmail.com' || email === 'generalsales2021@gmail.com';
+
+            if (role === 'admin' || role === 'moderator' || isAdminEmail) {
+              staffUids.add(docSnap.id);
+            }
+          });
+
+          // Enviar notificações individuais para cada admin/moderador encontrado
+          for (const staffUid of staffUids) {
+            const notifId = `pending_${adId}_${staffUid}_${Date.now()}`;
+            const notifData = {
+              userId: staffUid,
+              title: 'Novo anúncio pendente',
+              message: `Há um novo anúncio aguardando aprovação: "${adData.title}"`,
+              createdAt: serverTimestamp(),
+              read: false,
+              adId: adId,
+              type: 'ad_pending'
+            };
+            await setDoc(doc(db, 'notifications', notifId), notifData);
+          }
+          console.log(`[CreateAd] Notificações pendentes criadas com sucesso para ${staffUids.size} administradores/moderadores.`);
+        } catch (notifErr) {
+          console.warn('[CreateAd] Falha ao criar notificações de anúncio pendente:', notifErr);
+        }
+      }
+
       clearHomeCache();
       if (id) {
         if (isAdmin && originalAd?.sellerId !== user.uid) {
