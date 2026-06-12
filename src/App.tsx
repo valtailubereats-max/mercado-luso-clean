@@ -36,7 +36,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const Navbar = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isModerator, loading } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
   const [adminNotificationCount, setAdminNotificationCount] = React.useState(0);
@@ -250,6 +250,12 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>}
 
+              {isModerator && !isAdmin && (
+                <Link to="/admin/ads" className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1.5 p-2 transition-colors">
+                  <ShieldCheck size={20} /> <span>Gerir Anúncios</span>
+                </Link>
+              )}
+
               <div className="relative">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
                   <Bell size={20}/>
@@ -421,6 +427,12 @@ const Navbar = () => {
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">
                     Admin {adminNotificationCount > 0 && <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{adminNotificationCount}</span>}
+                  </Link>
+                )}
+
+                {isModerator && !isAdmin && (
+                  <Link to="/admin/ads" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">
+                    Gerir Anúncios
                   </Link>
                 )}
 
