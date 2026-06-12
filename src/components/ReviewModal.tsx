@@ -69,7 +69,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       return;
     }
 
-    console.log(`[ReviewModal] Procurando interessados para o anúncio: "${adId}" e vendedor: "${sellerId}"`);
     setLoadingUsers(true);
 
     const getInterestedUsers = async () => {
@@ -85,7 +84,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           id: doc.id,
           ...doc.data()
         }));
-        console.log(`[ReviewModal] Interessados encontrados: ${list.length}`);
         setUsersList(list);
       } catch (err) {
         console.error('[ReviewModal] Erro ao carregar interessados:', err);
@@ -148,8 +146,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         reviewerId = user?.uid || '';
         revieweeId = selectedBuyerId;
       }
-
-      console.log(`[ReviewModal] Creating review with role: isBuyerRating=${isBuyerRating}. sellerId=${determinedSellerId}, buyerId=${determinedBuyerId}, reviewerId=${reviewerId}, revieweeId=${revieweeId}`);
 
       const reviewData: Review = {
         id: reviewId,

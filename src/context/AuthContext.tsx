@@ -118,10 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           referredBy: refCode
         });
 
-        console.log(`Successfully registered referral in Firestore! Inviter: ${inviterId}, Referred: ${uid}`);
         localStorage.removeItem('referred_by_code');
-        
-        // Dynamic reload
         await fetchProfile(uid, true);
       }
     } catch (err) {
@@ -141,7 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      console.log('🔥 CHAMADA AO FIREBASE DETECTADA');
       const docRef = doc(db, 'users', uid);
       const docSnap = await withTimeout(getDocWithCacheFallback(docRef, `users/${uid}`), 45000);
       if (docSnap.exists()) {

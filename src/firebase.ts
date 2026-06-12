@@ -48,72 +48,14 @@ if (typeof window !== 'undefined') {
   });
 }
 
-function logAuditRead(pathLabel: string) {
-  const label = pathLabel.toLowerCase();
-  if (label.includes('home/approved-ads')) {
-    console.log('[READ] Home ads');
-  } else if (label.includes('home/featured-ads')) {
-    console.log('[READ] Home featured');
-  } else if (label.startsWith('ads/')) {
-    console.log('[READ] AdDetails ad');
-  } else if (label.startsWith('users/')) {
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/anuncio/')) {
-      console.log('[READ] AdDetails seller');
-    } else if (typeof window !== 'undefined' && (window.location.pathname.includes('/profile') || window.location.pathname.includes('/perfil'))) {
-      console.log('[READ] Profile');
-    } else {
-      console.log('[READ] AdDetails seller');
-    }
-  } else if (label.startsWith('sellerpublicprofiles/')) {
-    console.log('[READ] AdDetails seller');
-  } else if (label.startsWith('reviews/')) {
-    console.log('[READ] Reviews');
-  } else if (label.startsWith('favorites/')) {
-    console.log('[READ] Favorites');
-  } else if (label.startsWith('referrals/')) {
-    console.log('[READ] Profile');
-  } else if (label === 'settings/global') {
-    console.log('[READ] Settings');
-  } else if (label.startsWith('admin/')) {
-    console.log('[READ] Admin');
-  } else {
-    if (label.includes('admin')) {
-      console.log('[READ] Admin');
-    } else if (label.includes('profile')) {
-      console.log('[READ] Profile');
-    } else if (label.includes('settings')) {
-      console.log('[READ] Settings');
-    } else if (label.includes('favorite')) {
-      console.log('[READ] Favorites');
-    } else if (label.includes('review')) {
-      console.log('[READ] Reviews');
-    }
-  }
-}
-
 // Configura as buscas para tentarem ler primeiro do Servidor e apenas do Cache como Fallback (Offline) para garantir dados sempre atualizados em tempo real estando online
 export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'unknown'): Promise<QuerySnapshot> {
-  console.log(`[Firestore SERVER FETCH] 🌍 Tentando ler do Servidor para: ${pathLabel}`);
   try {
-    logAuditRead(pathLabel);
     const snap = await getDocsFromServer(q);
-    console.log(`[Firestore Server Success] Recuperado com sucesso do Servidor (${snap.size} docs) para: ${pathLabel}`);
-    
-    if (typeof window !== 'undefined') {
-      if (typeof (window as any).__firestoreReadAuditTotal === 'undefined') {
-        (window as any).__firestoreReadAuditTotal = 0;
-      }
-      (window as any).__firestoreReadAuditTotal += snap.size;
-      const total = (window as any).__firestoreReadAuditTotal;
-      console.log(`[READ COUNT] +${snap.size} docs | total=${total} | label=${pathLabel}`);
-    }
-
     return snap;
   } catch (err) {
-    console.warn(`[Firestore Server Fallback] Falha ao ler do servidor para: ${pathLabel}. Tentando ler do Cache local...`, err);
     try {
       const snap = await getDocsFromCache(q);
-      console.log(`[Firestore Cache HIT] Recuperado com sucesso do Cache local (${snap.size} docs) como fallback para: ${pathLabel}`);
       return snap;
     } catch (cacheErr) {
       console.error(`[Firestore Fatal Error] Falha de leitura e cache para: ${pathLabel}`, cacheErr);
@@ -123,28 +65,12 @@ export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'un
 }
 
 export async function getDocWithCacheFallback(docRef: DocumentReference, pathLabel: string = 'unknown'): Promise<DocumentSnapshot> {
-  console.log(`[Firestore SERVER FETCH] 🌍 Tentando ler do Servidor para o documento: ${pathLabel}`);
   try {
-    logAuditRead(pathLabel);
     const snap = await getDocFromServer(docRef);
-    console.log(`[Firestore Server Success] Documento recuperado do Servidor para: ${pathLabel}`);
-    
-    const amount = snap.exists() ? 1 : 0;
-    if (typeof window !== 'undefined') {
-      if (typeof (window as any).__firestoreReadAuditTotal === 'undefined') {
-        (window as any).__firestoreReadAuditTotal = 0;
-      }
-      (window as any).__firestoreReadAuditTotal += amount;
-      const total = (window as any).__firestoreReadAuditTotal;
-      console.log(`[READ COUNT] +1 doc | total=${total} | label=${pathLabel}`);
-    }
-
     return snap;
   } catch (err) {
-    console.warn(`[Firestore Server Fallback] Falha ao ler documento do servidor para: ${pathLabel}. Tentando ler do Cache local...`, err);
     try {
       const snap = await getDocFromCache(docRef);
-      console.log(`[Firestore Cache HIT] Documento recuperado do Cache local para: ${pathLabel}`);
       return snap;
     } catch (cacheErr) {
       console.error(`[Firestore Fatal Error] Falha de leitura e cache para documento: ${pathLabel}`, cacheErr);

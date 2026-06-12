@@ -65,15 +65,8 @@ const Profile = () => {
         limit(50)
       );
       
-      console.log(`[Profile] Iniciando busca manual de adInterests para o anúncio: "${adId}".`);
-      console.log(`[Profile] Usuário/Vendedor autenticado: "${user.uid}".`);
-      console.log(`[Profile] Query Firestore: collection(db, 'adInterests'), where('adId', '==', '${adId}'), where('sellerId', '==', '${user.uid}'), limit(50)`);
-
       const snapshot = await getDocs(q);
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      console.log(`[Profile] Busca manual concluída com sucesso. Quantidade retornada: ${list.length}`);
-      console.log(`[Profile] Dados retornados:`, JSON.stringify(list, null, 2));
 
       setAdInterests(prev => ({
         ...prev,
@@ -162,8 +155,6 @@ const Profile = () => {
       const currentCredits = profile.referralCredits || 0;
 
       if (realCount !== profileCount) {
-        console.log(`Updating user referral stats. DB Count: ${realCount}, Profile Count: ${profileCount}`);
-        
         const oldPoints = calculateTotalPoints(profileCount, pointsFromAds);
         const newPoints = calculateTotalPoints(realCount, pointsFromAds);
         
@@ -343,7 +334,6 @@ const Profile = () => {
           createdAt: publicSnap.exists() && publicSnap.data().createdAt ? publicSnap.data().createdAt : fallbackCreated,
           updatedAt: now
         }, { merge: true });
-        console.log('[Sync] Sincronizou sellerPublicProfiles com sucesso.');
       } catch (syncErr) {
         console.error('[Sync] Erro ao sincronizar para sellerPublicProfiles:', syncErr);
       }
