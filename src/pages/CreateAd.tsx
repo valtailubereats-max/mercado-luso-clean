@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -398,22 +398,23 @@ const CreateAd = () => {
 
       // Notificação interna automática para admins e moderadores quando um novo anúncio for criado como pendente
       if (!id && adData.status === 'pending') {
+        console.log('[PENDING NOTIF] start');
         try {
-          const usersSnapshot = await getDocs(collection(db, 'users'));
-          const staffUids = new Set<string>();
-
-          usersSnapshot.forEach(docSnap => {
-            const userData = docSnap.data();
-            const role = userData.role;
-            const email = userData.email?.toLowerCase();
-            const isAdminEmail = email === 'valtailubereats@gmail.com' || email === 'generalsales2021@gmail.com';
-
-            if (role === 'admin' || role === 'moderator' || isAdminEmail) {
-              staffUids.add(docSnap.id);
-            }
+          // 3. está buscando corretamente users onde role in ["admin", "moderator"];
+          const staffQuery = query(
+            collection(db, 'users'),
+            where('role', 'in', ['admin', 'moderator'])
+          );
+          const staffSnapshot = await getDocs(staffQuery);
+          
+          const staffUids: string[] = [];
+          staffSnapshot.forEach(docSnap => {
+            staffUids.push(docSnap.id);
           });
 
-          // Enviar notificações individuais para cada admin/moderador encontrado
+          console.log(`[PENDING NOTIF] staff found: ${staffUids.length}`);
+
+          // 4. está criando documentos na collection "notifications";
           for (const staffUid of staffUids) {
             const notifId = `pending_${adId}_${staffUid}_${Date.now()}`;
             const notifData = {
@@ -426,10 +427,10 @@ const CreateAd = () => {
               type: 'ad_pending'
             };
             await setDoc(doc(db, 'notifications', notifId), notifData);
+            console.log(`[PENDING NOTIF] notification created for: ${staffUid}`);
           }
-          console.log(`[CreateAd] Notificações pendentes criadas com sucesso para ${staffUids.size} administradores/moderadores.`);
-        } catch (notifErr) {
-          console.warn('[CreateAd] Falha ao criar notificações de anúncio pendente:', notifErr);
+        } catch (notifErr: any) {
+          console.error('[PENDING NOTIF] error:', notifErr?.message || notifErr);
         }
       }
 
