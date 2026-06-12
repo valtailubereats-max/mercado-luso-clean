@@ -21,6 +21,8 @@ import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
 // @ts-ignore
 import londonAerial from '../assets/images/london_aerial_1780755464204.png';
 
+import { useClickOutside } from '../hooks/useClickOutside';
+
 const PAGE_SIZE = 30; 
 
 const Home = () => {
@@ -226,16 +228,10 @@ const Home = () => {
     }
   }, [profile]);
 
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setCountryDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Click outside to close dropdown using unified hook
+  useClickOutside(dropdownRef, () => {
+    setCountryDropdownOpen(false);
+  });
 
   // Handle Country Change
   const handleCountryChange = (val: 'Portugal' | 'Reino Unido') => {

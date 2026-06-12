@@ -6,6 +6,7 @@ import { db, storage, handleFirestoreError, OperationType, getDocWithCacheFallba
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { clearHomeCache } from '../utils/cache';
+import { sendEmailGeneric } from '../utils/emailService';
 import { CITIES, Ad, MarketplaceSettings, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
@@ -398,7 +399,6 @@ const CreateAd = () => {
 
       // Notificação interna automática para admins e moderadores quando um novo anúncio for criado como pendente
       if (!id && adData.status === 'pending') {
-        console.log('[PENDING NOTIF] start');
         try {
           // 3. está buscando corretamente users onde role in ["admin", "moderator"];
           const staffQuery = query(
@@ -408,11 +408,14 @@ const CreateAd = () => {
           const staffSnapshot = await getDocs(staffQuery);
           
           const staffUids: string[] = [];
+          const staffEmails: string[] = [];
           staffSnapshot.forEach(docSnap => {
             staffUids.push(docSnap.id);
+            const sData = docSnap.data();
+            if (sData && sData.email) {
+              staffEmails.push(sData.email);
+            }
           });
-
-          console.log(`[PENDING NOTIF] staff found: ${staffUids.length}`);
 
           // 4. está criando documentos na collection "notifications";
           for (const staffUid of staffUids) {
@@ -427,10 +430,19 @@ const CreateAd = () => {
               type: 'ad_pending'
             };
             await setDoc(doc(db, 'notifications', notifId), notifData);
-            console.log(`[PENDING NOTIF] notification created for: ${staffUid}`);
           }
-        } catch (notifErr: any) {
-          console.error('[PENDING NOTIF] error:', notifErr?.message || notifErr);
+
+          // Enviar email para admins/moderadores se houver algum email cadastrado
+          if (staffEmails.length > 0) {
+            sendEmailGeneric('anuncio_pendente_staff', staffEmails, {
+              staffEmails: staffEmails,
+              adTitle: adData.title,
+              adId: adId,
+              sellerName: adData.sellerName || 'Anunciante'
+            }).catch(err => console.warn('[CreateAd] Falha não impeditiva ao enviar email de anúncio pendente:', err));
+          }
+        } catch (notifErr) {
+          // Silenciosamente capturar sem poluir o console de produção
         }
       }
 

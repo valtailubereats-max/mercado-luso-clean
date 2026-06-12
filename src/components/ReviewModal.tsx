@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, runTransaction, collection, query, getDocs, limit, orderBy, startAt, endAt, where } from 'firebase/firestore';
 import { Review, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { sendEmailGeneric, getSellerEmail } from '../utils/emailService';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -217,6 +218,36 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     });
   }
 });
+
+      // Disparar o e-mail correspondente de forma assíncrona pós-transação de sucesso
+      try {
+        if (isBuyerRating) {
+          // O comprador avaliou o vendedor. Enviar para o vendedor (sellerId)
+          getSellerEmail(sellerId).then((sellerEmail) => {
+            if (sellerEmail) {
+              sendEmailGeneric('review_recebida', sellerEmail, {
+                sellerName: sellerName || 'Vendedor',
+                reviewerName: currentUserProfile?.name || user?.displayName || 'Comprador',
+                rating: rating,
+                comment: comment,
+                adTitle: adTitle
+              }).catch(e => console.warn('[ReviewModal] Falha ao enviar email de review:', e));
+            }
+          }).catch(err => console.warn('[ReviewModal] Falha ao obter email do vendedor para review:', err));
+        } else {
+          // O vendedor marcou a venda como concluída. Enviar para o vendedor (user.email)
+          const sellerEmail = user?.email;
+          if (sellerEmail) {
+            sendEmailGeneric('compra_concluida', sellerEmail, {
+              sellerName: currentUserProfile?.name || user?.displayName || 'Vendedor',
+              buyerName: buyerName || 'Comprador',
+              adTitle: adTitle
+            }).catch(e => console.warn('[ReviewModal] Falha ao enviar email de compra concluída:', e));
+          }
+        }
+      } catch (emailTriggerErr) {
+        console.warn('[ReviewModal] Erro não impeditivo no disparo de emails:', emailTriggerErr);
+      }
 
       onSuccess();
       onClose();

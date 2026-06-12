@@ -320,13 +320,27 @@ const Profile = () => {
     setLoading(true);
     try {
       const docRef = doc(db, 'users', user.uid);
-      const digitsOnly = phone.replace(/\D/g, '');
+      const digitsOnly = phone.replace(/\D/g, '').trim();
       if (digitsOnly.length < 7) {
         alert('Por favor, insira um número de telemóvel válido.');
         setLoading(false);
         return;
       }
-      const fullPhone = `${countryCode}${digitsOnly}`;
+      const fullPhone = `${countryCode}${digitsOnly}`.trim();
+
+      // Verificar se o telemóvel já se encontra registado por outro utilizador
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('phone', '==', fullPhone)
+      );
+      const querySnap = await getDocs(usersQuery);
+      const duplicateUser = querySnap.docs.find(doc => doc.id !== user.uid);
+      if (duplicateUser) {
+        alert('Este número de telemóvel já está associado a outro utilizador. Por favor, utilize outro número.');
+        setLoading(false);
+        return;
+      }
+
       // Use setDoc with merge: true to avoid "No document to update" if creation failed
       await setDoc(docRef, { name, phone: fullPhone, city, country }, { merge: true });
       

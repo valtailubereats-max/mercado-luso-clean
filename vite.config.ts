@@ -101,6 +101,36 @@ Estrutura JSON esperada:
                   res.end(JSON.stringify({ success: false, error: err.message || 'Erro inesperado' }));
                 }
               });
+            } else if (req.url?.startsWith('/api/email/send') && req.method === 'POST') {
+              let body = '';
+              req.on('data', chunk => { body += chunk; });
+              req.on('end', async () => {
+                try {
+                  const { template, to, data } = JSON.parse(body);
+                  const { default: handler } = await import('./api/email/send.ts');
+                  
+                  const mockRes = {
+                    status(code: number) {
+                      res.writeHead(code, { 'Content-Type': 'application/json' });
+                      return this;
+                    },
+                    json(payload: any) {
+                      res.end(JSON.stringify(payload));
+                      return this;
+                    },
+                    setHeader() {},
+                    end() {
+                      res.end();
+                    }
+                  };
+                  
+                  await handler({ method: 'POST', body: { template, to, data } }, mockRes);
+                } catch (err: any) {
+                  console.error("[Emulator] Erro no emulador de email:", err);
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ success: false, error: err.message || 'Erro no emulador de email' }));
+                }
+              });
             } else if (req.url?.startsWith('/api/health')) {
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ status: "ok" }));

@@ -34,6 +34,7 @@ import Links from './pages/Links';
 import { Ad } from './types';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useClickOutside } from './hooks/useClickOutside';
 
 const Navbar = () => {
   const { user, isAdmin, isModerator, loading } = useAuth();
@@ -47,19 +48,27 @@ const Navbar = () => {
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [navSearch, setNavSearch] = React.useState('');
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
+  
   const userDropdownRef = React.useRef<HTMLDivElement>(null);
+  const adminNotificationsRef = React.useRef<HTMLDivElement>(null);
+  const notificationsRef = React.useRef<HTMLDivElement>(null);
+  const navRef = React.useRef<HTMLElement>(null);
 
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
-        setShowUserDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  useClickOutside(userDropdownRef, () => {
+    setShowUserDropdown(false);
+  });
+
+  useClickOutside(adminNotificationsRef, () => {
+    setShowAdminNotifications(false);
+  });
+
+  useClickOutside(notificationsRef, () => {
+    setShowNotifications(false);
+  });
+
+  useClickOutside(navRef, () => {
+    setIsOpen(false);
+  });
 
   const handleNavSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +184,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#bfead0] border-b border-[#a8dec0] sticky top-0 z-50 shadow-sm/50">
+    <nav ref={navRef} className="bg-[#bfead0] border-b border-[#a8dec0] sticky top-0 z-50 shadow-sm/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 group">
@@ -220,7 +229,7 @@ const Navbar = () => {
                 <PlusCircle size={20} /> <span>Anunciar</span>
               </Link>
 
-              {isAdmin && <div className="relative">
+              {isAdmin && <div className="relative" ref={adminNotificationsRef}>
                 <button onClick={() => setShowAdminNotifications(!showAdminNotifications)} className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
                   <ShieldCheck size={20} /> <span>Admin</span>
                   {adminNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-pulse">{adminNotificationCount}</span>}
@@ -255,7 +264,7 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>}
 
-              <div className="relative">
+              <div className="relative" ref={notificationsRef}>
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
                   <Bell size={20}/>
                   {notifications.length > 0 && <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">{notifications.length}</span>}

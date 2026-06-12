@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatPrice, getAdUrl } from '../utils';
+import { sendEmailGeneric, getSellerEmail } from '../utils/emailService';
 import OptimizedImage from './OptimizedImage';
 import ReviewModal from './ReviewModal';
 
@@ -289,6 +290,18 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         } catch (notifErr) {
           console.warn('[AdCard] Falha não bloqueante ao criar notificação de interesse:', notifErr);
         }
+
+        // Desparar email de interesse de forma assíncrona
+        getSellerEmail(ad.sellerId.trim()).then((sellerEmail) => {
+          if (sellerEmail) {
+            sendEmailGeneric('interesse_contacto', sellerEmail, {
+              sellerName: ad.sellerName || 'Anunciante',
+              adTitle: ad.title,
+              interestedName: truncatedName,
+              adId: ad.id
+            }).catch(e => console.warn('[AdCard] Erro ao enviar email de interesse:', e));
+          }
+        }).catch(err => console.warn('[AdCard] Erro ao obter email de vendedor para interesse:', err));
       }
 
       return { success: true };

@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType, getDocWithCacheFallback } from '../firebase';
+import { sendEmailGeneric } from '../utils/emailService';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, ShieldCheck, Mail, Lock, User as UserIcon, ArrowRight, Github, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -123,6 +124,13 @@ const Login = () => {
           } catch (syncErr) {
             console.error('[Sync] Falha ao criar sellerPublicProfiles em Google Login:', syncErr);
           }
+
+          // Enviar email de boas-vindas
+          if (user.email) {
+            sendEmailGeneric('boas_vindas', user.email, {
+              userName: user.displayName || 'Utilizador'
+            }).catch(emailErr => console.warn('[Google Register Email] Erro ao enviar email de boas-vindas:', emailErr));
+          }
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
@@ -200,6 +208,13 @@ const Login = () => {
             });
           } catch (syncErr) {
             console.error('[Sync] Falha ao criar sellerPublicProfiles em Email register:', syncErr);
+          }
+
+          // Enviar email de boas-vindas
+          if (user.email) {
+            sendEmailGeneric('boas_vindas', user.email, {
+              userName: name
+            }).catch(emailErr => console.warn('[Email Register Welcome] Erro ao enviar email de boas-vindas:', emailErr));
           }
           // Synchronize locally too
           localStorage.setItem('selectedCountry', profileCountry);

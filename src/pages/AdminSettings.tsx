@@ -13,8 +13,11 @@ import {
   AlertTriangle,
   Tag,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  Send
 } from 'lucide-react';
+import { sendEmailGeneric } from '../utils/emailService';
 import { AdminMigrationWidget } from '../components/AdminMigrationWidget';
 
 interface AdminSettingsProps {
@@ -28,6 +31,74 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
   const [newCategory, setNewCategory] = useState('');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Email Configuration and Interactive Testing state
+  const [emailsEnabled, setEmailsEnabled] = useState(() => {
+    return localStorage.getItem('emails_enabled') !== 'false';
+  });
+  const [testTemplate, setTestTemplate] = useState('anuncio_aprovado');
+  const [testTo, setTestTo] = useState('utilizador_teste@dominio.com');
+  const [testName, setTestName] = useState('Rita Santos');
+  const [testTitle, setTestTitle] = useState('Sofá de Pele Confortável - Excelentes Condições');
+  const [testReason, setTestReason] = useState('O preço apresentado deve corresponder ao valor real do produto.');
+  const [testRating, setTestRating] = useState(5);
+  const [testComment, setTestComment] = useState('Excelente vendedor, respondeu rápido e ajudou a carregar o móvel!');
+  const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [testResult, setTestResult] = useState<any>(null);
+
+  const handleToggleEmails = (checked: boolean) => {
+    setEmailsEnabled(checked);
+    localStorage.setItem('emails_enabled', checked ? 'true' : 'false');
+  };
+
+  const handleSendTestEmail = async () => {
+    setTestStatus('sending');
+    setTestResult(null);
+    try {
+      let data: any = {};
+      if (testTemplate === 'anuncio_aprovado') {
+        data = { sellerName: testName, adTitle: testTitle, adId: 'test-ad-approved-123' };
+      } else if (testTemplate === 'anuncio_rejeitado') {
+        data = { sellerName: testName, adTitle: testTitle, reason: testReason };
+      } else if (testTemplate === 'anuncio_pendente_staff') {
+        data = { staffEmails: [testTo], adTitle: testTitle, adId: 'test-ad-pending-123', sellerName: testName };
+      } else if (testTemplate === 'interesse_contacto') {
+        data = { sellerName: testName, adTitle: testTitle, interestedName: 'José Martins', adId: 'test-ad-interest-123' };
+      } else if (testTemplate === 'review_recebida') {
+        data = { sellerName: testName, reviewerName: 'José Martins', rating: testRating, comment: testComment, adTitle: testTitle };
+      } else if (testTemplate === 'compra_concluida') {
+        data = { sellerName: testName, buyerName: 'José Martins', adTitle: testTitle };
+      } else if (testTemplate === 'boas_vindas') {
+        data = { userName: testName };
+      }
+
+      // Envia uma requisição real de teste para o backend de email
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template: testTemplate,
+          to: testTo,
+          data: data,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok && result?.success) {
+        setTestStatus('success');
+        setTestResult(result);
+      } else {
+        setTestStatus('error');
+        setTestResult(result || { error: 'Falha desconhecida no envio do email' });
+      }
+    } catch (err: any) {
+      console.error('Erro de teste de e-mail:', err);
+      setTestStatus('error');
+      setTestResult({ error: err?.message || String(err) });
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -445,6 +516,181 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           </button>
         </div>
       </form>
+
+      {/* SISTEMA DE ENVIO DE E-MAILS AUTOMÁTICOS */}
+      <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+              <Mail size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Configurações de E-mails Automáticos</h2>
+              <p className="text-xs text-slate-500 font-medium">Controle o envio e realize simulações de e-mails em tempo real.</p>
+            </div>
+          </div>
+          
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={emailsEnabled} 
+              onChange={(e) => handleToggleEmails(e.target.checked)} 
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+
+        <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-600">
+          <AlertCircle size={18} className="text-indigo-500" />
+          <p>
+            <strong>Status de Integração:</strong> Se as variáveis de ambiente <code>RESEND_API_KEY</code> ou <code>SENDGRID_API_KEY</code> estiverem presentes no servidor, os e-mails serão enviados de modo real. Caso contrário, o sistema executará as simulações em logs de desenvolvimento perfeitamente formatados.
+          </p>
+        </div>
+
+        {/* Simulador Interativo */}
+        <div className="bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-100 space-y-5">
+          <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span>🧪</span> Simulador Interativo de Envio de E-mails (Sandbox)
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Template para teste</label>
+              <select
+                value={testTemplate}
+                onChange={(e) => setTestTemplate(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+              >
+                <option value="anuncio_aprovado">1. Anúncio Aprovado</option>
+                <option value="anuncio_rejeitado">2. Anúncio Rejeitado</option>
+                <option value="anuncio_pendente_staff">3. Novo Anúncio Pendente (Staff)</option>
+                <option value="interesse_contacto">4. Clique de Interesse no WhatsApp</option>
+                <option value="review_recebida">5. Avaliação Pública Recebida</option>
+                <option value="compra_concluida">6. Compra/Venda Concluída</option>
+                <option value="boas_vindas">7. Boas-vindas ao registar conta</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">E-mail do Destinatário</label>
+              <input
+                type="email"
+                value={testTo}
+                onChange={(e) => setTestTo(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold"
+                placeholder="exemplo@dominio.com"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200/65 pt-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nome do Utilizador</label>
+              <input
+                type="text"
+                value={testName}
+                onChange={(e) => setTestName(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Título de Exemplo do Anúncio</label>
+              <input
+                type="text"
+                value={testTitle}
+                onChange={(e) => setTestTitle(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold"
+              />
+            </div>
+
+            {testTemplate === 'anuncio_rejeitado' && (
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Motivo da Rejeção</label>
+                <textarea
+                  value={testReason}
+                  onChange={(e) => setTestReason(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold h-16 resize-none"
+                />
+              </div>
+            )}
+
+            {testTemplate === 'review_recebida' && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Classificação (1 a 5 estrelas)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={testRating}
+                    onChange={(e) => setTestRating(parseInt(e.target.value) || 5)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Comentário Público</label>
+                  <input
+                    type="text"
+                    value={testComment}
+                    onChange={(e) => setTestComment(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 pt-3">
+            <button
+              onClick={handleSendTestEmail}
+              disabled={testStatus === 'sending'}
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 self-start w-full md:w-auto"
+            >
+              <Send size={14} />
+              {testStatus === 'sending' ? 'A ENVIAR/SIMULAR...' : 'DISPARAR EMAIL DE TESTE'}
+            </button>
+
+            {/* Test Logging Feedback Box */}
+            {testStatus !== 'idle' && (
+              <div className={`mt-3 p-4 rounded-xl text-xs font-mono space-y-2 max-h-56 overflow-y-auto border ${
+                testStatus === 'success' 
+                  ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800' 
+                  : testStatus === 'error'
+                  ? 'bg-red-50/50 border-red-100 text-red-800'
+                  : 'bg-slate-100 border-slate-200 text-slate-700'
+              }`}>
+                {testStatus === 'sending' && <p className="animate-pulse">⏳ A processar requisição segura para o backend de e-mails...</p>}
+                {testStatus === 'success' && (
+                  <>
+                    <p className="font-bold flex items-center gap-1.5 text-emerald-700">
+                      ✅ SUCESSO COPIADO PARA LOGS!
+                    </p>
+                    <p>Status: OK</p>
+                    {testResult?.simulated ? (
+                      <p className="italic">Modo de Operação: Simulado em Desenvolvimento (Logs do terminal detalham conteúdo completo)</p>
+                    ) : (
+                      <p className="italic">Modo de Operação: Real ({testResult?.provider || 'API Provedor'})</p>
+                    )}
+                  </>
+                )}
+                {testStatus === 'error' && (
+                  <>
+                    <p className="font-bold text-red-700">❌ FALHA NO ENVIO DO TESTE</p>
+                    <p>Erro operacional: {testResult?.error || 'Erro interno do servidor backend'}</p>
+                  </>
+                )}
+                {testResult && (
+                  <pre className="bg-white/80 p-3 rounded-lg text-[10px] leading-relaxed border border-current/10 max-w-full overflow-x-auto text-slate-800">
+                    {JSON.stringify(testResult, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <AdminMigrationWidget />
     </div>

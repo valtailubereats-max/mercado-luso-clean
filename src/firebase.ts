@@ -26,9 +26,12 @@ const isSandboxEnv = typeof window !== 'undefined' && (
   window.location.hostname.includes('run.app')
 );
 
-console.log('[Firebase] Initializing client-side app. Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'Server-side', '| Sandbox Env (Force Long-Polling):', isSandboxEnv);
+console.log('[Firebase] Initializing client-side app. Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'Server-side', '| Sandbox Env (Auto-Detect Long-Polling):', isSandboxEnv);
 
-const firestoreOptions = isSandboxEnv ? { experimentalForceLongPolling: true } : {};
+const firestoreOptions = isSandboxEnv ? { 
+  experimentalForceLongPolling: true,
+  useFetchStreams: false
+} : {};
 
 const dbId = firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId;
 export const db = dbId 
