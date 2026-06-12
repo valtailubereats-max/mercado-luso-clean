@@ -1,26 +1,5 @@
 {
-  "cleanUrls": true,
   "rewrites": [
-    {
-      "source": "/anuncio/:id*",
-      "destination": "/api/seo"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/robots.txt"
-    },
-    {
-      "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
-    },
-    {
-      "source": "/((?!api/|assets/|robots\\.txt|sitemap\\.xml).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "functions": {
-    "api/seo.ts": {
-      "includeFiles": "dist/index.html"
-    }
-  }
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
