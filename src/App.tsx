@@ -205,7 +205,7 @@ const Navbar = () => {
             <form onSubmit={handleNavSearch} className="w-full relative">
               <input
                 type="text"
-                placeholder="O que procura?"
+                placeholder="✨ O que procura hoje? Digite aqui..."
                 value={navSearch}
                 onChange={(e) => setNavSearch(e.target.value)}
                 className="w-full bg-white/90 border border-[#a8dec0]/60 rounded-xl py-2 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pt-green/50 focus:bg-white transition-all shadow-sm"
