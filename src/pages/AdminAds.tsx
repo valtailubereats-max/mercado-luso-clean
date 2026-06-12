@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, updateDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { Ad } from '../types';
@@ -116,6 +116,23 @@ const AdminAds = () => {
           await awardAdApprovalPoints(adToUpdate.sellerId, adId);
         } catch (pointsErr) {
           console.error("Error awarding ad approved points:", pointsErr);
+        }
+
+        try {
+          const notifId = `approval_${adId}_${Date.now()}`;
+          const notifData = {
+            userId: adToUpdate.sellerId.trim(),
+            title: 'Anúncio aprovado',
+            message: `Seu anúncio "${adToUpdate.title}" foi aprovado e já está publicado.`,
+            createdAt: serverTimestamp(),
+            read: false,
+            adId: adId,
+            type: 'ad_approved'
+          };
+          await setDoc(doc(db, 'notifications', notifId), notifData);
+          console.log('[AdminAds] Notificação de aprovação gravada com sucesso!');
+        } catch (notifErr) {
+          console.warn('[AdminAds] Falha ao criar notificação de aprovação:', notifErr);
         }
       }
 

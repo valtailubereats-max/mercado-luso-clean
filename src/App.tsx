@@ -250,12 +250,6 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>}
 
-              {isModerator && !isAdmin && (
-                <Link to="/admin/ads" className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1.5 p-2 transition-colors">
-                  <ShieldCheck size={20} /> <span>Gerir Anúncios</span>
-                </Link>
-              )}
-
               <div className="relative">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
                   <Bell size={20}/>
@@ -318,6 +312,17 @@ const Navbar = () => {
                       >
                         Meu Perfil
                       </Link>
+
+                      {isModerator && !isAdmin && (
+                        <Link
+                          to="/admin/ads"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                          id="menu-gerir-anuncios"
+                        >
+                          Gerir Anúncios
+                        </Link>
+                      )}
 
                       <Link
                         to="/profile?tab=favorites"
