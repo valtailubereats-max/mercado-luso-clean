@@ -208,11 +208,73 @@ Estrutura JSON esperada:
 
                   const cleanTitle = (title: string): string => {
                     if (!title) return '';
-                    return decodeHtmlEntities(title)
+                    let temp = decodeHtmlEntities(title)
                       .replace(/\s*-\s*à venda\s*-\s*.*$/gi, '')
                       .replace(/\s*-\s*OLX\s*Portugal.*$/gi, '')
                       .replace(/\s*-\s*OLX.*$/gi, '')
+                      .replace(/\|.*$/gi, '')
                       .trim();
+
+                    // Remove uncommon visual emojis or symbols to keep it clean, but keep alphanumeric + basic punctuation
+                    temp = temp.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+                    
+                    // Replace duplicate spaces
+                    temp = temp.replace(/\s+/g, ' ');
+
+                    return temp.trim();
+                  };
+
+                  const cleanDescription = (desc: string): string => {
+                    if (!desc) return '';
+                    let temp = decodeHtmlEntities(desc);
+                    
+                    // Remove HTML tags, if any
+                    temp = temp.replace(/<[^>]*>/g, '');
+
+                    // Remove non-printable control characters, preserving normal whitespace/linebreaks
+                    temp = temp.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+
+                    temp = temp.replace(/\r/g, '');
+                    temp = temp.replace(/\n{3,}/g, '\n\n'); // Allow maximum 2 consecutive newlines
+                    temp = temp.split('\n').map(line => line.trim()).join('\n');
+                    temp = temp.split('\n').map(line => line.replace(/[ \t]{2,}/g, ' ')).join('\n'); // No visual spacing slop
+
+                    return temp.trim();
+                  };
+
+                  const parsePrice = (priceStr: string | number | undefined | null): number => {
+                    if (priceStr === undefined || priceStr === null) return 0;
+                    if (typeof priceStr === 'number') return priceStr;
+                    
+                    let str = String(priceStr).trim();
+                    if (!str) return 0;
+
+                    // Remove currency symbols and spaces
+                    str = str.replace(/[€$£\s]/g, '');
+
+                    // Inspect decimal style
+                    const lastComma = str.lastIndexOf(',');
+                    const lastDot = str.lastIndexOf('.');
+                    
+                    if (lastComma > lastDot && (lastComma === str.length - 3 || lastComma === str.length - 2)) {
+                      // European decimal comma: 1.250,50 or 1250,5
+                      str = str.replace(/\./g, '').replace(',', '.');
+                    } else if (lastDot > lastComma && (lastDot === str.length - 3 || lastDot === str.length - 2)) {
+                      // US style decimal dot: 1,250.50
+                      str = str.replace(/,/g, '');
+                    } else {
+                      // No explicit decimal fraction, like "1.250" or "1,250"
+                      // Replace both signs to treat it as an integer, common in Portuguese OLX prices
+                      str = str.replace(/[.,]/g, '');
+                    }
+
+                    // Match first sequence of digits potentially with a single decimal dot
+                    const match = str.match(/\d+(?:\.\d+)?/);
+                    if (match) {
+                      const parsed = parseFloat(match[0]);
+                      return isNaN(parsed) ? 0 : parsed;
+                    }
+                    return 0;
                   };
 
                   const extractMetaContent = (html: string, nameOrProperty: string): string | null => {
@@ -340,7 +402,7 @@ Estrutura JSON esperada:
                   const jsonLdList = extractJsonLd(responseText);
                   const productNode = extractFromJsonLdList(jsonLdList);
 
-                  // 1. Title extraction (First OG, then JSON-LD, then fallback HTML)
+                  // 1. Title extraction
                   let rawTitle = extractMetaContent(responseText, 'og:title');
                   if (!rawTitle) {
                     rawTitle = productNode?.name || productNode?.title || extractMetaContent(responseText, 'twitter:title') || '';
@@ -361,34 +423,30 @@ Estrutura JSON esperada:
                     return;
                   }
 
-                  // 2. Description extraction (First OG, then JSON-LD, then fallback name meta)
+                  // 2. Description extraction
                   let foundDescription = extractMetaContent(responseText, 'og:description');
                   if (!foundDescription) {
                     foundDescription = productNode?.description || extractMetaContent(responseText, 'twitter:description') || extractMetaContent(responseText, 'description') || '';
                   }
-                  const description = decodeHtmlEntities(foundDescription).trim();
+                  const description = cleanDescription(foundDescription);
 
-                  // 3. Price extraction (First OG, then JSON-LD, then regex title fallback)
+                  // 3. Price extraction
                   let price = 0;
                   const ogPriceAmount = extractMetaContent(responseText, 'product:price:amount');
                   if (ogPriceAmount) {
-                    const p = parseFloat(ogPriceAmount.replace(/[^0-9.]/g, ''));
-                    if (!isNaN(p)) price = p;
+                    price = parsePrice(ogPriceAmount);
                   }
                   if (price === 0) {
                     if (productNode?.offers?.price !== undefined) {
-                      const p = parseFloat(String(productNode.offers.price).replace(/[^0-9.]/g, ''));
-                      if (!isNaN(p)) price = p;
+                      price = parsePrice(productNode.offers.price);
                     } else if (productNode?.offers?.[0]?.price !== undefined) {
-                      const p = parseFloat(String(productNode.offers[0].price).replace(/[^0-9.]/g, ''));
-                      if (!isNaN(p)) price = p;
+                      price = parsePrice(productNode.offers[0].price);
                     }
                   }
                   if (price === 0 && rawTitle) {
                     const priceMatch = rawTitle.match(/(\d+(?:\s*\d+)?)\s*€/);
                     if (priceMatch) {
-                      const p = parseFloat(priceMatch[1].replace(/\s/g, ''));
-                      if (!isNaN(p)) price = p;
+                      price = parsePrice(priceMatch[1]);
                     }
                   }
 
@@ -408,44 +466,81 @@ Estrutura JSON esperada:
                     parsedCategory = extractMetaContent(responseText, 'category') || '';
                   }
 
-                  let category = 'Outros';
+                  let category = '';
                   const lowerParsedCat = String(parsedCategory).toLowerCase() + ' ' + title.toLowerCase() + ' ' + description.toLowerCase();
 
-                  if (lowerParsedCat.includes('carro') || lowerParsedCat.includes('moto') || lowerParsedCat.includes('barco') || lowerParsedCat.includes('veiculo') || lowerParsedCat.includes('auto') || lowerParsedCat.includes('peças')) {
+                  if (lowerParsedCat.includes('carro') || lowerParsedCat.includes('moto') || lowerParsedCat.includes('barco') || lowerParsedCat.includes('veiculo') || lowerParsedCat.includes('auto') || lowerParsedCat.includes('peças') || lowerParsedCat.includes('pneus') || lowerParsedCat.includes('jantes') || lowerParsedCat.includes('motociclo')) {
                     category = 'Carros, motos e barcos';
-                  } else if (lowerParsedCat.includes('imovel') || lowerParsedCat.includes('apartamento') || lowerParsedCat.includes('casa') || lowerParsedCat.includes('moradia') || lowerParsedCat.includes('quarto') || lowerParsedCat.includes('terreno')) {
+                  } else if (lowerParsedCat.includes('imovel') || lowerParsedCat.includes('apartamento') || lowerParsedCat.includes('casa') || lowerParsedCat.includes('moradia') || lowerParsedCat.includes('quarto') || lowerParsedCat.includes('terreno') || lowerParsedCat.includes('loja') || lowerParsedCat.includes('garagem') || lowerParsedCat.includes('escritório') || lowerParsedCat.includes('prédio')) {
                     category = 'Imóveis';
-                  } else if (lowerParsedCat.includes('telemovel') || lowerParsedCat.includes('computador') || lowerParsedCat.includes('tecnologia') || lowerParsedCat.includes('eletronica') || lowerParsedCat.includes('tablet') || lowerParsedCat.includes('tv')) {
+                  } else if (lowerParsedCat.includes('telemovel') || lowerParsedCat.includes('iphone') || lowerParsedCat.includes('samsung') || lowerParsedCat.includes('computador') || lowerParsedCat.includes('tecnologia') || lowerParsedCat.includes('eletronica') || lowerParsedCat.includes('tablet') || lowerParsedCat.includes('tv') || lowerParsedCat.includes('laptop') || lowerParsedCat.includes('smartphone') || lowerParsedCat.includes('consola') || lowerParsedCat.includes('playstation') || lowerParsedCat.includes('nintendo') || lowerParsedCat.includes('xbox')) {
                     category = 'Tecnologia';
-                  } else if (lowerParsedCat.includes('casa') || lowerParsedCat.includes('jardim') || lowerParsedCat.includes('moveis') || lowerParsedCat.includes('decoracao') || lowerParsedCat.includes('eletrodomestico')) {
+                  } else if (lowerParsedCat.includes('jardim') || lowerParsedCat.includes('moveis') || lowerParsedCat.includes('móveis') || lowerParsedCat.includes('decoracao') || lowerParsedCat.includes('decoração') || lowerParsedCat.includes('eletrodomestico') || lowerParsedCat.includes('eletrodoméstico') || lowerParsedCat.includes('diy') || lowerParsedCat.includes('ferramenta') || lowerParsedCat.includes('bricolage') || lowerParsedCat.includes('sofá') || lowerParsedCat.includes('mesa') || lowerParsedCat.includes('cadeira') || lowerParsedCat.includes('cama')) {
                     category = 'Casa e Jardim';
-                  } else if (lowerParsedCat.includes('moda') || lowerParsedCat.includes('acessorio') || lowerParsedCat.includes('vestuario') || lowerParsedCat.includes('calcado') || lowerParsedCat.includes('roupa')) {
+                  } else if (lowerParsedCat.includes('moda') || lowerParsedCat.includes('acessorio') || lowerParsedCat.includes('acessório') || lowerParsedCat.includes('vestuario') || lowerParsedCat.includes('vestuário') || lowerParsedCat.includes('calcado') || lowerParsedCat.includes('calçado') || lowerParsedCat.includes('roupa') || lowerParsedCat.includes('sapatilha') || lowerParsedCat.includes('sapato') || lowerParsedCat.includes('mala') || lowerParsedCat.includes('relogio') || lowerParsedCat.includes('relógio') || lowerParsedCat.includes('óculos')) {
                     category = 'Moda e Acessórios';
-                  } else if (lowerParsedCat.includes('lazer') || lowerParsedCat.includes('desporto') || lowerParsedCat.includes('bicicleta') || lowerParsedCat.includes('hobby') || lowerParsedCat.includes('livro') || lowerParsedCat.includes('musica')) {
+                  } else if (lowerParsedCat.includes('lazer') || lowerParsedCat.includes('desporto') || lowerParsedCat.includes('bicicleta') || lowerParsedCat.includes('hobby') || lowerParsedCat.includes('livro') || lowerParsedCat.includes('musica') || lowerParsedCat.includes('música') || lowerParsedCat.includes('instrumento') || lowerParsedCat.includes('ginásio') || lowerParsedCat.includes('filme') || lowerParsedCat.includes('jogo') || lowerParsedCat.includes('brinquedo')) {
                     category = 'Lazer e Desporto';
-                  } else if (lowerParsedCat.includes('bebe') || lowerParsedCat.includes('crianca') || lowerParsedCat.includes('brinquedo')) {
+                  } else if (lowerParsedCat.includes('bebe') || lowerParsedCat.includes('bebé') || lowerParsedCat.includes('crianca') || lowerParsedCat.includes('criança') || lowerParsedCat.includes('carrinho de bebé') || lowerParsedCat.includes('fralda') || lowerParsedCat.includes('roupa de bebé')) {
                     category = 'Bebés e Crianças';
-                  } else if (lowerParsedCat.includes('imigracao')) {
+                  } else if (lowerParsedCat.includes('imigracao') || lowerParsedCat.includes('imigração') || lowerParsedCat.includes('visto') || lowerParsedCat.includes('nacionalidade') || lowerParsedCat.includes('sef') || lowerParsedCat.includes('aima')) {
                     category = 'Imigração';
+                  } else if (lowerParsedCat.includes('outro') || lowerParsedCat.includes('outros')) {
+                    category = 'Outros';
                   }
 
                   // 5. City mapping
-                  let city = 'Lisboa';
+                  let city = null;
                   let foundCity = findLocationInJsonLd(jsonLdList) || extractMetaContent(responseText, 'og:locality') || extractMetaContent(responseText, 'geo.placename');
+                  
+                  if (!foundCity) {
+                    const localityMatch = responseText.match(/"addressLocality"\s*:\s*"([^"]+)"/i);
+                    const regionMatch = responseText.match(/"addressRegion"\s*:\s*"([^"]+)"/i);
+                    if (regionMatch) {
+                      foundCity = regionMatch[1];
+                    } else if (localityMatch) {
+                      foundCity = localityMatch[1];
+                    }
+                  }
+
+                  if (!foundCity) {
+                    const cityNameMatch = responseText.match(/"cityName"\s*:\s*"([^"]+)"/i);
+                    if (cityNameMatch) {
+                      foundCity = cityNameMatch[1];
+                    }
+                  }
+
+                  if (!foundCity) {
+                    const regionNameMatch = responseText.match(/"regionName"\s*:\s*"([^"]+)"/i);
+                    if (regionNameMatch) {
+                      foundCity = regionNameMatch[1];
+                    }
+                  }
+
                   if (foundCity) {
                     const normCity = decodeHtmlEntities(String(foundCity)).trim().toLowerCase();
-                    const allCities = ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Faro', 'Funchal', 'Ponta Delgada'];
-                    const matched = allCities.find(c => c.toLowerCase() === normCity || normCity.includes(c.toLowerCase()));
+                    const allPortugalCities = ['Lisboa', 'Porto', 'Braga', 'Faro', 'Coimbra', 'Aveiro', 'Setúbal', 'Leiria', 'Madeira', 'Açores', 'Outra'];
+                    
+                    const matched = allPortugalCities.find(c => c.toLowerCase() === normCity || normCity.includes(c.toLowerCase()));
                     if (matched) {
                       city = matched;
-                    }
-                  } else {
-                    const allCities = ['Lisboa', 'Porto', 'Braga', 'Coimbra', 'Faro', 'Funchal', 'Ponta Delgada'];
-                    for (const c of allCities) {
-                      const rx = new RegExp(`\\b${c}\\b`, 'i');
-                      if (rx.test(responseText) || rx.test(url)) {
-                        city = c;
-                        break;
+                    } else {
+                      // Common municipality/neighborhood fallback mappings for Portugal
+                      if (normCity.includes('lisbon') || normCity.includes('sintra') || normCity.includes('cascais') || normCity.includes('loures') || normCity.includes('odivelas') || normCity.includes('amadora') || normCity.includes('oeiras') || normCity.includes('vila franca de xira') || normCity.includes('mafra')) {
+                        city = 'Lisboa';
+                      } else if (normCity.includes('oporto') || normCity.includes('gaia') || normCity.includes('matosinhos') || normCity.includes('maia') || normCity.includes('gondomar') || normCity.includes('póvoa de varzim')) {
+                        city = 'Porto';
+                      } else if (normCity.includes('guimarães') || normCity.includes('barcelos') || normCity.includes('famalicão')) {
+                        city = 'Braga';
+                      } else if (normCity.includes('albufeira') || normCity.includes('portimão') || normCity.includes('loulé') || normCity.includes('lagos')) {
+                        city = 'Faro';
+                      } else if (normCity.includes('funchal') || normCity.includes('porto santo')) {
+                        city = 'Madeira';
+                      } else if (normCity.includes('ponta delgada') || normCity.includes('angra') || normCity.includes('horta')) {
+                        city = 'Açores';
+                      } else {
+                        // Keep the extracted city as a fallback for custom/personalized city
+                        city = decodeHtmlEntities(String(foundCity)).trim();
                       }
                     }
                   }
@@ -460,31 +555,55 @@ Estrutura JSON esperada:
                     if (Array.isArray(productNode.image)) {
                       productNode.image.forEach((img: any) => {
                         const urlStr = typeof img === 'string' ? img : (typeof img === 'object' && img?.url ? img.url : '');
-                        if (urlStr && !images.includes(urlStr)) {
+                        if (urlStr) {
                           images.push(urlStr);
                         }
                       });
-                    } else if (typeof productNode.image === 'string' && !images.includes(productNode.image)) {
+                    } else if (typeof productNode.image === 'string') {
                       images.push(productNode.image);
-                    } else if (typeof productNode.image === 'object' && productNode.image?.url && !images.includes(productNode.image.url)) {
+                    } else if (typeof productNode.image === 'object' && productNode.image?.url) {
                       images.push(productNode.image.url);
                     }
                   }
                   const twitterImg = extractMetaContent(responseText, 'twitter:image');
-                  if (twitterImg && !images.includes(twitterImg)) {
+                  if (twitterImg) {
                     images.push(twitterImg);
                   }
-                  const htmlImgMatches = responseText.match(/https:\/\/img\.olx\.pt\/v1\/files\/[a-zA-Z0-9_-]+\/image;[^\s"'>]+/g) || [];
+                  
+                  const htmlImgMatches = responseText.match(/https?:\/\/[^\s"'>]+?\.olx\.pt\/v1\/files\/[a-zA-Z0-9_-]+\/image;[^\s"'>\)]*/gi) || [];
                   for (const mUrl of htmlImgMatches) {
-                    const decUrl = decodeHtmlEntities(mUrl);
-                    if (!images.includes(decUrl)) {
-                      images.push(decUrl);
+                    images.push(mUrl);
+                  }
+
+                  const srcMatches = responseText.match(/(?:src|data-src|srcset|content)=["'](https?:\/\/img\.olx\.pt\/[^"']+)["']/gi);
+                  if (srcMatches) {
+                    for (const match of srcMatches) {
+                      const urlMatch = match.match(/(https?:\/\/img\.olx\.pt\/[^\s"';,>]+)/i);
+                      if (urlMatch) {
+                        images.push(urlMatch[1]);
+                      }
                     }
                   }
-                  images = Array.from(new Set(images)).filter(Boolean).slice(0, 6);
 
+                  const isValidImageUrl = (imgUrl: string): boolean => {
+                    if (!imgUrl || typeof imgUrl !== 'string') return false;
+                    try {
+                      const decoded = decodeHtmlEntities(imgUrl).trim();
+                      if (!decoded.startsWith('http://') && !decoded.startsWith('https://')) return false;
+                      const parsed = new URL(decoded);
+                      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                    } catch (e) {
+                      return false;
+                    }
+                  };
+
+                  images = Array.from(new Set(images.map(img => decodeHtmlEntities(img).trim())))
+                    .filter(img => isValidImageUrl(img))
+                    .slice(0, 10);
+
+                  const countryResult = isOlx ? 'Portugal' : null;
                   res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ success: true, data: { title, description, price, category, city, images } }));
+                  res.end(JSON.stringify({ success: true, data: { title, description, price, category, city, country: countryResult, images } }));
                 } catch (err: any) {
                   console.error("[Scraper] Unexpected import error:", err);
                   res.writeHead(200, { 'Content-Type': 'application/json' });

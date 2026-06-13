@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   MapPin, MessageCircle, Clock, ChevronLeft, ChevronRight, X, Heart, Star, 
-  Trash2, Edit, AlertCircle, ShieldAlert, ShoppingBag, Eye, Award, Calendar, Share2
+  Trash2, Edit, AlertCircle, ShieldAlert, ShoppingBag, Eye, Award, Calendar, Share2, ExternalLink
 } from 'lucide-react';
 import { 
   doc, updateDoc, increment, setDoc, collection, query, where, limit, getDoc, serverTimestamp 
@@ -120,7 +120,7 @@ const AdDetails = () => {
 
       const profileData: any = {
         uid: sellerId,
-        displayName: ad?.sellerName || 'Vendedor',
+        displayName: (ad && ad.sourceUrl && /^https?:\/\//i.test(ad.sourceUrl)) ? 'Parceiro' : (ad?.sellerName || 'Vendedor'),
         city: ad?.city || '',
         country: ad?.country || 'Portugal',
         ratingAverage,
@@ -192,6 +192,16 @@ const AdDetails = () => {
     return `https://wa.me/${phone}?text=${encodeURIComponent(`Olá, vi o seu anúncio "${ad.title}" no Mercado Luso e tenho grande interesse. Está disponível?`)}`;
   };
 
+  const hasSourceUrl = !!(ad && ad.sourceUrl && /^https?:\/\//i.test(ad.sourceUrl));
+
+  const getTargetContactUrl = () => {
+    if (!ad) return '';
+    if (hasSourceUrl && ad.sourceUrl) {
+      return ad.sourceUrl;
+    }
+    return getWhatsappUrl();
+  };
+
   const incrementWhatsappClicks = async () => {
     if (!ad) return;
     try {
@@ -221,17 +231,17 @@ const AdDetails = () => {
       registerInterest().then((res: any) => {
         if (res.success) {
           if (res.bypassed) {
-            showToastMsg('success', 'A abrir o WhatsApp...', 2000);
+            showToastMsg('success', hasSourceUrl ? 'A abrir o link de contacto...' : 'A abrir o WhatsApp...', 2000);
           } else {
-            showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+            showToastMsg('success', hasSourceUrl ? '👥 Interesse registado! A abrir o contacto...' : '👥 Interesse registado! A abrir o WhatsApp...', 3000);
           }
           setTimeout(() => {
-            window.open(getWhatsappUrl(), '_blank');
+            window.open(getTargetContactUrl(), '_blank', 'noopener,noreferrer');
           }, 1000);
         } else {
-          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir WhatsApp...`, 6000);
+          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir contacto...`, 6000);
           setTimeout(() => {
-            window.open(getWhatsappUrl(), '_blank');
+            window.open(getTargetContactUrl(), '_blank', 'noopener,noreferrer');
           }, 2500);
         }
       });
@@ -325,21 +335,21 @@ const AdDetails = () => {
         const res = await registerInterest();
         if (res.success) {
           if (res.bypassed) {
-            showToastMsg('success', 'A abrir o WhatsApp...', 2000);
+            showToastMsg('success', hasSourceUrl ? 'A abrir o link de contacto...' : 'A abrir o WhatsApp...', 2000);
           } else {
-            showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+            showToastMsg('success', hasSourceUrl ? '👥 Interesse registado! A abrir o contacto...' : '👥 Interesse registado! A abrir o WhatsApp...', 3000);
           }
           setTimeout(() => {
-            window.open(getWhatsappUrl(), '_blank');
+            window.open(getTargetContactUrl(), '_blank', 'noopener,noreferrer');
           }, 1000);
         } else {
-          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir WhatsApp...`, 6000);
+          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir contacto...`, 6000);
           setTimeout(() => {
-            window.open(getWhatsappUrl(), '_blank');
+            window.open(getTargetContactUrl(), '_blank', 'noopener,noreferrer');
           }, 2500);
         }
       } else {
-        window.open(getWhatsappUrl(), '_blank');
+        window.open(getTargetContactUrl(), '_blank', 'noopener,noreferrer');
       }
       setShowContactWarning(false);
     }
@@ -637,11 +647,11 @@ const AdDetails = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-indigo-600/10 text-indigo-700 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0">
-                    {ad.sellerName.slice(0, 2).toUpperCase()}
+                    {(hasSourceUrl ? 'Parceiro' : ad.sellerName).slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <h4 className="font-extrabold text-slate-900 leading-tight flex items-center gap-1 truncate">
-                      {ad.sellerName}
+                      {hasSourceUrl ? 'Parceiro' : ad.sellerName}
                       <Award size={14} className="text-indigo-500 flex-shrink-0" />
                     </h4>
                     
@@ -689,10 +699,16 @@ const AdDetails = () => {
                 ) : (
                   <button
                     onClick={handleContactClick}
-                    className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 px-6 rounded-2xl font-black transition-all shadow-md active:scale-[0.98] w-full text-center"
+                    className={`flex items-center justify-center gap-2 ${
+                      hasSourceUrl ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-500 hover:bg-emerald-600'
+                    } text-white py-3.5 px-6 rounded-2xl font-black transition-all shadow-md active:scale-[0.98] w-full text-center`}
                   >
-                    <MessageCircle size={20} className="flex-shrink-0" />
-                    <span className="leading-tight">Contactar via WhatsApp</span>
+                    {hasSourceUrl ? (
+                      <ExternalLink size={20} className="flex-shrink-0" />
+                    ) : (
+                      <MessageCircle size={20} className="flex-shrink-0" />
+                    )}
+                    <span className="leading-tight">{hasSourceUrl ? 'Contato' : 'Contactar via WhatsApp'}</span>
                   </button>
                 )}
 
@@ -779,7 +795,7 @@ const AdDetails = () => {
           adTitle={ad.title}
           adCategory={ad.category}
           sellerId={ad.sellerId}
-          sellerName={ad.sellerName}
+          sellerName={hasSourceUrl ? 'Parceiro' : ad.sellerName}
           isBuyerRating={true}
           onSuccess={() => {
             alert('A sua avaliação foi enviada com sucesso!');
@@ -860,11 +876,11 @@ const AdDetails = () => {
                     onClick={handleConfirmWhatsapp}
                     className={`flex-1 py-3 text-sm font-bold rounded-xl transition ${
                       acceptedContactTerms 
-                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md' 
+                        ? hasSourceUrl ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md'
                         : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                     }`}
                   >
-                    Abrir WhatsApp
+                    {hasSourceUrl ? 'Abrir Contato' : 'Abrir WhatsApp'}
                   </button>
                 </div>
               </div>

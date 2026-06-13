@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Ad } from '../types';
-import { MapPin, MessageCircle, Clock, X, User, Phone, AlertTriangle, Heart, Flag, Search, ChevronLeft, ChevronRight, Tag, Star, ShoppingBag, Mail, Globe, Share2 } from 'lucide-react';
+import { MapPin, MessageCircle, Clock, X, User, Phone, AlertTriangle, Heart, Flag, Search, ChevronLeft, ChevronRight, Tag, Star, ShoppingBag, Mail, Globe, Share2, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
@@ -60,6 +60,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   );
 
   const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
+  const hasSourceUrl = !!(ad.sourceUrl && /^https?:\/\//i.test(ad.sourceUrl));
 
   const hasPrice =
     ad.category !== 'Imigração' &&
@@ -113,7 +114,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
 
       const profileData: any = {
         uid: ad.sellerId,
-        displayName: ad.sellerName || 'Vendedor',
+        displayName: hasSourceUrl ? 'Parceiro' : (ad.sellerName || 'Vendedor'),
         city: ad.city || '',
         country: ad.country || 'Portugal',
         ratingAverage,
@@ -167,7 +168,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   };
 
   const cleanPhone = (ad.sellerPhone || '').replace(/\D/g, '');
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá ${ad.sellerName}, tenho interesse no seu anúncio "${ad.title}" no Mercado Luso.`)}`;
+  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá ${hasSourceUrl ? 'Parceiro' : ad.sellerName}, tenho interesse no seu anúncio "${ad.title}" no Mercado Luso.`)}`;
+  const targetContactUrl = hasSourceUrl ? ad.sourceUrl : whatsappUrl;
 
   const incrementViews = async () => {
     try {
@@ -209,17 +211,17 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       registerInterest().then((res: any) => {
         if (res.success) {
           if (res.bypassed) {
-            showToastMsg('success', 'A abrir o WhatsApp...', 2000);
+            showToastMsg('success', hasSourceUrl ? 'A abrir o link de contacto...' : 'A abrir o WhatsApp...', 2000);
           } else {
-            showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+            showToastMsg('success', hasSourceUrl ? '👥 Interesse registado! A abrir o contacto...' : '👥 Interesse registado! A abrir o WhatsApp...', 3000);
           }
           setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
+            window.open(targetContactUrl, '_blank', 'noopener,noreferrer');
           }, 1000);
         } else {
-          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir WhatsApp...`, 6000);
+          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir contacto...`, 6000);
           setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
+            window.open(targetContactUrl, '_blank', 'noopener,noreferrer');
           }, 2500);
         }
       });
@@ -325,21 +327,21 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         const res = await registerInterest();
         if (res.success) {
           if (res.bypassed) {
-            showToastMsg('success', 'A abrir o WhatsApp...', 2000);
+            showToastMsg('success', hasSourceUrl ? 'A abrir o link de contacto...' : 'A abrir o WhatsApp...', 2000);
           } else {
-            showToastMsg('success', '👥 Interesse registado! A abrir o WhatsApp...', 3000);
+            showToastMsg('success', hasSourceUrl ? '👥 Interesse registado! A abrir o contacto...' : '👥 Interesse registado! A abrir o WhatsApp...', 3000);
           }
           setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
+            window.open(targetContactUrl, '_blank', 'noopener,noreferrer');
           }, 1000);
         } else {
-          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir WhatsApp...`, 6000);
+          showToastMsg('error', `⚠️ Erro na BD: ${res.error || 'Falha ao registar'}. A abrir contacto...`, 6000);
           setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
+            window.open(targetContactUrl, '_blank', 'noopener,noreferrer');
           }, 2500);
         }
       } else {
-        window.open(whatsappUrl, '_blank');
+        window.open(targetContactUrl, '_blank', 'noopener,noreferrer');
       }
       setShowContactWarning(false);
     }
@@ -495,16 +497,22 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
               <Share2 size={isFeaturedVariant ? 12 : 14} />
             </button>
 
-            {/* WhatsApp */}
-            {ad.sellerPhone && ad.sellerPhone.trim() !== '' && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
+            {/* WhatsApp ou Contato */}
+            {((ad.sellerPhone && ad.sellerPhone.trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
               <button
                 onClick={handleContactClick}
-                className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600 ${
-                  isFeaturedVariant ? 'p-1.5' : 'p-2'
-                }`}
-                title="Contactar via WhatsApp"
+                className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 ${
+                  hasSourceUrl
+                    ? 'text-indigo-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600'
+                    : 'text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600'
+                } ${isFeaturedVariant ? 'p-1.5' : 'p-2'}`}
+                title={hasSourceUrl ? "Contato" : "Contactar via WhatsApp"}
               >
-                <MessageCircle size={isFeaturedVariant ? 12 : 14} className="text-[#25D366]" />
+                {hasSourceUrl ? (
+                  <ExternalLink size={isFeaturedVariant ? 12 : 14} className="text-indigo-600" />
+                ) : (
+                  <MessageCircle size={isFeaturedVariant ? 12 : 14} className="text-[#25D366]" />
+                )}
               </button>
             )}
           </div>
@@ -677,7 +685,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vendedor</p>
                           <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className="text-base font-bold text-slate-900">{ad.sellerName}</span>
+                            <span className="text-base font-bold text-slate-900">{hasSourceUrl ? 'Parceiro' : ad.sellerName}</span>
                             <div className="flex items-center gap-0.5 text-amber-500" title={`${sellerProfile?.ratingAverage || sellerProfile?.rating || 0} / 5`}>
                               {[1, 2, 3, 4, 5].map((star) => {
                                 const ratingVal = sellerProfile?.ratingAverage || sellerProfile?.rating || 0;
@@ -707,10 +715,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                         ) : (
                           <button
                             onClick={handleContactClick}
-                            className="flex items-center justify-center gap-2 bg-emerald-500 text-white py-3 px-4 rounded-xl font-bold hover:bg-emerald-600 transition-all shadow-md text-sm active:scale-95 text-center"
+                            className={`flex items-center justify-center gap-2 ${
+                              hasSourceUrl ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-500 hover:bg-emerald-600'
+                            } text-white py-3 px-4 rounded-xl font-bold transition-all shadow-md text-sm active:scale-95 text-center`}
                           >
-                            <MessageCircle size={18} className="flex-shrink-0" />
-                            <span className="leading-tight">Contactar via WhatsApp</span>
+                            {hasSourceUrl ? (
+                              <ExternalLink size={18} className="flex-shrink-0" />
+                            ) : (
+                              <MessageCircle size={18} className="flex-shrink-0" />
+                            )}
+                            <span className="leading-tight">{hasSourceUrl ? 'Contato' : 'Contactar via WhatsApp'}</span>
                           </button>
                         )}
                       </div>
@@ -768,7 +782,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           adTitle={ad.title}
           adCategory={ad.category}
           sellerId={ad.sellerId}
-          sellerName={ad.sellerName}
+          sellerName={hasSourceUrl ? 'Parceiro' : ad.sellerName}
           isBuyerRating={true}
           onSuccess={() => {
             alert('A sua avaliação foi enviada com sucesso!');
@@ -812,9 +826,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 <button
                   disabled={!acceptedContactTerms}
                   onClick={confirmContact}
-                  className={`py-3 rounded-xl font-bold transition-all ${acceptedContactTerms ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                  className={`py-3 rounded-xl font-bold transition-all ${acceptedContactTerms ? (hasSourceUrl ? 'bg-indigo-600 text-white' : 'bg-emerald-500 text-white') : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
                 >
-                  Confirmar e Abrir WhatsApp
+                  {hasSourceUrl ? 'Confirmar e Abrir Contato' : 'Confirmar e Abrir WhatsApp'}
                 </button>
               </div>
             </motion.div>

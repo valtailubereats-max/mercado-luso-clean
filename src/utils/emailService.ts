@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
@@ -49,6 +49,69 @@ export interface EmailData {
 }
 
 /**
+ * Verifica se um e-mail ou UID pertence a um administrador ou moderador.
+ */
+export async function isUserStaff(emailOrUid: string): Promise<boolean> {
+  if (!emailOrUid) return false;
+  try {
+    if (!emailOrUid.includes('@')) {
+      const userDoc = await getDoc(doc(db, 'users', emailOrUid));
+      if (userDoc.exists()) {
+        const role = userDoc.data()?.role;
+        return role === 'admin' || role === 'moderator';
+      }
+    } else {
+      const q = query(collection(db, 'users'), where('email', '==', emailOrUid));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const role = querySnapshot.docs[0].data()?.role;
+        return role === 'admin' || role === 'moderator';
+      }
+    }
+  } catch (err) {
+    console.warn('[EmailService] Erro ao verificar se usuário é staff:', err);
+  }
+  return false;
+}
+
+/**
+ * Determina se o envio do e-mail automático deve ser bloqueado para anúncios criados por admin/moderador.
+ */
+async function shouldBlockEmail(template: string, to: string | string[], data: any): Promise<boolean> {
+  if (data && data.adId) {
+    try {
+      const adDocSnap = await getDoc(doc(db, 'ads', data.adId));
+      if (adDocSnap.exists()) {
+        const adInfo = adDocSnap.data();
+        if (adInfo && adInfo.sellerId) {
+          const sellerIsStaff = await isUserStaff(adInfo.sellerId);
+          if (sellerIsStaff) {
+            console.log(`[EmailService] Bloqueando email silenciosamente para o template ${template} pois o criador do anúncio é admin/moderador.`);
+            return true;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[EmailService] Erro ao buscar anúncio para verificar bloqueio:', err);
+    }
+  }
+
+  const adRelatedTemplates = ['anuncio_aprovado', 'anuncio_rejeitado', 'interesse_contacto', 'review_recebida', 'compra_concluida'];
+  if (adRelatedTemplates.includes(template)) {
+    const recipients = Array.isArray(to) ? to : [to];
+    for (const recipient of recipients) {
+      const isStaff = await isUserStaff(recipient);
+      if (isStaff) {
+        console.log(`[EmailService] Bloqueando email silenciosamente para ${recipient} pois pertence a admin/moderador.`);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Envia uma requisição de email para o endpoint backend.
  */
 export async function sendEmailGeneric<T extends keyof EmailData>(
@@ -60,6 +123,12 @@ export async function sendEmailGeneric<T extends keyof EmailData>(
     const isEnabled = localStorage.getItem('emails_enabled') !== 'false';
     if (!isEnabled) {
       console.log(`[EmailService] Envio de e-mails desativado via configuração local para o template: ${template}`);
+      return { success: true };
+    }
+
+    // Verificar se o email deve ser bloqueado sob as regras de admin/moderador (Objetivo 2)
+    const blocked = await shouldBlockEmail(template, to, data);
+    if (blocked) {
       return { success: true };
     }
 

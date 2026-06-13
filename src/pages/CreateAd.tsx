@@ -48,7 +48,8 @@ const CreateAd = () => {
     duration: 30, // Default for free
     contactEmail: '',
     externalUrl: '',
-    sellerPhone: prefill?.sellerPhone || ''
+    sellerPhone: prefill?.sellerPhone || '',
+    sourceUrl: prefill?.sourceUrl || ''
   });
 
   const [imagePositionX, setImagePositionX] = useState<number>(50);
@@ -189,7 +190,8 @@ const CreateAd = () => {
           duration: 30, // Duration is only used for calculation on submit
           contactEmail: data.contactEmail || '',
           externalUrl: data.externalUrl || '',
-          sellerPhone: data.sellerPhone || ''
+          sellerPhone: data.sellerPhone || '',
+          sourceUrl: data.sourceUrl || ''
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
@@ -373,6 +375,8 @@ const CreateAd = () => {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + days);
 
+      const validSourceUrl = (formData.sourceUrl && /^https?:\/\//i.test(formData.sourceUrl)) ? formData.sourceUrl.trim() : null;
+
       const adData = {
         id: adId,
         title: formData.title,
@@ -395,6 +399,7 @@ const CreateAd = () => {
         updatedAt: serverTimestamp(),
         contactEmail: formData.category === 'Imigração' ? (formData.contactEmail || '') : '',
         externalUrl: formData.category === 'Imigração' ? (formData.externalUrl || '') : '',
+        sourceUrl: validSourceUrl,
         imagePositionX: imagePositionX,
         imagePositionY: imagePositionY,
         imageZoom: imageZoom
@@ -525,35 +530,51 @@ const CreateAd = () => {
       if (response.ok && result?.success && result?.data) {
         const { title, description, price, city, country, category, images } = result.data;
         
+        const isOlxPortugal = importUrl.toLowerCase().includes('olx.pt');
+        
         let matchedCity = formData.city;
         let matchedCountry = formData.country;
         
-        if (city) {
-          const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
-          const matchedUkCity = UK_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
-          
-          if (matchedPortCity) {
-            matchedCity = matchedPortCity;
-            matchedCountry = 'Portugal';
-          } else if (matchedUkCity) {
-            matchedCity = matchedUkCity;
-            matchedCountry = 'Reino Unido';
+        if (isOlxPortugal) {
+          matchedCountry = 'Portugal';
+          if (city) {
+            const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+            if (matchedPortCity) {
+              matchedCity = matchedPortCity;
+            } else {
+              matchedCity = city.trim();
+            }
+          } else {
+            matchedCity = '';
           }
-        } else if (country) {
-          const normCountry = country.toString().toLowerCase();
-          if (normCountry === 'portugal') {
-            matchedCountry = 'Portugal';
-            matchedCity = PORTUGAL_CITIES[0];
-          } else if (normCountry === 'reino unido' || normCountry === 'uk' || normCountry === 'united kingdom') {
-            matchedCountry = 'Reino Unido';
-            matchedCity = UK_CITIES[0];
+        } else {
+          if (city) {
+            const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+            const matchedUkCity = UK_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+            
+            if (matchedPortCity) {
+              matchedCity = matchedPortCity;
+              matchedCountry = 'Portugal';
+            } else if (matchedUkCity) {
+              matchedCity = matchedUkCity;
+              matchedCountry = 'Reino Unido';
+            }
+          } else if (country) {
+            const normCountry = country.toString().toLowerCase();
+            if (normCountry === 'portugal') {
+              matchedCountry = 'Portugal';
+              matchedCity = PORTUGAL_CITIES[0];
+            } else if (normCountry === 'reino unido' || normCountry === 'uk' || normCountry === 'united kingdom') {
+              matchedCountry = 'Reino Unido';
+              matchedCity = UK_CITIES[0];
+            }
           }
         }
 
-        // Match category case-insensitively
+        // Match category case-insensitively. If no correspondence, set to empty string for manual selection
         const matchedCategory = categories.find(
           (c: string) => c.toLowerCase() === (category || '').toString().toLowerCase()
-        ) || categories[0] || 'Outros';
+        ) || '';
 
         setFormData(prev => ({
           ...prev,
@@ -562,11 +583,12 @@ const CreateAd = () => {
           price: price !== undefined && price !== null ? price.toString() : prev.price,
           city: matchedCity,
           country: matchedCountry,
-          category: matchedCategory,
-          images: images && Array.isArray(images) && images.length > 0 ? images : prev.images
+          category: matchedCategory || prev.category, // fallback nicely but keep empty choice as principal
+          images: images && Array.isArray(images) && images.length > 0 ? images : prev.images,
+          sourceUrl: importUrl
         }));
 
-        setImportSuccess('Dados importados com sucesso!');
+        setImportSuccess('Dados importados da OLX. Revise as informações antes de publicar.');
       } else {
         throw new Error(result?.error || 'Falha ao importar dados do produto.');
       }
@@ -649,6 +671,15 @@ const CreateAd = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {formData.sourceUrl && (
+            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
+              <Check className="text-emerald-600 shrink-0 mt-0.5" size={18} id="olx-import-banner" />
+              <div className="text-xs sm:text-sm text-slate-600">
+                Este anúncio foi importado da OLX. O botão de contato direcionará para o anúncio original.
+              </div>
+            </div>
+          )}
+
           {/* Image Upload */}
           <div className="space-y-4">
             <div className="flex justify-between items-end">
@@ -918,6 +949,7 @@ const CreateAd = () => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none"
               >
+                <option value="">Seleccione uma categoria...</option>
                 {categories
                   .filter(c => c !== 'Imigração' || isAdmin || profile?.role === 'admin' || profile?.role === 'moderator')
                   .map((c, index) => <option key={`category-${c}-${index}`} value={c}>{c}</option>)}
