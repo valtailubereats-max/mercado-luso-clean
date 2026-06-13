@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, updateDoc, doc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, updateDoc, doc, getDocs, getDoc, setDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, parseFirestoreDate } from '../firebase';
 import { UserProfile } from '../types';
-import { motion } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
   Search, 
@@ -15,7 +16,11 @@ import {
   Clock,
   MoreVertical,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Pencil,
+  X,
+  MapPin,
+  Phone
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -34,6 +39,144 @@ const AdminUsers = () => {
   const [debugSelectedUserId, setDebugSelectedUserId] = useState<string>('');
   const [debugStatus, setDebugStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
+  
+  const { isAdmin } = useAuth();
+
+  // User Profile Editing States
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editCountry, setEditCountry] = useState<'Portugal' | 'Reino Unido' | ''>('');
+  const [editRole, setEditRole] = useState<'user' | 'moderator' | 'admin'>('user');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleOpenEditModal = (user: UserProfile) => {
+    setEditingUser(user);
+    setEditName(user.name || '');
+    setEditEmail(user.email || '');
+    setEditPhone(user.phone || '');
+    setEditCity(user.city || '');
+    setEditCountry(user.country || '');
+    setEditRole(user.role || 'user');
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (!isAdmin) {
+      setEditError("Apenas administradores podem editar dados dos utilizadores.");
+      return;
+    }
+
+    const editingUserId = editingUser.id || editingUser.uid;
+    if (!editingUserId) {
+      setEditError("ID do utilizador inválido.");
+      return;
+    }
+
+    setIsSaving(true);
+    setEditError(null);
+    setEditSuccess(null);
+
+    try {
+      // Validate Name
+      if (!editName.trim()) {
+        setEditError("O nome não pode estar vazio.");
+        setIsSaving(false);
+        return;
+      }
+
+      // Check if phone has at least 7 digits (if provided)
+      let finalPhone = editPhone.trim();
+      if (finalPhone) {
+        const digitsOnly = finalPhone.replace(/\D/g, '').trim();
+        if (digitsOnly.length < 7) {
+          setEditError("Por favor, insira um número de telemóvel válido (mínimo 7 dígitos).");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate phone uniqueness: same logic as Profile
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('phone', '==', finalPhone)
+        );
+        const querySnap = await getDocs(usersQuery);
+        const duplicateUser = querySnap.docs.find(doc => doc.id !== editingUserId);
+        if (duplicateUser) {
+          setEditError("Este número de telemóvel já está associado a outro utilizador. Por favor, utilize outro número.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Update basic fields in user document (SetDoc with merge: true)
+      const userDocRef = doc(db, 'users', editingUserId);
+      const updatedFields: any = {
+        name: editName.trim(),
+        phone: finalPhone,
+        city: editCity.trim(),
+        country: editCountry || null,
+        role: editRole,
+      };
+
+      await setDoc(userDocRef, updatedFields, { merge: true });
+
+      // Synchronize to sellerPublicProfiles
+      try {
+        const publicRef = doc(db, 'sellerPublicProfiles', editingUserId);
+        const publicSnap = await getDoc(publicRef);
+        const now = new Date();
+        const fallbackCreated = editingUser?.acceptedTermsAt ? (editingUser.acceptedTermsAt.toDate ? editingUser.acceptedTermsAt.toDate() : editingUser.acceptedTermsAt) : now;
+        
+        await setDoc(publicRef, {
+          displayName: editName.trim(),
+          city: editCity.trim(),
+          country: editCountry || null,
+          createdAt: publicSnap.exists() && publicSnap.data().createdAt ? publicSnap.data().createdAt : fallbackCreated,
+          updatedAt: now
+        }, { merge: true });
+      } catch (syncErr) {
+        console.error('[Sync] Erro ao sincronizar para sellerPublicProfiles:', syncErr);
+      }
+
+      // Success feedback
+      setEditSuccess("Dados do utilizador atualizados com sucesso!");
+      
+      // Update local state list to reflect changes immediately
+      setUsers(users.map(u => (u.id === editingUserId || u.uid === editingUserId) ? { 
+        ...u, 
+        name: editName.trim(),
+        phone: finalPhone,
+        city: editCity.trim(),
+        country: editCountry as 'Portugal' | 'Reino Unido' | undefined,
+        role: editRole 
+      } : u));
+
+      // Close modal gracefully after a short delay
+      setTimeout(() => {
+        setEditingUser(null);
+      }, 1500);
+
+    } catch (err: any) {
+      console.error("Error editing user:", err);
+      let errMsg = "Ocorreu um erro ao guardar as alterações.";
+      if (err?.code === 'permission-denied') {
+        errMsg = "Erro de Permissão (Firestore Rules): Sem privilégios de administrador adequados.";
+      } else if (err instanceof Error) {
+        errMsg = err.message;
+      }
+      setEditError(errMsg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers(limitAmount);
@@ -335,6 +478,14 @@ const AdminUsers = () => {
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditModal(user)}
+                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 font-bold text-xs rounded-xl transition-all border border-emerald-100 flex items-center gap-1 cursor-pointer"
+                            title="Editar Perfil do Utilizador"
+                          >
+                            <Pencil size={12} />
+                            Editar
+                          </button>
                           {user.role !== 'user' && user.role !== undefined && (
                             <button
                               onClick={() => handleUpdateRole(user.id || '', 'user', user.role || 'user')}
@@ -388,6 +539,172 @@ const AdminUsers = () => {
           )}
         </div>
       )}
+
+      {/* Edit User Profile Modal */}
+      <AnimatePresence>
+        {editingUser && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-white rounded-3xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in-50 duration-200"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                    <Pencil size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-950 text-base leading-tight">Editar Perfil do Utilizador</h3>
+                    <p className="text-xs text-slate-500 font-medium">Modifique as informações de forma segura.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="w-8 h-8 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors shadow-sm cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Modal Body / Form */}
+              <form onSubmit={handleSaveUser} className="p-6 space-y-4">
+                {editError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl flex items-start gap-2.5 text-xs font-bold leading-relaxed shadow-sm">
+                    <AlertCircle size={16} className="shrink-0 text-rose-600 mt-0.5" />
+                    <span>{editError}</span>
+                  </div>
+                )}
+
+                {editSuccess && (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl flex items-start gap-2.5 text-xs font-bold leading-relaxed shadow-sm">
+                    <UserCheck size={16} className="shrink-0 text-emerald-600 mt-0.5" />
+                    <span>{editSuccess}</span>
+                  </div>
+                )}
+
+                {/* Email Field (ReadOnly) */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Email de Login (Apenas Leitura)</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editEmail}
+                      readOnly
+                      disabled
+                      className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-500 cursor-not-allowed focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-start gap-1.5 text-[10px] text-amber-700 bg-amber-50/50 border border-amber-200/50 rounded-xl p-2.5 font-bold leading-relaxed">
+                    <AlertCircle size={14} className="shrink-0 text-amber-600 mt-0.5" />
+                    <span>O email de login não pode ser alterado diretamente aqui para preservar a integridade do Firebase Authentication.</span>
+                  </div>
+                </div>
+
+                {/* Display Name Field */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Nome Completo / Exibição</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Ex: João Silva"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Phone Field */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Telefone / Telemóvel</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      type="text"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="Ex: +351912345678"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* City Field */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Cidade</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                      <input
+                        type="text"
+                        value={editCity}
+                        onChange={(e) => setEditCity(e.target.value)}
+                        placeholder="Ex: Lisboa"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Country Field */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">País</label>
+                    <select
+                      value={editCountry}
+                      onChange={(e) => setEditCountry(e.target.value as 'Portugal' | 'Reino Unido' | '')}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      <option value="">Selecione o País...</option>
+                      <option value="Portugal">Portugal</option>
+                      <option value="Reino Unido">Reino Unido</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Role Field */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Cargo de Autenticação</label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as 'user' | 'moderator' | 'admin')}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="user">Utilizador Comum (user)</option>
+                    <option value="moderator">Moderador (moderator)</option>
+                    <option value="admin">Administrador (admin)</option>
+                  </select>
+                </div>
+
+                {/* Submit Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    disabled={isSaving}
+                    className="px-5 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs transition-colors shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <div className="w-4 h-4 border-2 border-white border-b-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <UserCheck size={14} />
+                    )}
+                    {isSaving ? 'A guardar...' : 'Guardar Alterações'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
