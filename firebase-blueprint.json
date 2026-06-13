@@ -197,6 +197,23 @@
         "source": { "type": "string", "enum": ["whatsapp"] }
       },
       "required": ["id", "adId", "sellerId", "interestedUserId", "interestedUserName", "createdAt", "source"]
+    },
+    "MarketingMaterial": {
+      "title": "MarketingMaterial",
+      "description": "Dynamic material for marketing campaigns",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["Texto", "Imagem/Banner", "Vídeo", "Link"] },
+        "description": { "type": "string" },
+        "content": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "type", "description", "content", "createdAt", "createdBy"]
     }
   },
   "firestore": {
@@ -247,6 +264,10 @@
     "/adInterests/{interestId}": {
       "schema": "AdInterest",
       "description": "User expressions of interest"
+    },
+    "/marketing_materials/{materialId}": {
+      "schema": "MarketingMaterial",
+      "description": "Marketing materials"
     }
   }
 }

@@ -45,6 +45,21 @@ const Profile = () => {
   const [purchasedAdsLoading, setPurchasedAdsLoading] = useState(true);
   const [isBuyerRating, setIsBuyerRating] = useState(false);
   const [reviewedAdIds, setReviewedAdIds] = useState<Set<string>>(new Set());
+  const [adsCountryTab, setAdsCountryTab] = useState<'Portugal' | 'Reino Unido'>('Portugal');
+
+  useEffect(() => {
+    if (profile?.country === 'Reino Unido' || profile?.country === 'Portugal') {
+      setAdsCountryTab(profile.country);
+    }
+  }, [profile?.country]);
+
+  const ptAds = React.useMemo(() => {
+    return ads.filter(ad => !ad.country || ad.country === 'Portugal');
+  }, [ads]);
+
+  const ukAds = React.useMemo(() => {
+    return ads.filter(ad => ad.country === 'Reino Unido');
+  }, [ads]);
 
   const [adInterests, setAdInterests] = useState<Record<string, { loading: boolean, data: any[] }>>({});
   const [expandedInterestsAdId, setExpandedInterestsAdId] = useState<string | null>(null);
@@ -292,7 +307,7 @@ const Profile = () => {
     if (!user) return;
     setAdsLoading(true);
     try {
-      const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid), limit(5));
+      const q = query(collection(db, 'ads'), where('sellerId', '==', user.uid), limit(100));
       const querySnapshot = await getDocsWithCacheFallback(q, `ads/sellerId-${user.uid}`);
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       setAds(adsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
@@ -828,16 +843,58 @@ const Profile = () => {
       {currentTab === 'anuncios' && (
         <div className="space-y-12" id="profile-anuncios-tab-content">
           <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          Meus Anúncios
-          <span className="bg-slate-200 text-slate-600 text-sm px-3 py-1 rounded-full">{ads.length}</span>
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            Meus Anúncios
+            <span className="bg-slate-200 text-slate-600 text-sm px-3 py-1 rounded-full">{ads.length}</span>
+          </h2>
+
+          {/* Sub-abas de divisão por país */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit gap-1" id="ads-country-sub-tabs">
+            <button
+              onClick={() => setAdsCountryTab('Portugal')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                adsCountryTab === 'Portugal'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              id="btn-sub-tab-portugal"
+            >
+              <span>🇵🇹</span> Portugal
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                adsCountryTab === 'Portugal' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200/80 text-slate-600'
+              }`}>
+                {ptAds.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setAdsCountryTab('Reino Unido')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                adsCountryTab === 'Reino Unido'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              id="btn-sub-tab-uk"
+            >
+              <span>🇬🇧</span> Reino Unido
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                adsCountryTab === 'Reino Unido' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200/80 text-slate-600'
+              }`}>
+                {ukAds.length}
+              </span>
+            </button>
+          </div>
+        </div>
 
         {adsLoading ? (
           <div className="text-center py-12 text-slate-400">A carregar anúncios...</div>
-        ) : ads.length === 0 ? (
+        ) : (adsCountryTab === 'Portugal' ? ptAds : ukAds).length === 0 ? (
           <div className="bg-white p-12 rounded-3xl text-center border-2 border-dashed border-slate-200">
-            <p className="text-slate-500 mb-4">Ainda não publicou nenhum anúncio.</p>
+            <p className="text-slate-500 mb-4">
+              {ads.length === 0 
+                ? 'Ainda não publicou nenhum anúncio.' 
+                : `Ainda não publicou nenhum anúncio em ${adsCountryTab}.`}
+            </p>
             <button
               onClick={() => navigate('/create-ad')}
               className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all"
@@ -847,7 +904,7 @@ const Profile = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {ads.map((ad, idx) => {
+            {(adsCountryTab === 'Portugal' ? ptAds : ukAds).map((ad, idx) => {
               const isAdFeatured = ad.isFeatured && ad.featuredUntil && (
                 ad.featuredUntil.seconds 
                   ? ad.featuredUntil.toDate() > new Date() 

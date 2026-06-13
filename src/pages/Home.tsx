@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, limit, getCountFromServer, orderBy } from 'firebase/firestore';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
@@ -125,6 +125,7 @@ const Home = () => {
   // Só consideramos administrador confirmado para consultas restritas de contagem de users.
   const isConfirmedAdminOnly = !authLoading && profile?.role === 'admin';
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -557,6 +558,7 @@ const Home = () => {
   const filteredFeaturedAds = useMemo(() => {
     const now = new Date();
     let result = featuredAds.filter(ad => {
+      if (ad.category === 'Trabalho/Empregos') return false;
       if (!ad.isFeatured || !ad.featuredUntil) return false;
       const featuredUntilDate = ad.featuredUntil.seconds
         ? ad.featuredUntil.toDate()
@@ -587,6 +589,7 @@ const Home = () => {
 
   const filteredAds = useMemo(() => {
     let result = ads.filter(ad => {
+      if (ad.category === 'Trabalho/Empregos') return false;
       const search = searchTerm.toLowerCase().trim();
       const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
       const matchesStatus = ad.status === 'approved' && (ad.adStatus === 'active' || ad.adStatus === 'sold' || !ad.adStatus);
@@ -699,7 +702,14 @@ const Home = () => {
                       <Tag size={18} />
                       <select 
                         value={category} 
-                        onChange={(e) => setCategory(e.target.value)} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Trabalho/Empregos') {
+                            navigate('/trabalhos');
+                          } else {
+                            setCategory(val);
+                          }
+                        }} 
                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       >
                         <option value="Todas">Categorias</option>

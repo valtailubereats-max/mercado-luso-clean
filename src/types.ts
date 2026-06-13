@@ -105,6 +105,11 @@ export interface Ad {
   soldAt?: any; // Firestore Timestamp
   soldOutsidePlatform?: boolean;
   sourceUrl?: string;
+  salary?: string;
+  contractType?: string;
+  workSchedule?: string;
+  companyName?: string;
+  experienceRequired?: string;
 }
 
 export interface Favorite {
@@ -160,6 +165,7 @@ export const CATEGORIES = [
   'Lazer e Desporto',
   'Bebés e Crianças',
   'Imigração',
+  'Trabalho/Empregos',
   'Outros'
 ];
 

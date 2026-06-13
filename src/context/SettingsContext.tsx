@@ -72,7 +72,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const rawCategories = settings?.categories || CATEGORIES;
-  const categories = rawCategories.includes('Imigração') ? rawCategories : [...rawCategories, 'Imigração'];
+  let categories = rawCategories.includes('Imigração') ? rawCategories : [...rawCategories, 'Imigração'];
+  if (!categories.includes('Trabalho/Empregos')) {
+    const othersIndex = categories.indexOf('Outros');
+    if (othersIndex !== -1) {
+      const copy = [...categories];
+      copy.splice(othersIndex, 0, 'Trabalho/Empregos');
+      categories = copy;
+    } else {
+      categories = [...categories, 'Trabalho/Empregos'];
+    }
+  }
 
   return (
     <SettingsContext.Provider value={{ settings, categories, loading }}>

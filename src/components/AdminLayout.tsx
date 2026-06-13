@@ -38,7 +38,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }, [loading, user, location.pathname, location.search, navigate]);
 
   React.useEffect(() => {
-    if (!loading && user && isStaff && isModerator && location.pathname !== '/admin/ads') {
+    if (!loading && user && isStaff && isModerator && location.pathname !== '/admin/ads' && location.pathname !== '/admin/marketing') {
       navigate('/admin/ads', { replace: true });
     }
   }, [isModerator, isStaff, loading, location.pathname, navigate, user]);
@@ -96,7 +96,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       <nav className="flex-1 space-y-1">
         {menuItems
-          .filter((item) => !isModerator || item.path === '/admin/ads')
+          .filter((item) => !isModerator || item.path === '/admin/ads' || item.path === '/admin/marketing')
           .map((item) => {
             const isActive = location.pathname === item.path;
             return (

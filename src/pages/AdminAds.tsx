@@ -29,9 +29,11 @@ import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { formatPrice } from '../utils';
 import { sendEmailGeneric, getSellerEmail } from '../utils/emailService';
+import { useAuth } from '../context/AuthContext';
 
 const AdminAds = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [adFilter, setAdFilter] = useState<string>('all');
@@ -113,6 +115,8 @@ const AdminAds = () => {
       clearHomeCache();
 
       if (adToUpdate && adToUpdate.sellerId) {
+        const isSelfOwned = user?.uid && (adToUpdate.sellerId.trim() === user.uid);
+
         if (status === 'approved') {
           try {
             await awardAdApprovalPoints(adToUpdate.sellerId, adId);
@@ -120,61 +124,69 @@ const AdminAds = () => {
             console.error("Error awarding ad approved points:", pointsErr);
           }
 
-          try {
-            const notifId = `approval_${adId}_${Date.now()}`;
-            const notifData = {
-              userId: adToUpdate.sellerId.trim(),
-              title: 'Anúncio aprovado',
-              message: `Seu anúncio "${adToUpdate.title}" foi aprovado e já está publicado.`,
-              createdAt: serverTimestamp(),
-              read: false,
-              adId: adId,
-              type: 'ad_approved'
-            };
-            await setDoc(doc(db, 'notifications', notifId), notifData);
-            console.log('[AdminAds] Notificação de aprovação gravada com sucesso!');
-          } catch (notifErr) {
-            console.warn('[AdminAds] Falha ao criar notificação de aprovação:', notifErr);
-          }
-
-          // Enviar email de aprovação (asíncrono, sem bloquear UI)
-          getSellerEmail(adToUpdate.sellerId.trim()).then((email) => {
-            if (email) {
-              sendEmailGeneric('anuncio_aprovado', email, {
-                sellerName: adToUpdate.sellerName || 'Anunciante',
-                adTitle: adToUpdate.title,
-                adId: adId
-              }).catch(err => console.warn('[AdminAds] Falha ao enviar email de aprovação:', err));
+          if (!isSelfOwned) {
+            try {
+              const notifId = `approval_${adId}_${Date.now()}`;
+              const notifData = {
+                userId: adToUpdate.sellerId.trim(),
+                title: 'Anúncio aprovado',
+                message: `Seu anúncio "${adToUpdate.title}" foi aprovado e já está publicado.`,
+                createdAt: serverTimestamp(),
+                read: false,
+                adId: adId,
+                type: 'ad_approved'
+              };
+              await setDoc(doc(db, 'notifications', notifId), notifData);
+              console.log('[AdminAds] Notificação de aprovação gravada com sucesso!');
+            } catch (notifErr) {
+              console.warn('[AdminAds] Falha ao criar notificação de aprovação:', notifErr);
             }
-          }).catch(err => console.warn('[AdminAds] Falha ao obter email do vendedor:', err));
+
+            // Enviar email de aprovação (asíncrono, sem bloquear UI)
+            getSellerEmail(adToUpdate.sellerId.trim()).then((email) => {
+              if (email) {
+                sendEmailGeneric('anuncio_aprovado', email, {
+                  sellerName: adToUpdate.sellerName || 'Anunciante',
+                  adTitle: adToUpdate.title,
+                  adId: adId
+                }).catch(err => console.warn('[AdminAds] Falha ao enviar email de aprovação:', err));
+              }
+            }).catch(err => console.warn('[AdminAds] Falha ao obter email do vendedor:', err));
+          } else {
+            console.log('[AdminAds] Skipping approval email & notification for self-owned ad');
+          }
 
         } else if (status === 'rejected') {
-          try {
-            const notifId = `rejection_${adId}_${Date.now()}`;
-            const notifData = {
-              userId: adToUpdate.sellerId.trim(),
-              title: 'Anúncio rejeitado',
-              message: `Seu anúncio "${adToUpdate.title}" não pôde ser aprovado pela equipe de moderação.`,
-              createdAt: serverTimestamp(),
-              read: false,
-              adId: adId,
-              type: 'ad_rejected'
-            };
-            await setDoc(doc(db, 'notifications', notifId), notifData);
-          } catch (notifErr) {
-            console.warn('[AdminAds] Falha ao criar notificação de rejeição:', notifErr);
-          }
-
-          // Enviar email de rejeição (asíncrono, sem bloquear UI)
-          getSellerEmail(adToUpdate.sellerId.trim()).then((email) => {
-            if (email) {
-              sendEmailGeneric('anuncio_rejeitado', email, {
-                sellerName: adToUpdate.sellerName || 'Anunciante',
-                adTitle: adToUpdate.title,
-                reason: 'Inadequação da descrição, preço inválido ou conteúdo contrário aos termos de publicação.'
-              }).catch(err => console.warn('[AdminAds] Falha ao enviar email de rejeição:', err));
+          if (!isSelfOwned) {
+            try {
+              const notifId = `rejection_${adId}_${Date.now()}`;
+              const notifData = {
+                userId: adToUpdate.sellerId.trim(),
+                title: 'Anúncio rejeitado',
+                message: `Seu anúncio "${adToUpdate.title}" não pôde ser aprovado pela equipe de moderação.`,
+                createdAt: serverTimestamp(),
+                read: false,
+                adId: adId,
+                type: 'ad_rejected'
+              };
+              await setDoc(doc(db, 'notifications', notifId), notifData);
+            } catch (notifErr) {
+              console.warn('[AdminAds] Falha ao criar notificação de rejeição:', notifErr);
             }
-          }).catch(err => console.warn('[AdminAds] Falha ao obter email do vendedor:', err));
+
+            // Enviar email de rejeição (asíncrono, sem bloquear UI)
+            getSellerEmail(adToUpdate.sellerId.trim()).then((email) => {
+              if (email) {
+                sendEmailGeneric('anuncio_rejeitado', email, {
+                  sellerName: adToUpdate.sellerName || 'Anunciante',
+                  adTitle: adToUpdate.title,
+                  reason: 'Inadequação da descrição, preço inválido ou conteúdo contrário aos termos de publicação.'
+                }).catch(err => console.warn('[AdminAds] Falha ao enviar email de rejeição:', err));
+              }
+            }).catch(err => console.warn('[AdminAds] Falha ao obter email do vendedor:', err));
+          } else {
+            console.log('[AdminAds] Skipping rejection email & notification for self-owned ad');
+          }
         }
       }
 

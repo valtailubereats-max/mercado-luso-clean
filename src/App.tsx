@@ -9,6 +9,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { collection, query, where, orderBy, doc, updateDoc, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Trabalhos from './pages/Trabalhos';
 import Profile from './pages/Profile';
 import CreateAd from './pages/CreateAd';
 import AdminDashboard from './pages/AdminDashboard';
@@ -769,6 +770,8 @@ export default function App() {
             <main ref={mainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 cursor-grab active:cursor-grabbing">
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/trabalhos" element={<Trabalhos />} />
+                <Route path="/empregos" element={<Trabalhos />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/create-ad" element={<ProtectedRoute><CreateAd /></ProtectedRoute>} />

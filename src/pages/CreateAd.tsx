@@ -29,6 +29,7 @@ const CreateAd = () => {
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   const prefill = location.state?.prefill;
+  const urlCategory = new URLSearchParams(location.search).get('category');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,14 +44,29 @@ const CreateAd = () => {
     images: [] as string[],
     city: prefill?.city || PORTUGAL_CITIES[0],
     country: (prefill?.country || 'Portugal') as 'Portugal' | 'Reino Unido',
-    category: prefill?.category || categories[0] || 'Outros',
+    category: urlCategory || prefill?.category || categories[0] || 'Outros',
     plan: 'free' as 'free' | 'intermediate' | 'premium',
     duration: 30, // Default for free
     contactEmail: '',
     externalUrl: '',
     sellerPhone: prefill?.sellerPhone || '',
-    sourceUrl: prefill?.sourceUrl || ''
+    sourceUrl: prefill?.sourceUrl || '',
+    salary: '',
+    contractType: '',
+    workSchedule: '',
+    companyName: '',
+    experienceRequired: ''
   });
+
+  useEffect(() => {
+    const pCategory = new URLSearchParams(location.search).get('category');
+    if (pCategory) {
+      setFormData(prev => ({
+        ...prev,
+        category: pCategory
+      }));
+    }
+  }, [location.search]);
 
   const [imagePositionX, setImagePositionX] = useState<number>(50);
   const [imagePositionY, setImagePositionY] = useState<number>(50);
@@ -191,7 +207,12 @@ const CreateAd = () => {
           contactEmail: data.contactEmail || '',
           externalUrl: data.externalUrl || '',
           sellerPhone: data.sellerPhone || '',
-          sourceUrl: data.sourceUrl || ''
+          sourceUrl: data.sourceUrl || '',
+          salary: data.salary || '',
+          contractType: data.contractType || '',
+          workSchedule: data.workSchedule || '',
+          companyName: data.companyName || '',
+          experienceRequired: data.experienceRequired || ''
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
@@ -330,7 +351,13 @@ const CreateAd = () => {
       return;
     }
 
-    if (formData.category !== 'Imigração' && !profile.phone) {
+    const isStaff = isAdmin || isModerator || profile?.role === 'admin' || profile?.role === 'moderator';
+    if (formData.category === 'Trabalho/Empregos' && !isStaff) {
+      alert('Apenas administradores e moderadores podem publicar anúncios de Trabalho.');
+      return;
+    }
+
+    if (formData.category !== 'Imigração' && formData.category !== 'Trabalho/Empregos' && !profile.phone) {
       alert('Por favor, adicione seu telemóvel no perfil antes de criar um anúncio.');
       navigate('/profile');
       return;
@@ -349,7 +376,7 @@ const CreateAd = () => {
         return;
       }
 
-      if (formData.images.length === 0) {
+      if (formData.category !== 'Trabalho/Empregos' && formData.images.length === 0) {
         alert('Por favor, carregue pelo menos uma imagem para o seu anúncio.');
         setLoading(false);
         return;
@@ -377,18 +404,19 @@ const CreateAd = () => {
 
       const validSourceUrl = (formData.sourceUrl && /^https?:\/\//i.test(formData.sourceUrl)) ? formData.sourceUrl.trim() : null;
 
+      const isJob = formData.category === 'Trabalho/Empregos';
       const adData = {
         id: adId,
         title: formData.title,
         description: formData.description,
-        price: formData.category === 'Imigração' ? 0 : (formData.price ? parseFloat(formData.price) : 0),
-        imageUrl: formData.images[0], // Primary image
+        price: (formData.category === 'Imigração' || isJob) ? 0 : (formData.price ? parseFloat(formData.price) : 0),
+        imageUrl: formData.images[0] || '', // Primary image
         images: formData.images,
         city: formData.city,
         country: formData.country,
         category: formData.category,
         sellerId: id && originalAd ? originalAd.sellerId : user.uid,
-        sellerPhone: formData.category === 'Imigração' ? formData.sellerPhone.trim() : (id && originalAd ? originalAd.sellerPhone : profile.phone),
+        sellerPhone: isJob ? (formData.sellerPhone.trim() || profile.phone || '') : (formData.category === 'Imigração' ? formData.sellerPhone.trim() : (id && originalAd ? originalAd.sellerPhone : profile.phone)),
         sellerName: id && originalAd ? originalAd.sellerName : profile.name,
         status: isAdmin && id ? (originalAd?.status || 'pending') : 'pending',
         adStatus: id && originalAd ? originalAd.adStatus : 'active',
@@ -397,12 +425,17 @@ const CreateAd = () => {
         userNotified: isAdmin && id ? true : false,
         createdAt: id && originalAd ? originalAd.createdAt : serverTimestamp(),
         updatedAt: serverTimestamp(),
-        contactEmail: formData.category === 'Imigração' ? (formData.contactEmail || '') : '',
-        externalUrl: formData.category === 'Imigração' ? (formData.externalUrl || '') : '',
+        contactEmail: (formData.category === 'Imigração' || isJob) ? (formData.contactEmail || '') : '',
+        externalUrl: (formData.category === 'Imigração' || isJob) ? (formData.externalUrl || '') : '',
         sourceUrl: validSourceUrl,
         imagePositionX: imagePositionX,
         imagePositionY: imagePositionY,
-        imageZoom: imageZoom
+        imageZoom: imageZoom,
+        salary: isJob ? formData.salary.trim() : '',
+        contractType: isJob ? formData.contractType : '',
+        workSchedule: isJob ? formData.workSchedule : '',
+        companyName: isJob ? formData.companyName.trim() : '',
+        experienceRequired: isJob ? formData.experienceRequired : ''
       };
 
       await setDoc(doc(db, 'ads', adId), adData, { merge: true });
@@ -420,11 +453,22 @@ const CreateAd = () => {
           
           const staffUids: string[] = [];
           const staffEmails: string[] = [];
+          const creatorUid = user?.uid;
+          const creatorEmail = (user?.email || profile?.email || '').toLowerCase().trim();
+
           staffSnapshot.forEach(docSnap => {
-            staffUids.push(docSnap.id);
+            const uid = docSnap.id;
             const sData = docSnap.data();
-            if (sData && sData.email) {
-              staffEmails.push(sData.email);
+            
+            // Exclude the creator from notifications and emails
+            if (uid !== creatorUid) {
+              staffUids.push(uid);
+              if (sData && sData.email) {
+                const sEmail = sData.email.toLowerCase().trim();
+                if (sEmail && sEmail !== creatorEmail) {
+                  staffEmails.push(sData.email);
+                }
+              }
             }
           });
 
@@ -532,61 +576,61 @@ const CreateAd = () => {
         
         const isOlxPortugal = importUrl.toLowerCase().includes('olx.pt');
         
-        let matchedCity = formData.city;
-        let matchedCountry = formData.country;
-        
-        if (isOlxPortugal) {
-          matchedCountry = 'Portugal';
-          if (city) {
-            const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
-            if (matchedPortCity) {
-              matchedCity = matchedPortCity;
-            } else {
-              matchedCity = city.trim();
-            }
-          } else {
-            matchedCity = '';
-          }
-        } else {
-          if (city) {
-            const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
-            const matchedUkCity = UK_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
-            
-            if (matchedPortCity) {
-              matchedCity = matchedPortCity;
-              matchedCountry = 'Portugal';
-            } else if (matchedUkCity) {
-              matchedCity = matchedUkCity;
-              matchedCountry = 'Reino Unido';
-            }
-          } else if (country) {
-            const normCountry = country.toString().toLowerCase();
-            if (normCountry === 'portugal') {
-              matchedCountry = 'Portugal';
-              matchedCity = PORTUGAL_CITIES[0];
-            } else if (normCountry === 'reino unido' || normCountry === 'uk' || normCountry === 'united kingdom') {
-              matchedCountry = 'Reino Unido';
-              matchedCity = UK_CITIES[0];
-            }
-          }
-        }
-
         // Match category case-insensitively. If no correspondence, set to empty string for manual selection
         const matchedCategory = categories.find(
           (c: string) => c.toLowerCase() === (category || '').toString().toLowerCase()
         ) || '';
 
-        setFormData(prev => ({
-          ...prev,
-          title: title || prev.title,
-          description: description || prev.description,
-          price: price !== undefined && price !== null ? price.toString() : prev.price,
-          city: matchedCity,
-          country: matchedCountry,
-          category: matchedCategory || prev.category, // fallback nicely but keep empty choice as principal
-          images: images && Array.isArray(images) && images.length > 0 ? images : prev.images,
-          sourceUrl: importUrl
-        }));
+        setFormData(prev => {
+          let matchedCity = prev.city;
+          let matchedCountry = prev.country;
+          
+          if (isOlxPortugal) {
+            matchedCountry = 'Portugal';
+            if (city) {
+              const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+              if (matchedPortCity) {
+                matchedCity = matchedPortCity;
+              } else {
+                matchedCity = city.trim();
+              }
+            }
+          } else {
+            if (city) {
+              const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+              const matchedUkCity = UK_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+              
+              if (matchedPortCity) {
+                matchedCity = matchedPortCity;
+                matchedCountry = 'Portugal';
+              } else if (matchedUkCity) {
+                matchedCity = matchedUkCity;
+                matchedCountry = 'Reino Unido';
+              }
+            } else if (country) {
+              const normCountry = country.toString().toLowerCase();
+              if (normCountry === 'portugal') {
+                matchedCountry = 'Portugal';
+                matchedCity = PORTUGAL_CITIES[0];
+              } else if (normCountry === 'reino unido' || normCountry === 'uk' || normCountry === 'united kingdom') {
+                matchedCountry = 'Reino Unido';
+                matchedCity = UK_CITIES[0];
+              }
+            }
+          }
+
+          return {
+            ...prev,
+            title: title || prev.title,
+            description: description || prev.description,
+            price: price !== undefined && price !== null ? price.toString() : prev.price,
+            city: matchedCity || prev.city,
+            country: matchedCountry || prev.country,
+            category: matchedCategory || prev.category, // fallback nicely but keep empty choice as principal
+            images: images && Array.isArray(images) && images.length > 0 ? images : prev.images,
+            sourceUrl: importUrl
+          };
+        });
 
         setImportSuccess('Dados importados da OLX. Revise as informações antes de publicar.');
       } else {
@@ -683,7 +727,9 @@ const CreateAd = () => {
           {/* Image Upload */}
           <div className="space-y-4">
             <div className="flex justify-between items-end">
-              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Imagens do Produto</label>
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                {formData.category === 'Trabalho/Empregos' ? 'Imagens da Vaga (Opcional)' : 'Imagens do Produto'}
+              </label>
               <span className="text-xs font-bold text-slate-400">
                 {formData.images.length} de {maxAllowed} imagens
               </span>
@@ -951,30 +997,18 @@ const CreateAd = () => {
               >
                 <option value="">Seleccione uma categoria...</option>
                 {categories
-                  .filter(c => c !== 'Imigração' || isAdmin || profile?.role === 'admin' || profile?.role === 'moderator')
+                  .filter(c => {
+                    const isStaffOnly = c === 'Imigração' || c === 'Trabalho/Empregos';
+                    if (isStaffOnly) {
+                      return isAdmin || isModerator || profile?.role === 'admin' || profile?.role === 'moderator';
+                    }
+                    return true;
+                  })
                   .map((c, index) => <option key={`category-${c}-${index}`} value={c}>{c}</option>)}
               </select>
             </div>
 
-            {formData.category !== 'Imigração' ? (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-                  Preço ({formData.country === 'Reino Unido' ? '£' : '€'})
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl select-none leading-none z-10">
-                    {formData.country === 'Reino Unido' ? '£' : '€'}
-                  </span>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-            ) : (
+            {formData.category === 'Imigração' ? (
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Telemóvel / WhatsApp (Obrigatório)</label>
@@ -1008,6 +1042,129 @@ const CreateAd = () => {
                   />
                 </div>
               </>
+            ) : formData.category === 'Trabalho/Empregos' ? (
+              <>
+                <div className="space-y-2 col-span-1 md:col-span-2">
+                  <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
+                    <p className="text-xs text-indigo-800 font-bold">💼 Informações da Vaga de Trabalho</p>
+                    <p className="text-[11px] text-indigo-600 mt-1">Preencha as informações detalhadas sobre o emprego para atrair candidaturas qualificadas.</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Empresa / Recrutador</label>
+                  <input
+                    type="text"
+                    value={formData.companyName}
+                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="Ex: Luso Recrutamento, LDA"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Salário / Remuneração</label>
+                  <input
+                    type="text"
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="Ex: 1.200€ - 1.500€ / mês, 10€ / hora, A negociar"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Tipo de Contrato</label>
+                  <select
+                    value={formData.contractType}
+                    onChange={(e) => setFormData({ ...formData, contractType: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                  >
+                    <option value="">Seleccione o tipo de contrato...</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contrato de Trabalho">Contrato de Trabalho</option>
+                    <option value="Prestação de Serviços (Recibos Verdes)">Prestação de Serviços (Recibos Verdes)</option>
+                    <option value="Temporário / Sazonal">Temporário / Sazonal</option>
+                    <option value="Estágio">Estágio</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Horário de Trabalho</label>
+                  <select
+                    value={formData.workSchedule}
+                    onChange={(e) => setFormData({ ...formData, workSchedule: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                  >
+                    <option value="">Seleccione o horário...</option>
+                    <option value="Período Diário">Período Diário</option>
+                    <option value="Turnos">Turnos</option>
+                    <option value="Horário Flexível">Horário Flexível</option>
+                    <option value="Finais de Semana">Finais de Semana</option>
+                    <option value="Trabalho Noturno">Trabalho Noturno</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Experiência Requerida</label>
+                  <select
+                    value={formData.experienceRequired}
+                    onChange={(e) => setFormData({ ...formData, experienceRequired: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                  >
+                    <option value="">Seleccione a experiência...</option>
+                    <option value="Sem experiência">Sem experiência</option>
+                    <option value="1-2 anos">1-2 anos</option>
+                    <option value="3-5 anos">3-5 anos</option>
+                    <option value="Sénior (+5 anos)">Sénior (+5 anos)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Telemóvel / WhatsApp de Contacto</label>
+                  <input
+                    type="tel"
+                    value={formData.sellerPhone}
+                    onChange={(e) => setFormData({ ...formData, sellerPhone: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="Ex: +351 912 345 678"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">E-mail de Contacto (Opcional)</label>
+                  <input
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="exemplo@vagas.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Link de Candidatura Externa (Opcional)</label>
+                  <input
+                    type="url"
+                    value={formData.externalUrl}
+                    onChange={(e) => setFormData({ ...formData, externalUrl: e.target.value })}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="https://vagas.recrutamento.com/vaga/123"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                  Preço ({formData.country === 'Reino Unido' ? '£' : '€'})
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl select-none leading-none z-10">
+                    {formData.country === 'Reino Unido' ? '£' : '€'}
+                  </span>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
             )}
 
             <div className="space-y-2">

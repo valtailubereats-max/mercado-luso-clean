@@ -193,7 +193,7 @@ Estrutura JSON esperada:
 
                   const decodeHtmlEntities = (str: string): string => {
                     if (!str) return '';
-                    return str
+                    let temp = str
                       .replace(/&amp;/g, '&')
                       .replace(/&lt;/g, '<')
                       .replace(/&gt;/g, '>')
@@ -204,6 +204,13 @@ Estrutura JSON esperada:
                       .replace(/&nbsp;/g, ' ')
                       .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
                       .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+                    
+                    try {
+                      temp = temp.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+                    } catch (e) {
+                      // ignore
+                    }
+                    return temp;
                   };
 
                   const cleanTitle = (title: string): string => {
