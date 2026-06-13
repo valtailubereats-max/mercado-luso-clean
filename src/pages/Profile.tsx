@@ -479,7 +479,7 @@ const Profile = () => {
         <button
           onClick={() => navigate('/profile?tab=perfil')}
           className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras'].includes(currentTab)
+            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)
               ? 'bg-white text-indigo-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-800'
           }`}
@@ -497,6 +497,17 @@ const Profile = () => {
           id="btn-tab-anuncios"
         >
           Meus Anúncios <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'anuncios' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{ads.length}</span>
+        </button>
+        <button
+          onClick={() => navigate('/profile?tab=reviews')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            currentTab === 'reviews'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-reviews"
+        >
+          Avaliações <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'reviews' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{reviews.length}</span>
         </button>
         <button
           onClick={() => navigate('/profile?tab=compras')}
@@ -522,7 +533,7 @@ const Profile = () => {
         </button>
       </div>
 
-      {(currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras'].includes(currentTab)) && (
+      {(currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)) && (
         <div className="space-y-12" id="profile-perfil-tab-content">
           <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -816,57 +827,7 @@ const Profile = () => {
 
       {currentTab === 'anuncios' && (
         <div className="space-y-12" id="profile-anuncios-tab-content">
-          {reviews.length > 0 && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Avaliações Recebidas
-            <span className="bg-amber-100 text-amber-800 text-sm px-3 py-1 rounded-full">{reviews.length}</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {reviews.map((rev) => (
-              <div key={rev.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold text-slate-800">{rev.buyerName}</h4>
-                      <div className="flex flex-wrap gap-1.5 items-center mt-1">
-                        {rev.adCategory && (
-                          <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-md font-semibold font-sans">
-                            {rev.adCategory}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]" title={rev.adTitle}>
-                          {rev.adTitle}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} size={12} className={`${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-100'}`} />
-                      ))}
-                    </div>
-                  </div>
-                  {rev.comment ? (
-                    <p className="text-slate-600 text-xs leading-relaxed italic">"{rev.comment}"</p>
-                  ) : (
-                    <p className="text-slate-400 text-xs italic">Sem comentário escrito.</p>
-                  )}
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-slate-50 text-[10px]">
-                  <span className={`px-2 py-0.5 rounded-full font-bold ${rev.success ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                    {rev.success ? 'Negócio Fechado ✓' : 'Negócio Incompleto'}
-                  </span>
-                  <span className="text-slate-400 font-medium">
-                    {rev.createdAt?.toDate ? formatDistanceToNow(rev.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-6">
+          <div className="space-y-6">
         <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           Meus Anúncios
           <span className="bg-slate-200 text-slate-600 text-sm px-3 py-1 rounded-full">{ads.length}</span>
@@ -1110,6 +1071,66 @@ const Profile = () => {
           </div>
         )}
       </div>
+        </div>
+      )}
+
+      {currentTab === 'reviews' && (
+        <div className="space-y-6" id="reviews-tab-content">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            Avaliações Recebidas
+            <span className="bg-amber-100 text-amber-800 text-sm px-3 py-1 rounded-full">{reviews.length}</span>
+          </h2>
+
+          {reviewsLoading ? (
+            <div className="text-center py-12 text-slate-400">A carregar avaliações...</div>
+          ) : reviews.length === 0 ? (
+            <div className="bg-white p-16 rounded-3xl text-center border-2 border-dashed border-slate-200" id="no-reviews-box">
+              <span className="text-4xl text-amber-400">★</span>
+              <p className="text-slate-500 mt-4 font-semibold">Ainda não recebeu nenhuma avaliação.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviews.map((rev) => (
+                <div key={rev.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-slate-800">{rev.buyerName}</h4>
+                        <div className="flex flex-wrap gap-1.5 items-center mt-1">
+                          {rev.adCategory && (
+                            <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-md font-semibold font-sans">
+                              {rev.adCategory}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]" title={rev.adTitle}>
+                            {rev.adTitle}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star key={s} size={12} className={`${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-100'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    {rev.comment ? (
+                      <p className="text-slate-600 text-xs leading-relaxed italic">"{rev.comment}"</p>
+                    ) : (
+                      <p className="text-slate-400 text-xs italic">Sem comentário escrito.</p>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-50 text-[10px]">
+                    <span className={`px-2 py-0.5 rounded-full font-bold ${rev.success ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                      {rev.success ? 'Negócio Fechado ✓' : 'Negócio Incompleto'}
+                    </span>
+                    <span className="text-slate-400 font-medium">
+                      {rev.createdAt?.toDate ? formatDistanceToNow(rev.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
