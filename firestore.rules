@@ -37,7 +37,11 @@ service cloud.firestore {
              (!('role' in data) || data.role in ['user', 'admin', 'moderator']) &&
              (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
              (!('acceptedTerms' in data) || data.acceptedTerms is bool) &&
-             (!('acceptedTermsAt' in data) || data.acceptedTermsAt is timestamp);
+             (!('acceptedTermsAt' in data) || data.acceptedTermsAt is timestamp || data.acceptedTermsAt is string) &&
+             (!('referralCredits' in data) || data.referralCredits is number) &&
+             (!('pointsFromAds' in data) || data.pointsFromAds is number) &&
+             (!('referredUsersCount' in data) || data.referredUsersCount is number) &&
+             (!('referralCode' in data) || data.referralCode is string);
     }
 
     function isValidAd(data) {
@@ -123,7 +127,7 @@ service cloud.firestore {
       allow update: if
         (isOwner(userId) && isValidUser(request.resource.data, userId)) ||
         (isAuthenticated() && isValidRatingUpdate()) ||
-        (isAdmin() && isValidUser(request.resource.data, userId));
+        isAdmin();
     }
 
     match /sellerPublicProfiles/{userId} {

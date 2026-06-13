@@ -21,16 +21,25 @@ import {
   User, 
   Calendar, 
   Clock, 
-  X
+  X,
+  Tag,
+  Save,
+  Undo
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { 
   MarketingMaterial, 
+  MarketingCategory,
   getLocalMaterials, 
   saveLocalMaterial, 
   deleteLocalMaterial, 
   syncToFirestore, 
-  deleteFromFirestore 
+  deleteFromFirestore,
+  getLocalCategories,
+  saveLocalCategory,
+  deleteLocalCategory,
+  syncCategoryToFirestore,
+  deleteCategoryFromFirestore
 } from '../utils/marketingService';
 
 const AdminMarketing = () => {
@@ -38,14 +47,21 @@ const AdminMarketing = () => {
   const navigate = useNavigate();
   
   const [materials, setMaterials] = useState<MarketingMaterial[]>([]);
+  const [categories, setCategories] = useState<MarketingCategory[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
-  // Modal State
+  // Modal State for Materials
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<MarketingMaterial | null>(null);
   
-  // Form fields
+  // Modal State for Categories
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
+  
+  // Form fields for Materials
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState('Geral');
   const [formType, setFormType] = useState<'Texto' | 'Imagem/Banner' | 'Vídeo' | 'Link'>('Texto');
@@ -56,10 +72,13 @@ const AdminMarketing = () => {
   
   const baseUrl = window.location.origin;
 
-  // Load materials from storage
+  // Load materials and categories from storage
   useEffect(() => {
-    const loaded = getLocalMaterials();
-    setMaterials(loaded);
+    const loadedMaterials = getLocalMaterials();
+    setMaterials(loadedMaterials);
+    
+    const loadedCategories = getLocalCategories();
+    setCategories(loadedCategories);
   }, []);
 
   const hasWritePermission = isAdmin || isModerator;
@@ -91,7 +110,9 @@ const AdminMarketing = () => {
   const openCreateModal = () => {
     setEditingMaterial(null);
     setFormTitle('');
-    setFormCategory('Geral');
+    // Safely default to 'Geral' or first existing category
+    const defaultCat = categories.length > 0 ? categories[0].name : 'Geral';
+    setFormCategory(defaultCat);
     setFormType('Texto');
     setFormDescription('');
     setFormContent('');
@@ -165,12 +186,113 @@ const AdminMarketing = () => {
     await syncToFirestore(newMaterial);
   };
 
+  // Category Actions
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hasWritePermission) {
+      alert('Sem permissões para gerir categorias.');
+      return;
+    }
+    if (!newCategoryName.trim()) return;
+    
+    const exists = categories.some(
+      c => c.name.toLowerCase() === newCategoryName.trim().toLowerCase()
+    );
+    if (exists) {
+      alert('Esta categoria já existe!');
+      return;
+    }
+    
+    const newCat: MarketingCategory = {
+      id: `cat_${Date.now()}`,
+      name: newCategoryName.trim()
+    };
+    
+    const updated = saveLocalCategory(newCat);
+    setCategories(updated);
+    setNewCategoryName('');
+    
+    await syncCategoryToFirestore(newCat);
+  };
+
+  const handleStartEditCategory = (cat: MarketingCategory) => {
+    setEditingCategoryId(cat.id);
+    setEditingCategoryName(cat.name);
+  };
+
+  const handleSaveCategoryEdit = async (id: string) => {
+    if (!hasWritePermission) {
+      alert('Sem permissões para gerir categorias.');
+      return;
+    }
+    if (!editingCategoryName.trim()) return;
+    
+    const exists = categories.some(
+      c => c.id !== id && c.name.toLowerCase() === editingCategoryName.trim().toLowerCase()
+    );
+    if (exists) {
+      alert('Já existe outra categoria com este nome!');
+      return;
+    }
+    
+    const oldCategory = categories.find(c => c.id === id);
+    const updatedCat = { id, name: editingCategoryName.trim() };
+    
+    const updatedList = saveLocalCategory(updatedCat);
+    setCategories(updatedList);
+    setEditingCategoryId(null);
+    
+    // Transparently update any materials carrying the old category name for continuity
+    if (oldCategory && oldCategory.name !== updatedCat.name) {
+      const updatedMaterials = materials.map(m => {
+        if (m.category === oldCategory.name) {
+          const materialCopy = { ...m, category: updatedCat.name };
+          syncToFirestore(materialCopy); // Sync behind scenes
+          return materialCopy;
+        }
+        return m;
+      });
+      setMaterials(updatedMaterials);
+      localStorage.setItem('mercado_luso_marketing_materials', JSON.stringify(updatedMaterials));
+    }
+    
+    await syncCategoryToFirestore(updatedCat);
+  };
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    if (!hasWritePermission) {
+      alert('Sem permissões para gerir categorias.');
+      return;
+    }
+    if (!window.confirm(`Tem a certeza que deseja eliminar a categoria "${name}"? Os materiais desta categoria NÃO serão eliminados, mas serão re-atribuídos à categoria "Geral".`)) {
+      return;
+    }
+    
+    const updatedList = deleteLocalCategory(id);
+    setCategories(updatedList);
+    
+    // Move any materials of this category to fallback category 'Geral'
+    const updatedMaterials = materials.map(m => {
+      if (m.category === name) {
+        const materialCopy = { ...m, category: 'Geral' };
+        syncToFirestore(materialCopy);
+        return materialCopy;
+      }
+      return m;
+    });
+    setMaterials(updatedMaterials);
+    localStorage.setItem('mercado_luso_marketing_materials', JSON.stringify(updatedMaterials));
+    
+    await deleteCategoryFromFirestore(id);
+  };
+
   // Filter materials based on category
   const filteredMaterials = selectedCategory === 'all'
     ? materials
     : materials.filter(m => m.category.toLowerCase() === selectedCategory.toLowerCase());
 
-  const categoriesList = ['all', 'Geral', 'Vendedores', 'Compradores', 'Sazonal'];
+  // Dynamic filter lists
+  const categoriesList = ['all', ...categories.map(c => c.name)];
 
   const gradientsList = [
     { value: 'from-violet-600 to-indigo-500', name: 'Roxo Elétrico' },
@@ -205,13 +327,22 @@ const AdminMarketing = () => {
         </div>
         
         {hasWritePermission && (
-          <button
-            onClick={openCreateModal}
-            className="self-start sm:self-auto bg-indigo-600 text-white font-bold text-sm px-6 py-3.5 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Novo Material
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="bg-slate-100 text-slate-700 font-bold text-sm px-6 py-3.5 rounded-2xl hover:bg-slate-200 transition-all flex items-center gap-2 border border-slate-200"
+            >
+              <Tag size={18} className="text-indigo-600" />
+              Categorias
+            </button>
+            <button
+              onClick={openCreateModal}
+              className="bg-indigo-600 text-white font-bold text-sm px-6 py-3.5 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Novo Material
+            </button>
+          </div>
         )}
       </div>
 
@@ -408,6 +539,149 @@ const AdminMarketing = () => {
         </div>
       </div>
 
+      {/* Categories Management Modal */}
+      <AnimatePresence>
+        {isCategoryModalOpen && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setIsCategoryModalOpen(false);
+                setEditingCategoryId(null);
+              }}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <div className="flex min-h-full items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden p-6 sm:p-8 z-10 space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Tag className="text-indigo-600 animate-pulse" size={24} />
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Gerir Categorias</h2>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setIsCategoryModalOpen(false);
+                      setEditingCategoryId(null);
+                    }}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Add Category Form */}
+                <form onSubmit={handleAddCategory} className="flex gap-2">
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Adicionar nova categoria..."
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 font-medium transition-all"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-indigo-600 text-white font-bold p-3 px-5 rounded-2xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 flex items-center justify-center gap-1 text-sm"
+                  >
+                    <Plus size={16} />
+                    Adicionar
+                  </button>
+                </form>
+
+                <div className="border-t border-slate-100 pt-4 space-y-3 max-h-[300px] overflow-y-auto">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Categorias Ativas</p>
+                  
+                  {categories.length === 0 ? (
+                    <p className="text-sm text-slate-400 font-medium py-4 text-center">Nenhuma categoria criada.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {categories.map((cat) => (
+                        <div 
+                          key={cat.id}
+                          className="flex items-center justify-between border border-slate-100 bg-slate-50/50 p-3 rounded-2xl transition-all hover:bg-slate-50"
+                        >
+                          {editingCategoryId === cat.id ? (
+                            <div className="flex items-center gap-2 flex-1 mr-2">
+                              <input 
+                                type="text"
+                                value={editingCategoryName}
+                                onChange={(e) => setEditingCategoryName(e.target.value)}
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveCategoryEdit(cat.id)}
+                                className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg"
+                                title="Gravar"
+                              >
+                                <Save size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingCategoryId(null)}
+                                className="p-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg"
+                                title="Cancelar"
+                              >
+                                <Undo size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-xs font-black text-slate-700 bg-white border border-slate-100 px-3 py-1.5 rounded-xl shadow-sm">
+                                {cat.name}
+                              </span>
+                              
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditCategory(cat)}
+                                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-all"
+                                  title="Editar categoria"
+                                >
+                                  <Edit size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-lg transition-all"
+                                  title="Eliminar categoria"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 pt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCategoryModalOpen(false);
+                      setEditingCategoryId(null);
+                    }}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-2.5 rounded-2xl text-sm transition-all text-center"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Create / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -470,10 +744,13 @@ const AdminMarketing = () => {
                         onChange={(e) => setFormCategory(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 font-semibold transition-all"
                       >
-                        <option value="Geral">Geral</option>
-                        <option value="Vendedores">Vendedores</option>
-                        <option value="Compradores">Compradores</option>
-                        <option value="Sazonal">Sazonal</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
+                        {/* Compatibility fallback for custom categories of currently active edit items */}
+                        {formCategory && !categories.some(c => c.name === formCategory) && (
+                          <option value={formCategory}>{formCategory}</option>
+                        )}
                       </select>
                     </div>
 

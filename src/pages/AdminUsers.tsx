@@ -50,6 +50,8 @@ const AdminUsers = () => {
   const [editCity, setEditCity] = useState('');
   const [editCountry, setEditCountry] = useState<'Portugal' | 'Reino Unido' | ''>('');
   const [editRole, setEditRole] = useState<'user' | 'moderator' | 'admin'>('user');
+  const [editReferralCredits, setEditReferralCredits] = useState<number>(0);
+  const [editPointsFromAds, setEditPointsFromAds] = useState<number>(0);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -62,6 +64,8 @@ const AdminUsers = () => {
     setEditCity(user.city || '');
     setEditCountry(user.country || '');
     setEditRole(user.role || 'user');
+    setEditReferralCredits(user.referralCredits || 0);
+    setEditPointsFromAds(user.pointsFromAds || 0);
     setEditError(null);
     setEditSuccess(null);
   };
@@ -124,6 +128,8 @@ const AdminUsers = () => {
         city: editCity.trim(),
         country: editCountry || null,
         role: editRole,
+        referralCredits: Number(editReferralCredits) || 0,
+        pointsFromAds: Number(editPointsFromAds) || 0,
       };
 
       await setDoc(userDocRef, updatedFields, { merge: true });
@@ -156,7 +162,9 @@ const AdminUsers = () => {
         phone: finalPhone,
         city: editCity.trim(),
         country: editCountry as 'Portugal' | 'Reino Unido' | undefined,
-        role: editRole 
+        role: editRole,
+        referralCredits: Number(editReferralCredits) || 0,
+        pointsFromAds: Number(editPointsFromAds) || 0,
       } : u));
 
       // Close modal gracefully after a short delay
@@ -675,6 +683,31 @@ const AdminUsers = () => {
                     <option value="moderator">Moderador (moderator)</option>
                     <option value="admin">Administrador (admin)</option>
                   </select>
+                </div>
+
+                {/* Rewards / Points and Credits Fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Créditos de Destaque</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editReferralCredits}
+                      onChange={(e) => setEditReferralCredits(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest">Pontos de Progresso</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editPointsFromAds}
+                      onChange={(e) => setEditPointsFromAds(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+                    />
+                  </div>
                 </div>
 
                 {/* Submit Action Buttons */}
