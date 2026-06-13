@@ -10,18 +10,23 @@ import { sendEmailGeneric } from '../utils/emailService';
 import { CITIES, Ad, MarketplaceSettings, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
-import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw } from 'lucide-react';
+import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw, Link, AlertCircle, Check } from 'lucide-react';
 import { compressImage } from '../lib/imageUtils';
 
 const CreateAd = () => {
   const { categories } = useSettings();
   const { id } = useParams();
-  const { user, profile, isAdmin, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, isModerator, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [originalAd, setOriginalAd] = useState<Ad | null>(null);
+
+  const [importUrl, setImportUrl] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   const prefill = location.state?.prefill;
 
@@ -480,6 +485,99 @@ const CreateAd = () => {
     }
   };
 
+  const handleImportAd = async () => {
+    const isStaff = isAdmin || isModerator || profile?.role === 'admin' || profile?.role === 'moderator';
+    if (!isStaff) {
+      setImportError('Não tem permissão para realizar esta ação.');
+      return;
+    }
+
+    if (!importUrl.trim()) {
+      setImportError('Por favor, cole um link de anúncio.');
+      return;
+    }
+
+    const regex = /^https?:\/\//i;
+    if (!regex.test(importUrl)) {
+      setImportError('Por favor, introduza um link válido que comece por http:// ou https://.');
+      return;
+    }
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportSuccess(null);
+
+    try {
+      const response = await fetch('/api/import-ad', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: importUrl,
+          userId: user?.uid,
+          userRole: profile?.role || (isAdmin ? 'admin' : isModerator ? 'moderator' : 'user')
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result?.success && result?.data) {
+        const { title, description, price, city, country, category, images } = result.data;
+        
+        let matchedCity = formData.city;
+        let matchedCountry = formData.country;
+        
+        if (city) {
+          const matchedPortCity = PORTUGAL_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+          const matchedUkCity = UK_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+          
+          if (matchedPortCity) {
+            matchedCity = matchedPortCity;
+            matchedCountry = 'Portugal';
+          } else if (matchedUkCity) {
+            matchedCity = matchedUkCity;
+            matchedCountry = 'Reino Unido';
+          }
+        } else if (country) {
+          const normCountry = country.toString().toLowerCase();
+          if (normCountry === 'portugal') {
+            matchedCountry = 'Portugal';
+            matchedCity = PORTUGAL_CITIES[0];
+          } else if (normCountry === 'reino unido' || normCountry === 'uk' || normCountry === 'united kingdom') {
+            matchedCountry = 'Reino Unido';
+            matchedCity = UK_CITIES[0];
+          }
+        }
+
+        // Match category case-insensitively
+        const matchedCategory = categories.find(
+          (c: string) => c.toLowerCase() === (category || '').toString().toLowerCase()
+        ) || categories[0] || 'Outros';
+
+        setFormData(prev => ({
+          ...prev,
+          title: title || prev.title,
+          description: description || prev.description,
+          price: price !== undefined && price !== null ? price.toString() : prev.price,
+          city: matchedCity,
+          country: matchedCountry,
+          category: matchedCategory,
+          images: images && Array.isArray(images) && images.length > 0 ? images : prev.images
+        }));
+
+        setImportSuccess('Dados importados com sucesso!');
+      } else {
+        throw new Error(result?.error || 'Falha ao importar dados do produto.');
+      }
+    } catch (err: any) {
+      console.error('Error importing ad from link:', err);
+      setImportError('Não foi possível importar os dados deste anúncio. Preencha manualmente.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (fetching) return <div className="text-center py-20">A carregar...</div>;
 
   return (
@@ -494,6 +592,61 @@ const CreateAd = () => {
         className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100"
       >
         <h1 className="text-3xl font-bold text-slate-900 mb-8">{id ? 'Editar Anúncio' : 'Novo Anúncio'}</h1>
+
+        {!id && (isAdmin || isModerator || profile?.role === 'admin' || profile?.role === 'moderator') && (
+          <div className="mb-8 p-6 bg-indigo-50/40 border border-indigo-100/80 rounded-2xl" id="import-ad-section">
+            <h3 className="text-md font-bold text-slate-900 flex items-center gap-2 mb-1">
+              <Link className="text-indigo-600" size={18} />
+              Criar anúncio a partir de link
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 mb-4">
+              Cole o link de um anúncio existente e tentaremos preencher os dados automaticamente.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Cole o link do anúncio (ex: https://...)"
+                value={importUrl}
+                onChange={(e) => {
+                  setImportUrl(e.target.value);
+                  setImportError(null);
+                  setImportSuccess(null);
+                }}
+                disabled={isImporting}
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={handleImportAd}
+                disabled={isImporting}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:bg-indigo-400 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isImporting ? (
+                  <>
+                    <RefreshCcw className="animate-spin text-white" size={16} />
+                    A importar...
+                  </>
+                ) : (
+                  'Importar Dados'
+                )}
+              </button>
+            </div>
+            
+            {importError && (
+              <div className="mt-3 text-xs text-rose-600 font-bold flex items-center gap-1">
+                <AlertCircle size={14} className="shrink-0" />
+                {importError}
+              </div>
+            )}
+            
+            {importSuccess && (
+              <div className="mt-3 text-xs text-emerald-600 font-bold flex items-center gap-1">
+                <Check size={14} className="shrink-0" />
+                {importSuccess}
+              </div>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Image Upload */}
