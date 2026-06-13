@@ -298,3 +298,15 @@ export interface AdInterest {
   source: 'whatsapp';
 }
 
+export interface PhotoStoreItem {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  active: boolean;
+  createdAt: any; // Firestore Timestamp
+  updatedAt?: any; // Firestore Timestamp
+  createdBy: string;
+}
+

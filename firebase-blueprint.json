@@ -214,6 +214,23 @@
         "createdBy": { "type": "string" }
       },
       "required": ["id", "title", "category", "type", "description", "content", "createdAt", "createdBy"]
+    },
+    "PhotoStoreItem": {
+      "title": "PhotoStoreItem",
+      "description": "Digital photo item for sale in store",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["title", "description", "price", "imageUrl", "active", "createdAt", "createdBy"]
     }
   },
   "firestore": {
@@ -268,6 +285,10 @@
     "/marketing_materials/{materialId}": {
       "schema": "MarketingMaterial",
       "description": "Marketing materials"
+    },
+    "/photoStoreItems/{itemId}": {
+      "schema": "PhotoStoreItem",
+      "description": "Digital photos for sale"
     }
   }
 }

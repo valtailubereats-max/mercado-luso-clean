@@ -14,7 +14,8 @@ import {
   Bell,
   Megaphone,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  Camera
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -51,6 +52,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Briefcase, label: 'Gestão de Equipe', path: '/admin/team' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
     { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
+    { icon: Camera, label: 'Loja de Fotos', path: '/admin/fotos' },
     { icon: Settings, label: 'Definições', path: '/admin/settings' },
   ];
 

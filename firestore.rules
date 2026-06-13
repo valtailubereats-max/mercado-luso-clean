@@ -107,6 +107,17 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidPhotoStoreItem(data) {
+      return data.keys().hasAll(['title', 'description', 'price', 'imageUrl', 'active', 'createdAt', 'createdBy']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.description is string &&
+             data.price is number &&
+             data.imageUrl is string &&
+             data.active is bool &&
+             data.createdAt is timestamp &&
+             data.createdBy is string;
+    }
+
     function isValidSellerPublicProfile(data) {
       return data.keys().hasAll(['displayName', 'country', 'createdAt', 'updatedAt']) &&
              data.displayName is string &&
@@ -213,6 +224,18 @@ service cloud.firestore {
           request.resource.data.adStatus == 'active'
         ) ||
 
+        (
+          isAuthenticated() &&
+          resource.data.sellerId == request.auth.uid &&
+          resource.data.status == 'approved' &&
+          (!('adStatus' in resource.data) || resource.data.adStatus == 'active') &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['isFeatured', 'featuredUntil', 'updatedAt']) &&
+          request.resource.data.isFeatured == true &&
+          request.resource.data.featuredUntil is timestamp &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp)
+        ) ||
+
         isAdmin() ||
         isModerator()
       );
@@ -264,6 +287,13 @@ service cloud.firestore {
       allow update: if request.resource.data.status in ['new', 'reviewed', 'archived'] &&
                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
                     isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /photoStoreItems/{itemId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPhotoStoreItem(request.resource.data);
+      allow update: if isAdmin() && isValidPhotoStoreItem(request.resource.data);
       allow delete: if isAdmin();
     }
   }
