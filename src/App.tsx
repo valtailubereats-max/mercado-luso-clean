@@ -31,6 +31,7 @@ import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
 import Links from './pages/Links';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Ad } from './types';
 import { formatDistanceToNow } from 'date-fns';
@@ -769,9 +770,9 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/create-ad" element={<CreateAd />} />
-                <Route path="/edit-ad/:id" element={<CreateAd />} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/create-ad" element={<ProtectedRoute><CreateAd /></ProtectedRoute>} />
+                <Route path="/edit-ad/:id" element={<ProtectedRoute><CreateAd /></ProtectedRoute>} />
                 <Route path="/anuncio/:id" element={<AdDetails />} />
                 <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
                 <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />

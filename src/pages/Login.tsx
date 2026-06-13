@@ -45,6 +45,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  const handleRedirectAfterAuth = async (isNewUser: boolean) => {
+    await refreshProfile();
+    const dest = searchParams.get('redirect');
+    if (dest) {
+      navigate(decodeURIComponent(dest), { replace: true });
+    } else {
+      navigate(isNewUser ? '/profile' : '/');
+    }
+  };
+
   const handleDemoLogin = (role: 'admin' | 'user') => {
     if (!acceptedTerms) {
       setError('Deve aceitar os Termos de Uso para continuar.');
@@ -67,7 +77,13 @@ const Login = () => {
         };
 
     localStorage.setItem('demo_user', JSON.stringify(demoProfile));
-    navigate('/');
+    
+    const dest = searchParams.get('redirect');
+    if (dest) {
+      navigate(decodeURIComponent(dest), { replace: true });
+    } else {
+      navigate('/');
+    }
     window.location.reload();
   };
 
@@ -136,11 +152,9 @@ const Login = () => {
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
-        await refreshProfile();
-        navigate('/profile');
+        await handleRedirectAfterAuth(true);
       } else {
-        await refreshProfile();
-        navigate('/');
+        await handleRedirectAfterAuth(false);
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -225,12 +239,10 @@ const Login = () => {
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
         }
-        await refreshProfile();
-        navigate('/profile');
+        await handleRedirectAfterAuth(true);
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        await refreshProfile();
-        navigate('/');
+        await handleRedirectAfterAuth(false);
       }
     } catch (err: any) {
       console.error('Email auth error:', err);
@@ -406,8 +418,12 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => {
+                  const params: any = { mode: 'forgot' };
                   const currentRef = searchParams.get('ref');
-                  setSearchParams(currentRef ? { mode: 'forgot', ref: currentRef } : { mode: 'forgot' });
+                  const currentRedirect = searchParams.get('redirect');
+                  if (currentRef) params.ref = currentRef;
+                  if (currentRedirect) params.redirect = currentRedirect;
+                  setSearchParams(params);
                   setMode('forgot');
                   setError('');
                   setSuccessMessage('');
@@ -468,8 +484,12 @@ const Login = () => {
           {mode === 'forgot' ? (
             <button
               onClick={() => {
+                const params: any = { mode: 'login' };
                 const currentRef = searchParams.get('ref');
-                setSearchParams(currentRef ? { mode: 'login', ref: currentRef } : { mode: 'login' });
+                const currentRedirect = searchParams.get('redirect');
+                if (currentRef) params.ref = currentRef;
+                if (currentRedirect) params.redirect = currentRedirect;
+                setSearchParams(params);
                 setMode('login');
                 setError('');
                 setSuccessMessage('');
@@ -482,8 +502,12 @@ const Login = () => {
             <button
               onClick={() => {
                 const newMode = mode === 'login' ? 'register' : 'login';
+                const params: any = { mode: newMode };
                 const currentRef = searchParams.get('ref');
-                setSearchParams(currentRef ? { mode: newMode, ref: currentRef } : { mode: newMode });
+                const currentRedirect = searchParams.get('redirect');
+                if (currentRef) params.ref = currentRef;
+                if (currentRedirect) params.redirect = currentRedirect;
+                setSearchParams(params);
                 setMode(newMode);
                 setError('');
                 setSuccessMessage('');

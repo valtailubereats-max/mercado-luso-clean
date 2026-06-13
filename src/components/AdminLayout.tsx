@@ -31,10 +31,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const isStaff = isAdmin || isModerator;
 
   React.useEffect(() => {
-    if (!loading && isStaff && isModerator && location.pathname !== '/admin/ads') {
+    if (!loading && !user) {
+      const redirectPath = encodeURIComponent(location.pathname + location.search);
+      navigate(`/login?redirect=${redirectPath}`, { replace: true });
+    }
+  }, [loading, user, location.pathname, location.search, navigate]);
+
+  React.useEffect(() => {
+    if (!loading && user && isStaff && isModerator && location.pathname !== '/admin/ads') {
       navigate('/admin/ads', { replace: true });
     }
-  }, [isModerator, isStaff, loading, location.pathname, navigate]);
+  }, [isModerator, isStaff, loading, location.pathname, navigate, user]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
@@ -47,7 +54,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Settings, label: 'Definições', path: '/admin/settings' },
   ];
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
