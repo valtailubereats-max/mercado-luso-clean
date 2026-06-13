@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle } from 'lucide-react';
+import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle, QrCode, Copy, Check } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { auth, db, getDocsWithCacheFallback } from './firebase';
 import { signOut } from 'firebase/auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -48,6 +49,16 @@ const Navbar = () => {
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [navSearch, setNavSearch] = React.useState('');
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
+  const [showQrModal, setShowQrModal] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopyLink = () => {
+    if (!user) return;
+    const inviteUrl = `${window.location.origin}/login?mode=register&ref=${user.uid}`;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   
   const userDropdownRef = React.useRef<HTMLDivElement>(null);
   const adminNotificationsRef = React.useRef<HTMLDivElement>(null);
@@ -78,9 +89,97 @@ const Navbar = () => {
     }
   };
 
+  const groupedNotifications = React.useMemo(() => {
+    const groups: { [key: string]: any[] } = {};
+    notifications.forEach((notif) => {
+      const type = notif.type || 'unknown';
+      if (!groups[type]) {
+        groups[type] = [];
+      }
+      groups[type].push(notif);
+    });
+
+    const result: any[] = [];
+
+    Object.keys(groups).forEach((type) => {
+      const list = groups[type];
+      if (list.length === 1) {
+        result.push({
+          ...list[0],
+          isGrouped: false,
+          ids: [list[0].id]
+        });
+      } else {
+        const representative = list[0];
+        let title = '';
+        let message = '';
+
+        if (type === 'ad_pending') {
+          title = 'ANÚNCIOS PENDENTES';
+          message = `🔔 ${list.length} anúncios aguardam aprovação`;
+        } else if (type === 'review' || type === 'rating' || representative.title?.toLowerCase().includes('avaliação')) {
+          title = 'AVALIAÇÕES';
+          message = `⭐ Você recebeu ${list.length} novas avaliações`;
+        } else if (type === 'whatsapp_interest' || representative.title?.toLowerCase().includes('interesse')) {
+          title = 'INTERESSE NOS ANÚNCIOS';
+          message = `💬 ${list.length} pessoas demonstraram interesse nos seus anúncios`;
+        } else {
+          const rawTitle = representative.title || 'NOTIFICAÇÃO';
+          title = rawTitle.toUpperCase();
+          message = `🔔 Tem ${list.length} novas notificações de: ${rawTitle}`;
+        }
+
+        result.push({
+          id: `grouped-${type}`,
+          isGrouped: true,
+          type,
+          count: list.length,
+          title,
+          message,
+          createdAt: representative.createdAt,
+          adId: representative.adId,
+          representative,
+          ids: list.map(n => n.id)
+        });
+      }
+    });
+
+    return result.sort((a, b) => {
+      const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [notifications]);
+
+  const handleNotificationClick = async (notif: any) => {
+    const idsToMark = notif.ids || [notif.id];
+    setNotifications(prev => prev.filter(n => !idsToMark.includes(n.id)));
+    setUserNotificationCount(prev => Math.max(0, prev - idsToMark.length));
+
+    const type = notif.type || notif.representative?.type;
+    const adId = notif.adId || notif.representative?.adId;
+
+    if (type === 'ad_pending') {
+      navigate('/admin/ads');
+    } else if (adId) {
+      navigate(`/profile?tab=anuncios&highlight=${adId}`);
+    }
+    setShowNotifications(false);
+
+    try {
+      const promises = idsToMark.map((id: string) => 
+        updateDoc(doc(db, 'notifications', id), { read: true })
+      );
+      await Promise.all(promises);
+    } catch (err) {
+      console.error('Error marking notification(s) as read in Firestore:', err);
+    }
+  };
+
   React.useEffect(() => {
     if (!user) {
       setNotifications([]);
+      setUserNotificationCount(0);
       return;
     }
     const q = query(
@@ -100,6 +199,7 @@ const Navbar = () => {
         return timeB - timeA;
       });
       setNotifications(unreadList);
+      setUserNotificationCount(unreadList.length);
     }, (err) => {
       console.error('Erro ao ouvir notificações:', err);
     });
@@ -108,31 +208,6 @@ const Navbar = () => {
 
   // Notificações do usuário, pending ads do admin e contagem de ads desativados do Firestore globais
   // para blindagem total contra consumo excessivo de leituras. O Navbar agora é 100% estático.
-
-  const handleMarkAsRead = async (id: string, adId?: string, type?: string) => {
-    // 2. Remover a notificação do estado local imediatamente.
-    setNotifications(prev => prev.filter(n => n.id !== id));
-
-    const notificationObject = notifications.find(n => n.id === id);
-    const notificationType = type || notificationObject?.type;
-
-    // 3 & 4. Se existir adId, navegar para /profile?tab=anuncios&highlight=<adId>. Se for ad_pending, ir para /admin/ads. Se não, apenas fechar o menu.
-    if (notificationType === 'ad_pending') {
-      navigate('/admin/ads');
-    } else if (adId) {
-      navigate(`/profile?tab=anuncios&highlight=${adId}`);
-    }
-    setShowNotifications(false);
-
-    try { 
-      // 1. Ao clicar, atualizar Firestore: read = true.
-      await updateDoc(doc(db, 'notifications', id), { read: true });
-    }
-    catch (err) { 
-      // 5. Mostrar no console se updateDoc falhar.
-      console.error('Error marking notification as read in Firestore:', err); 
-    }
-  };
 
   const handleLogout = async () => {
     localStorage.removeItem('demo_user');
@@ -276,10 +351,17 @@ const Navbar = () => {
                         <h3 className="font-bold text-slate-900">Notificações</h3>
                       </div>
                       <div className="max-h-96 overflow-y-auto">
-                        {notifications.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há novas notificações.</div> :
-                          notifications.map((notif, idx) => (
-                            <div key={`nav-notif-${notif.id || idx}-${idx}`} onClick={() => handleMarkAsRead(notif.id, notif.adId, notif.type)} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer">
-                              <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">{notif.title}</p>
+                        {groupedNotifications.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há novas notificações.</div> :
+                          groupedNotifications.map((notif, idx) => (
+                            <div key={`nav-notif-${notif.id || idx}-${idx}`} onClick={() => handleNotificationClick(notif)} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer">
+                              <div className="flex justify-between items-start gap-2 mb-1">
+                                <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">{notif.title}</p>
+                                {notif.isGrouped && (
+                                  <span className="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md leading-none shrink-0">
+                                    {notif.count}x
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm text-slate-700 leading-relaxed">{notif.message}</p>
                               <p className="text-[10px] text-slate-400 mt-2">{notif.createdAt?.toDate ? formatDistanceToNow(notif.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}</p>
                             </div>
@@ -326,6 +408,17 @@ const Navbar = () => {
                       >
                         Meu Perfil
                       </Link>
+
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          setShowQrModal(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700 w-full text-left cursor-pointer outline-none"
+                        id="menu-qrcode"
+                      >
+                        QR Code
+                      </button>
 
                       {isModerator && !isAdmin && (
                         <Link
@@ -459,6 +552,15 @@ const Navbar = () => {
                   <Link to="/profile" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
                     Meu Perfil
                   </Link>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      setShowQrModal(true);
+                    }}
+                    className="text-md font-bold text-slate-700 text-left cursor-pointer outline-none flex items-center gap-2"
+                  >
+                    QR Code
+                  </button>
                   <Link to="/profile?tab=favorites" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
                     Favoritos
                   </Link>
@@ -491,6 +593,82 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showQrModal && user && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl p-6 border border-slate-100 flex flex-col items-center"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-1.5 hover:bg-slate-50 rounded-full cursor-pointer outline-none"
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+
+              {/* Title & Description */}
+              <div className="text-center mt-3 mb-6">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <QrCode size={24} />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">QR Code de Convite</h3>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Convide os seus amigos para o Mercado Luso</p>
+              </div>
+
+              {/* QR Code Container with Central logo overlapping */}
+              <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-4 w-full">
+                <div className="relative p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/login?mode=register&ref=${user.uid}`}
+                    size={180}
+                    level="H"
+                    fgColor="#0f172a"
+                    includeMargin={false}
+                  />
+                  {/* Central bag logo */}
+                  <div className="absolute w-10 h-10 bg-[#52b64d] rounded-xl border-4 border-white flex items-center justify-center text-white shadow-md">
+                    <ShoppingBag size={18} className="stroke-[2.5]" />
+                  </div>
+                </div>
+
+                {/* Instructions Text */}
+                <p className="text-xs text-slate-600 text-center leading-relaxed font-semibold px-2">
+                  Mostre este QR Code para um amigo. Ao escanear, ele será direcionado para o cadastro do Mercado Luso pelo seu convite.
+                </p>
+              </div>
+
+              {/* Button "Copiar link de convite" */}
+              <button
+                onClick={handleCopyLink}
+                className={`mt-5 w-full py-3.5 px-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer outline-none ${
+                  copied
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-100'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check size={18} className="stroke-[3]" />
+                    <span>Link Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={18} />
+                    <span>Copiar link de convite</span>
+                  </>
+                )}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
@@ -514,6 +692,7 @@ export default function App() {
       const refCode = searchParams.get('ref');
       if (refCode) {
         localStorage.setItem('referred_by_code', refCode.trim().toUpperCase());
+        localStorage.setItem('referred_by_code_raw', refCode.trim());
         console.log('Saved referral code to localStorage:', refCode);
       }
     } catch (e) {

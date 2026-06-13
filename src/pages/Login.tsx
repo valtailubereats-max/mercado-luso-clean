@@ -102,6 +102,7 @@ const Login = () => {
         // Create basic profile if it doesn't exist
         const isAdminEmail = user.email === 'valtailubereats@gmail.com' || user.email === 'generalsales2021@gmail.com';
         try {
+          const refParam = searchParams.get('ref') || localStorage.getItem('referred_by_code_raw') || localStorage.getItem('referred_by_code');
           await setDoc(docRef, {
             uid: user.uid,
             name: user.displayName || 'Utilizador',
@@ -110,7 +111,8 @@ const Login = () => {
             country: finalCountry,
             role: isAdminEmail ? 'admin' : 'user',
             acceptedTerms: true,
-            acceptedTermsAt: serverTimestamp()
+            acceptedTermsAt: serverTimestamp(),
+            ...(refParam ? { referredBy: refParam.trim() } : {})
           });
           
           // Sincronizar sellerPublicProfiles:
@@ -187,6 +189,7 @@ const Login = () => {
         const docRef = doc(db, 'users', user.uid);
         const isAdminEmail = user.email === 'valtailubereats@gmail.com' || user.email === 'generalsales2021@gmail.com';
         try {
+          const refParam = searchParams.get('ref') || localStorage.getItem('referred_by_code_raw') || localStorage.getItem('referred_by_code');
           await setDoc(docRef, {
             uid: user.uid,
             name: name,
@@ -195,7 +198,8 @@ const Login = () => {
             country: profileCountry,
             role: isAdminEmail ? 'admin' : 'user',
             acceptedTerms: true,
-            acceptedTermsAt: serverTimestamp()
+            acceptedTermsAt: serverTimestamp(),
+            ...(refParam ? { referredBy: refParam.trim() } : {})
           });
           
           // Sincronizar sellerPublicProfiles:
@@ -402,6 +406,8 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => {
+                  const currentRef = searchParams.get('ref');
+                  setSearchParams(currentRef ? { mode: 'forgot', ref: currentRef } : { mode: 'forgot' });
                   setMode('forgot');
                   setError('');
                   setSuccessMessage('');
@@ -462,8 +468,9 @@ const Login = () => {
           {mode === 'forgot' ? (
             <button
               onClick={() => {
+                const currentRef = searchParams.get('ref');
+                setSearchParams(currentRef ? { mode: 'login', ref: currentRef } : { mode: 'login' });
                 setMode('login');
-                setSearchParams({ mode: 'login' });
                 setError('');
                 setSuccessMessage('');
               }}
@@ -475,7 +482,8 @@ const Login = () => {
             <button
               onClick={() => {
                 const newMode = mode === 'login' ? 'register' : 'login';
-                setSearchParams({ mode: newMode });
+                const currentRef = searchParams.get('ref');
+                setSearchParams(currentRef ? { mode: newMode, ref: currentRef } : { mode: newMode });
                 setMode(newMode);
                 setError('');
                 setSuccessMessage('');

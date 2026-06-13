@@ -77,9 +77,20 @@ function renderEmail(template: string, data: any): { subject: string; html: stri
   let ctaLink: string | undefined;
   let ctaText: string | undefined;
 
-  const baseUrl = process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : 'https://mercadoluso.com'; // Fallback link
+  // Centralized URL resolve: prioritizes PUBLIC_SITE_URL, SITE_URL or APP_URL.
+  // Never uses temporary Vercel URLs in production; only allows fallback to Vercel URLs in non-production.
+  let resolvedUrl = process.env.PUBLIC_SITE_URL || process.env.SITE_URL || process.env.APP_URL;
+
+  if (!resolvedUrl) {
+    if (process.env.NODE_ENV !== 'production' && process.env.VERCEL_URL) {
+      resolvedUrl = `https://${process.env.VERCEL_URL}`;
+    } else {
+      resolvedUrl = 'https://www.mercado-luso.com';
+    }
+  }
+
+  // Strip trailing slash if present
+  const baseUrl = resolvedUrl.replace(/\/$/, '');
 
   switch (template) {
     case 'anuncio_aprovado':
@@ -90,7 +101,7 @@ function renderEmail(template: string, data: any): { subject: string; html: stri
         <p>O anúncio já se encontra totalmente ativo e disponível para visualização e contacto de interessados no Mercado Luso.</p>
         <p>Desejamos-lhe ótimas vendas e excelentes negócios.</p>
       `;
-      ctaLink = `${baseUrl}/ad/${data.adId}`;
+      ctaLink = `${baseUrl}/anuncio/${data.adId}`;
       ctaText = 'Ver meu Anúncio';
       break;
 
@@ -126,7 +137,7 @@ function renderEmail(template: string, data: any): { subject: string; html: stri
         </table>
         <p>Por favor, aceda à secção de moderação no painel de administração o mais brevemente possível para validar este anúncio.</p>
       `;
-      ctaLink = `${baseUrl}/admin-panel/ads`; // Link aproximado para o painel de moderação
+      ctaLink = `${baseUrl}/admin/ads`;
       ctaText = 'Ir para Painel de Moderação';
       break;
 
@@ -139,7 +150,7 @@ function renderEmail(template: string, data: any): { subject: string; html: stri
         <p>O utilizador <strong>${data.interestedName}</strong> clicou no botão para estabelecer contacto de WhatsApp consigo.</p>
         <p>Se o comprador ainda não lhe enviou uma mensagem, mantenha-se atento à sua aplicação móvel para responder com prontidão!</p>
       `;
-      ctaLink = `${baseUrl}/ad/${data.adId}`;
+      ctaLink = `${baseUrl}/anuncio/${data.adId}`;
       ctaText = 'Visualizar o Anúncio';
       break;
 
