@@ -73,12 +73,56 @@ const CreateAd = () => {
   const [imagePositionX, setImagePositionX] = useState<number>(50);
   const [imagePositionY, setImagePositionY] = useState<number>(50);
   const [imageZoom, setImageZoom] = useState<number>(1);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
+
+  const canMoveX = (() => {
+    if (imageAspectRatio === null) return true;
+    if (imageAspectRatio > 1) return true;
+    return imageZoom > 1.01;
+  })();
+
+  const canMoveY = (() => {
+    if (imageAspectRatio === null) return true;
+    if (imageAspectRatio < 1) return true;
+    return imageZoom > 1.01;
+  })();
+
+  useEffect(() => {
+    if (!canMoveX) {
+      setImagePositionX(50);
+    }
+  }, [canMoveX]);
+
+  useEffect(() => {
+    if (!canMoveY) {
+      setImagePositionY(50);
+    }
+  }, [canMoveY]);
+
+  useEffect(() => {
+    if (formData.images && formData.images[0]) {
+      const img = new Image();
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          setImageAspectRatio(img.naturalWidth / img.naturalHeight);
+        }
+      };
+      img.src = formData.images[0];
+    } else {
+      setImageAspectRatio(null);
+    }
+  }, [formData.images?.[0]]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0, posX: 50, posY: 50 });
 
+  // Referências para o gesto pinch-to-zoom (mobile) e swipe
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartZoomRef = useRef<number>(1);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'touch') return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDraggingImage(true);
@@ -91,6 +135,7 @@ const CreateAd = () => {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'touch') return;
     if (!isDraggingImage || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const deltaX = e.clientX - dragStartRef.current.x;
@@ -103,16 +148,104 @@ const CreateAd = () => {
     const nextX = Math.min(100, Math.max(0, dragStartRef.current.posX - shiftX));
     const nextY = Math.min(100, Math.max(0, dragStartRef.current.posY - shiftY));
 
-    setImagePositionX(Math.round(nextX));
-    setImagePositionY(Math.round(nextY));
+    if (canMoveX) {
+      setImagePositionX(Math.round(nextX));
+    }
+    if (canMoveY) {
+      setImagePositionY(Math.round(nextY));
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'touch') return;
     if (isDraggingImage) {
       e.currentTarget.releasePointerCapture(e.pointerId);
       setIsDraggingImage(false);
     }
   };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 1) {
+      setIsDraggingImage(true);
+      const touch = e.touches[0];
+      dragStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        posX: imagePositionX,
+        posY: imagePositionY
+      };
+      touchStartDistRef.current = null;
+    } else if (e.touches.length === 2) {
+      setIsDraggingImage(false);
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dist = Math.sqrt(
+        Math.pow(touch1.clientX - touch2.clientX, 2) + 
+        Math.pow(touch1.clientY - touch2.clientY, 2)
+      );
+      touchStartDistRef.current = dist;
+      touchStartZoomRef.current = imageZoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 1 && isDraggingImage && containerRef.current) {
+      const touch = e.touches[0];
+      const rect = containerRef.current.getBoundingClientRect();
+      const deltaX = touch.clientX - dragStartRef.current.x;
+      const deltaY = touch.clientY - dragStartRef.current.y;
+
+      const scaleFactor = imageZoom > 1 ? 1 / imageZoom : 1.5;
+      const shiftX = (deltaX / rect.width) * 100 * scaleFactor;
+      const shiftY = (deltaY / rect.height) * 100 * scaleFactor;
+
+      const nextX = Math.min(100, Math.max(0, dragStartRef.current.posX - shiftX));
+      const nextY = Math.min(100, Math.max(0, dragStartRef.current.posY - shiftY));
+
+      if (canMoveX) {
+        setImagePositionX(Math.round(nextX));
+      }
+      if (canMoveY) {
+        setImagePositionY(Math.round(nextY));
+      }
+    } else if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dist = Math.sqrt(
+        Math.pow(touch1.clientX - touch2.clientX, 2) + 
+        Math.pow(touch1.clientY - touch2.clientY, 2)
+      );
+      
+      const ratio = dist / touchStartDistRef.current;
+      const nextZoom = touchStartZoomRef.current * ratio;
+      setImageZoom(Math.min(3, Math.max(1, nextZoom)));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDraggingImage(false);
+    touchStartDistRef.current = null;
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const preventDefaultWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomFactor = 0.08;
+      const direction = e.deltaY < 0 ? 1 : -1;
+      setImageZoom(prev => {
+        const nextZoom = prev + direction * zoomFactor;
+        return Math.min(3, Math.max(1, nextZoom));
+      });
+    };
+
+    container.addEventListener('wheel', preventDefaultWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', preventDefaultWheel);
+    };
+  }, [containerRef.current]);
 
   const getAdImageStyle = (x: number, y: number, z: number) => {
     const scale = z;
@@ -896,7 +1029,7 @@ const CreateAd = () => {
                   Enquadramento da Foto Principal (Ajuste Visual)
                 </h4>
                 <p className="text-xs text-slate-500 mb-4">
-                  Ajuste o foco, o alinhamento e o zoom usando os sliders abaixo ou <strong>arraste a imagem diretamente com o rato/dedo</strong> no preview à esquerda. No mobile, arraste para ajustar.
+                  Clique e <strong>arraste a imagem diretamente</strong> no preview da direita. Rode a <strong>roda do rato (scroll)</strong> para aplicar zoom no computador, ou use <strong>dois dedos (gesto pinch)</strong> no telemóvel.
                 </p>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
@@ -928,7 +1061,13 @@ const CreateAd = () => {
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
                         onPointerCancel={handlePointerUp}
-                        className="w-[170px] h-[170px] sm:w-[180px] sm:h-[180px] bg-slate-200 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-lg relative cursor-move select-none touch-none group"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchCancel={handleTouchEnd}
+                        className={`w-[170px] h-[170px] sm:w-[180px] sm:h-[180px] bg-slate-200 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-lg relative select-none touch-none group transition-all duration-200 ${
+                          isDraggingImage ? 'cursor-grabbing border-indigo-600 shadow-xl scale-[1.01]' : 'cursor-grab hover:shadow-md hover:border-indigo-400'
+                        }`}
                       >
                         <img 
                           src={formData.images[0]} 
@@ -936,7 +1075,7 @@ const CreateAd = () => {
                           className="w-full h-full object-cover pointer-events-none transition-all duration-75"
                           style={getAdImageStyle(imagePositionX, imagePositionY, imageZoom)}
                         />
-                        <div className="absolute top-2 right-2 bg-indigo-600/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2 rounded-full pointer-events-none shadow">
+                        <div className="absolute top-2 right-2 bg-indigo-600/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2.5 rounded-full pointer-events-none shadow">
                           Arraste 🖐️
                         </div>
                       </div>
@@ -946,67 +1085,25 @@ const CreateAd = () => {
 
                   {/* Slider Controls Box - Spans 5 cols on large screens */}
                   <div className="lg:col-span-5 space-y-4">
-                    {/* Horizontal Slider */}
-                    <div>
-                      <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">
-                        <span>Ajuste Horizontal</span>
-                        <span className="text-indigo-600 font-mono">{imagePositionX}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={imagePositionX}
-                        onChange={(e) => setImagePositionX(Number(e.target.value))}
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-ew-resize accent-indigo-600 focus:outline-none"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
-                        <span>Esquerda</span>
-                        <span>Centro</span>
-                        <span>Direita</span>
-                      </div>
-                    </div>
-
-                    {/* Vertical Slider */}
-                    <div>
-                      <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">
-                        <span>Ajuste Vertical</span>
-                        <span className="text-indigo-600 font-mono">{imagePositionY}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={imagePositionY}
-                        onChange={(e) => setImagePositionY(Number(e.target.value))}
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-ns-resize accent-indigo-600 focus:outline-none"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
-                        <span>Topo</span>
-                        <span>Centro</span>
-                        <span>Fundo</span>
-                      </div>
-                    </div>
-
-                    {/* Zoom Slider */}
-                    <div>
-                      <div className="flex justify-between text-xs font-bold text-slate-600 mb-1 uppercase tracking-tight">
-                        <span>Zoom</span>
-                        <span className="text-indigo-600 font-mono">{imageZoom.toFixed(2)}x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="1.8"
-                        step="0.05"
-                        value={imageZoom}
-                        onChange={(e) => setImageZoom(Number(e.target.value))}
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-zoom-in accent-indigo-600 focus:outline-none"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
-                        <span>Mínimo (1x)</span>
-                        <span>Zoom</span>
-                        <span>Máximo (1.8x)</span>
+                    <div className="bg-slate-100/80 border border-slate-200/60 p-4 rounded-2xl space-y-3">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">✨ Instruções de Enquadramento</span>
+                      <ul className="text-xs font-semibold text-slate-600 space-y-2.5">
+                        <li className="flex items-start gap-2">
+                          <span className="text-indigo-600 shrink-0">🖐️</span>
+                          <span><strong>Mover:</strong> Arraste a imagem para cima, baixo, esquerda ou direita.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-indigo-600 shrink-0">🔍</span>
+                          <span><strong>Zoom (PC):</strong> Use a roda de rolagem (scroll) do rato sobre a imagem.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-indigo-650 shrink-0">📱</span>
+                          <span><strong>Zoom (Mobile):</strong> Use um gesto de pinça (pinch) com dois dedos.</span>
+                        </li>
+                      </ul>
+                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-500">
+                        <span>Zoom Atual:</span>
+                        <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-mono">{imageZoom.toFixed(2)}x</span>
                       </div>
                     </div>
 
@@ -1018,7 +1115,7 @@ const CreateAd = () => {
                           setImagePositionX(50);
                           setImagePositionY(50);
                         }}
-                        className="flex-1 py-1.5 px-3 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
+                        className="flex-1 py-1.5 px-3 text-xs font-bold text-indigo-650 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
                       >
                         Centralizar
                       </button>
@@ -1029,7 +1126,7 @@ const CreateAd = () => {
                           setImagePositionY(50);
                           setImageZoom(1);
                         }}
-                        className="flex-1 py-1.5 px-3 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
+                        className="flex-1 py-1.5 px-3 text-xs font-bold text-slate-650 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
                       >
                         Repor Ajuste
                       </button>

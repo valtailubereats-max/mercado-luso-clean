@@ -1093,9 +1093,20 @@ const Profile = () => {
                   <label className="text-sm font-bold text-slate-700 uppercase tracking-wider font-sans block">Imagem de Capa (Opcional)</label>
                   
                   <div className="flex gap-4 items-center bg-slate-50 p-4 border-2 border-slate-100 rounded-2xl">
-                    <div className="w-20 h-12 shrink-0 bg-slate-200 border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden">
+                    <div className="w-20 h-12 shrink-0 bg-slate-200 border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden relative">
                       {showcaseCover && showcaseCover.trim() !== '' ? (
-                        <img src={showcaseCover || null} alt="Cover preview" className="w-full h-full object-cover" />
+                        <>
+                          <img 
+                            src={showcaseCover || null} 
+                            alt="" 
+                            className="absolute inset-0 w-full h-full object-cover blur-sm opacity-30 pointer-events-none" 
+                          />
+                          <img 
+                            src={showcaseCover || null} 
+                            alt="Cover preview" 
+                            className="relative max-w-full max-h-full object-contain z-10" 
+                          />
+                        </>
                       ) : (
                         <span className="text-lg">🖼️</span>
                       )}

@@ -1107,14 +1107,20 @@ const Home = () => {
                 >
                   {/* Banner & Logo overlay */}
                   <div className="relative">
-                    <div className="h-20 w-full bg-slate-100 overflow-hidden relative">
+                    <div className="h-24 w-full bg-slate-100 overflow-hidden relative flex items-center justify-center">
+                      <img 
+                        src={vitrine.showcaseCover || fallbackCover} 
+                        alt="" 
+                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-25 scale-110 pointer-events-none" 
+                        referrerPolicy="no-referrer"
+                      />
                       <img 
                         src={vitrine.showcaseCover || fallbackCover} 
                         alt={vitrine.showcaseName} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        className="relative max-w-full max-h-full object-contain z-10 p-1 group-hover:scale-102 transition-transform duration-500" 
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
                     </div>
                     
                     {/* Logo */}
