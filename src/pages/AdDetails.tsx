@@ -182,13 +182,21 @@ const AdDetails = () => {
     }
   };
 
+  const getAdPhone = () => {
+    if (!ad) return '';
+    if (ad.useProfilePhone === false && ad.contactPhone) {
+      return ad.contactPhone;
+    }
+    return ad.sellerPhone || '';
+  };
+
   const cleanPhone = (phone: string) => {
     return phone.replace(/\D/g, '');
   };
 
   const getWhatsappUrl = () => {
     if (!ad) return '';
-    const phone = cleanPhone(ad.sellerPhone || '');
+    const phone = cleanPhone(getAdPhone());
     return `https://wa.me/${phone}?text=${encodeURIComponent(`Olá, vi o seu anúncio "${ad.title}" no Mercado Luso e tenho grande interesse. Está disponível?`)}`;
   };
 

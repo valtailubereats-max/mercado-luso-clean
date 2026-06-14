@@ -110,6 +110,8 @@ export interface Ad {
   workSchedule?: string;
   companyName?: string;
   experienceRequired?: string;
+  contactPhone?: string;
+  useProfilePhone?: boolean;
 }
 
 export interface Favorite {

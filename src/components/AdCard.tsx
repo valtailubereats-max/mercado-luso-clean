@@ -167,7 +167,14 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
     }
   };
 
-  const cleanPhone = (ad.sellerPhone || '').replace(/\D/g, '');
+  const getAdPhone = () => {
+    if (ad.useProfilePhone === false && ad.contactPhone) {
+      return ad.contactPhone;
+    }
+    return ad.sellerPhone || '';
+  };
+
+  const cleanPhone = getAdPhone().replace(/\D/g, '');
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá ${hasSourceUrl ? 'Parceiro' : ad.sellerName}, tenho interesse no seu anúncio "${ad.title}" no Mercado Luso.`)}`;
   const targetContactUrl = hasSourceUrl ? ad.sourceUrl : whatsappUrl;
 
@@ -498,7 +505,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
             </button>
 
             {/* WhatsApp ou Contato */}
-            {((ad.sellerPhone && ad.sellerPhone.trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
+            {((getAdPhone() && getAdPhone().trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
               <button
                 onClick={handleContactClick}
                 className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 ${

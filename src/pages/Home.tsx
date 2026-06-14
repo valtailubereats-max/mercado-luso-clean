@@ -960,26 +960,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Etiqueta Informativa de Comunidade */}
-      <AnimatePresence mode="wait">
-        <motion.div 
-          key={country}
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="bg-emerald-50/80 border border-emerald-100 rounded-2xl py-1 px-3 md:py-2 md:px-5 flex items-center justify-between text-emerald-800 text-xs md:text-sm font-semibold shadow-sm transition-all duration-300 -my-2 md:-my-1"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-xl md:text-2xl leading-none">{getCommunityLabel(country).flag}</span>
-            <span className="tracking-tight">{getCommunityLabel(country).text}</span>
-          </div>
-          <span className="text-[10px] md:text-xs text-emerald-600/90 font-bold bg-white/60 px-3 py-1 rounded-full border border-emerald-200/50 hidden sm:inline-block uppercase tracking-wider">
-            Comunidade Ativa
-          </span>
-        </motion.div>
-      </AnimatePresence>
-
       {/* ✨ ANÚNCIOS EM DESTAQUE */}
       {filteredFeaturedAds.length > 0 && (
         <section className="space-y-2 md:space-y-3 pt-0 pb-2 md:py-1">

@@ -55,7 +55,9 @@ const CreateAd = () => {
     contractType: '',
     workSchedule: '',
     companyName: '',
-    experienceRequired: ''
+    experienceRequired: '',
+    useProfilePhone: true,
+    contactPhone: ''
   });
 
   useEffect(() => {
@@ -125,11 +127,41 @@ const CreateAd = () => {
   const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido') => {
     const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
     
-    setFormData(prev => ({
-      ...prev,
-      country: newCountry,
-      city: defaultCity
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        country: newCountry,
+        city: defaultCity
+      };
+      
+      // If profile phone is unchecked, and custom contact phone is empty or only holds a prefix, auto suggest new prefix
+      if (!prev.useProfilePhone) {
+        const trimmedPhone = prev.contactPhone.trim();
+        if (!trimmedPhone || trimmedPhone === '+351' || trimmedPhone === '+44') {
+          updated.contactPhone = newCountry === 'Reino Unido' ? '+44 ' : '+351 ';
+        }
+      }
+      
+      return updated;
+    });
+  };
+
+  const handleUseProfilePhoneChange = (checked: boolean) => {
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        useProfilePhone: checked
+      };
+      
+      if (!checked) {
+        const trimmedPhone = prev.contactPhone.trim();
+        if (!trimmedPhone) {
+          updated.contactPhone = prev.country === 'Reino Unido' ? '+44 ' : '+351 ';
+        }
+      }
+      
+      return updated;
+    });
   };
   const [settings, setSettings] = useState<MarketplaceSettings | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -212,7 +244,9 @@ const CreateAd = () => {
           contractType: data.contractType || '',
           workSchedule: data.workSchedule || '',
           companyName: data.companyName || '',
-          experienceRequired: data.experienceRequired || ''
+          experienceRequired: data.experienceRequired || '',
+          useProfilePhone: data.useProfilePhone !== undefined ? data.useProfilePhone : true,
+          contactPhone: data.contactPhone || ''
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
@@ -405,6 +439,15 @@ const CreateAd = () => {
       const validSourceUrl = (formData.sourceUrl && /^https?:\/\//i.test(formData.sourceUrl)) ? formData.sourceUrl.trim() : null;
 
       const isJob = formData.category === 'Trabalho/Empregos';
+      const isSpecialCategory = formData.category === 'Imigração' || isJob;
+      const useProfilePhoneValue = isSpecialCategory ? false : formData.useProfilePhone;
+      const contactPhoneValue = isSpecialCategory 
+        ? formData.sellerPhone.replace(/\s+/g, ' ').trim()
+        : (formData.useProfilePhone ? '' : formData.contactPhone.replace(/\s+/g, ' ').trim());
+      const finalSellerPhoneValue = isSpecialCategory
+        ? (formData.sellerPhone.replace(/\s+/g, ' ').trim() || profile.phone || '')
+        : (formData.useProfilePhone ? (profile.phone || '') : (formData.contactPhone?.replace(/\s+/g, ' ').trim() || profile.phone || ''));
+
       const adData = {
         id: adId,
         title: formData.title,
@@ -416,7 +459,9 @@ const CreateAd = () => {
         country: formData.country,
         category: formData.category,
         sellerId: id && originalAd ? originalAd.sellerId : user.uid,
-        sellerPhone: isJob ? (formData.sellerPhone.trim() || profile.phone || '') : (formData.category === 'Imigração' ? formData.sellerPhone.trim() : (id && originalAd ? originalAd.sellerPhone : profile.phone)),
+        sellerPhone: finalSellerPhoneValue,
+        contactPhone: contactPhoneValue,
+        useProfilePhone: useProfilePhoneValue,
         sellerName: id && originalAd ? originalAd.sellerName : profile.name,
         status: isAdmin && id ? (originalAd?.status || 'pending') : 'pending',
         adStatus: id && originalAd ? originalAd.adStatus : 'active',
@@ -575,6 +620,7 @@ const CreateAd = () => {
         const { title, description, price, city, country, category, images } = result.data;
         
         const isOlxPortugal = importUrl.toLowerCase().includes('olx.pt');
+        const isGumtreeUk = importUrl.toLowerCase().includes('gumtree.com');
         
         // Match category case-insensitively. If no correspondence, set to empty string for manual selection
         const matchedCategory = categories.find(
@@ -594,6 +640,18 @@ const CreateAd = () => {
               } else {
                 matchedCity = city.trim();
               }
+            }
+          } else if (isGumtreeUk) {
+            matchedCountry = 'Reino Unido';
+            if (city) {
+              const matchedUkCity = UK_CITIES.find(c => c.toLowerCase() === city.toString().toLowerCase());
+              if (matchedUkCity) {
+                matchedCity = matchedUkCity;
+              } else {
+                matchedCity = city.trim();
+              }
+            } else {
+              matchedCity = UK_CITIES[0];
             }
           } else {
             if (city) {
@@ -632,7 +690,11 @@ const CreateAd = () => {
           };
         });
 
-        setImportSuccess('Dados importados da OLX. Revise as informações antes de publicar.');
+        setImportSuccess(isOlxPortugal 
+          ? 'Dados importados da OLX. Revise as informações antes de publicar.' 
+          : isGumtreeUk 
+          ? 'Dados importados do Gumtree Reino Unido. Revise as informações antes de publicar.' 
+          : 'Dados importados com sucesso. Revise as informações antes de publicar.');
       } else {
         throw new Error(result?.error || 'Falha ao importar dados do produto.');
       }
@@ -717,9 +779,15 @@ const CreateAd = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
           {formData.sourceUrl && (
             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3">
-              <Check className="text-emerald-600 shrink-0 mt-0.5" size={18} id="olx-import-banner" />
+              <Check className="text-emerald-600 shrink-0 mt-0.5" size={18} id="import-banner" />
               <div className="text-xs sm:text-sm text-slate-600">
-                Este anúncio foi importado da OLX. O botão de contato direcionará para o anúncio original.
+                {formData.sourceUrl.toLowerCase().includes('olx.pt') ? (
+                  'Este anúncio foi importado da OLX. O botão de contato direcionará para o anúncio original.'
+                ) : formData.sourceUrl.toLowerCase().includes('gumtree.com') ? (
+                  'Este anúncio foi importado do Gumtree Reino Unido. O botão de contato direcionará para o anúncio original.'
+                ) : (
+                  'Este anúncio foi importado de um link externo. O botão de contato direcionará para o anúncio original.'
+                )}
               </div>
             </div>
           )}
@@ -1196,6 +1264,57 @@ const CreateAd = () => {
                 />
               </div>
             </div>
+
+            {formData.category !== 'Imigração' && formData.category !== 'Trabalho/Empregos' && (
+              <div className="space-y-4 md:col-span-2 p-6 bg-slate-50 border-2 border-slate-100 rounded-2xl" id="contact-phone-section">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Telefone de Contacto</h4>
+                  <p className="text-xs text-slate-500">Escolha o telefone que os interessados usarão para falar consigo via WhatsApp.</p>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer select-none py-1">
+                  <input
+                    type="checkbox"
+                    checked={formData.useProfilePhone}
+                    onChange={(e) => handleUseProfilePhoneChange(e.target.checked)}
+                    className="w-5 h-5 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 transition-all cursor-pointer"
+                    id="chk-use-profile-phone"
+                  />
+                  <span className="text-sm font-bold text-slate-700">
+                    Usar telefone do meu perfil <span className="text-slate-500 font-normal">({profile?.phone || 'Sem telefone configurado'})</span>
+                  </span>
+                </label>
+
+                <AnimatePresence>
+                  {!formData.useProfilePhone && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden space-y-2"
+                    >
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-2">
+                        Telefone de contacto do anúncio (Opcional)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          value={formData.contactPhone}
+                          onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                          className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:border-indigo-600 focus:outline-none transition-all text-sm"
+                          placeholder={formData.country === 'Reino Unido' ? '+44 7123 456789' : '+351 912 345 678'}
+                          id="txt-contact-phone"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        * Se o deixar em branco, usaremos o telefone do seu perfil como fallback para os interessados.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             <div className="space-y-4 md:col-span-2">
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Plano de Duração</label>

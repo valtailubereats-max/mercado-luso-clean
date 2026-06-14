@@ -151,13 +151,14 @@ Estrutura JSON esperada:
 
                   const lowerUrl = url.toLowerCase();
                   const isOlx = lowerUrl.includes('olx.pt');
+                  const isGumtree = lowerUrl.includes('gumtree.com');
                   const isTestUrl = lowerUrl.includes('teste.mercadoluso.com') || lowerUrl.includes('teste.mercadoluso');
 
-                  if (!isOlx && !isTestUrl) {
+                  if (!isOlx && !isGumtree && !isTestUrl) {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({
                       success: false,
-                      error: 'Esta plataforma ainda não é suportada. No momento, suportamos apenas OLX.'
+                      error: 'Esta plataforma ainda não é suportada. No momento, suportamos apenas OLX e Gumtree.'
                     }));
                     return;
                   }
@@ -219,6 +220,9 @@ Estrutura JSON esperada:
                       .replace(/\s*-\s*à venda\s*-\s*.*$/gi, '')
                       .replace(/\s*-\s*OLX\s*Portugal.*$/gi, '')
                       .replace(/\s*-\s*OLX.*$/gi, '')
+                      .replace(/\s*[|]\s*Gumtree.*$/gi, '')
+                      .replace(/\s*-\s*Gumtree.*$/gi, '')
+                      .replace(/\s*in\s+[^|]+[|]\s*Gumtree.*$/gi, '')
                       .replace(/\|.*$/gi, '')
                       .trim();
 
@@ -476,23 +480,25 @@ Estrutura JSON esperada:
                   let category = '';
                   const lowerParsedCat = String(parsedCategory).toLowerCase() + ' ' + title.toLowerCase() + ' ' + description.toLowerCase();
 
-                  if (lowerParsedCat.includes('carro') || lowerParsedCat.includes('moto') || lowerParsedCat.includes('barco') || lowerParsedCat.includes('veiculo') || lowerParsedCat.includes('auto') || lowerParsedCat.includes('peças') || lowerParsedCat.includes('pneus') || lowerParsedCat.includes('jantes') || lowerParsedCat.includes('motociclo')) {
+                  if (lowerParsedCat.includes('carro') || lowerParsedCat.includes('moto') || lowerParsedCat.includes('barco') || lowerParsedCat.includes('veiculo') || lowerParsedCat.includes('auto') || lowerParsedCat.includes('peças') || lowerParsedCat.includes('pneus') || lowerParsedCat.includes('jantes') || lowerParsedCat.includes('motociclo') || lowerParsedCat.includes('car ') || lowerParsedCat.includes('cars ') || lowerParsedCat.includes('vehicle') || lowerParsedCat.includes('motor') || lowerParsedCat.includes('van') || lowerParsedCat.includes('wheel') || lowerParsedCat.includes('tyre')) {
                     category = 'Carros, motos e barcos';
-                  } else if (lowerParsedCat.includes('imovel') || lowerParsedCat.includes('apartamento') || lowerParsedCat.includes('casa') || lowerParsedCat.includes('moradia') || lowerParsedCat.includes('quarto') || lowerParsedCat.includes('terreno') || lowerParsedCat.includes('loja') || lowerParsedCat.includes('garagem') || lowerParsedCat.includes('escritório') || lowerParsedCat.includes('prédio')) {
+                  } else if (lowerParsedCat.includes('imovel') || lowerParsedCat.includes('apartamento') || lowerParsedCat.includes('casa') || lowerParsedCat.includes('moradia') || lowerParsedCat.includes('quarto') || lowerParsedCat.includes('terreno') || lowerParsedCat.includes('loja') || lowerParsedCat.includes('garagem') || lowerParsedCat.includes('escritório') || lowerParsedCat.includes('prédio') || lowerParsedCat.includes('property') || lowerParsedCat.includes('flat') || lowerParsedCat.includes('house') || lowerParsedCat.includes('rent') || lowerParsedCat.includes('room') || lowerParsedCat.includes('studio')) {
                     category = 'Imóveis';
-                  } else if (lowerParsedCat.includes('telemovel') || lowerParsedCat.includes('iphone') || lowerParsedCat.includes('samsung') || lowerParsedCat.includes('computador') || lowerParsedCat.includes('tecnologia') || lowerParsedCat.includes('eletronica') || lowerParsedCat.includes('tablet') || lowerParsedCat.includes('tv') || lowerParsedCat.includes('laptop') || lowerParsedCat.includes('smartphone') || lowerParsedCat.includes('consola') || lowerParsedCat.includes('playstation') || lowerParsedCat.includes('nintendo') || lowerParsedCat.includes('xbox')) {
+                  } else if (lowerParsedCat.includes('telemovel') || lowerParsedCat.includes('iphone') || lowerParsedCat.includes('samsung') || lowerParsedCat.includes('computador') || lowerParsedCat.includes('tecnologia') || lowerParsedCat.includes('eletronica') || lowerParsedCat.includes('tablet') || lowerParsedCat.includes('tv') || lowerParsedCat.includes('laptop') || lowerParsedCat.includes('smartphone') || lowerParsedCat.includes('consola') || lowerParsedCat.includes('playstation') || lowerParsedCat.includes('nintendo') || lowerParsedCat.includes('xbox') || lowerParsedCat.includes('phone') || lowerParsedCat.includes('computer') || lowerParsedCat.includes('tv ') || lowerParsedCat.includes('console') || lowerParsedCat.includes('camera') || lowerParsedCat.includes('electronics')) {
                     category = 'Tecnologia';
-                  } else if (lowerParsedCat.includes('jardim') || lowerParsedCat.includes('moveis') || lowerParsedCat.includes('móveis') || lowerParsedCat.includes('decoracao') || lowerParsedCat.includes('decoração') || lowerParsedCat.includes('eletrodomestico') || lowerParsedCat.includes('eletrodoméstico') || lowerParsedCat.includes('diy') || lowerParsedCat.includes('ferramenta') || lowerParsedCat.includes('bricolage') || lowerParsedCat.includes('sofá') || lowerParsedCat.includes('mesa') || lowerParsedCat.includes('cadeira') || lowerParsedCat.includes('cama')) {
+                  } else if (lowerParsedCat.includes('jardim') || lowerParsedCat.includes('moveis') || lowerParsedCat.includes('móveis') || lowerParsedCat.includes('decoracao') || lowerParsedCat.includes('decoração') || lowerParsedCat.includes('eletrodomestico') || lowerParsedCat.includes('eletrodoméstico') || lowerParsedCat.includes('diy') || lowerParsedCat.includes('ferramenta') || lowerParsedCat.includes('bricolage') || lowerParsedCat.includes('sofá') || lowerParsedCat.includes('mesa') || lowerParsedCat.includes('cadeira') || lowerParsedCat.includes('cama') || lowerParsedCat.includes('garden') || lowerParsedCat.includes('furniture') || lowerParsedCat.includes('home') || lowerParsedCat.includes('sofa') || lowerParsedCat.includes('table') || lowerParsedCat.includes('chair') || lowerParsedCat.includes('bed') || lowerParsedCat.includes('appliance')) {
                     category = 'Casa e Jardim';
-                  } else if (lowerParsedCat.includes('moda') || lowerParsedCat.includes('acessorio') || lowerParsedCat.includes('acessório') || lowerParsedCat.includes('vestuario') || lowerParsedCat.includes('vestuário') || lowerParsedCat.includes('calcado') || lowerParsedCat.includes('calçado') || lowerParsedCat.includes('roupa') || lowerParsedCat.includes('sapatilha') || lowerParsedCat.includes('sapato') || lowerParsedCat.includes('mala') || lowerParsedCat.includes('relogio') || lowerParsedCat.includes('relógio') || lowerParsedCat.includes('óculos')) {
+                  } else if (lowerParsedCat.includes('moda') || lowerParsedCat.includes('acessorio') || lowerParsedCat.includes('acessório') || lowerParsedCat.includes('vestuario') || lowerParsedCat.includes('vestuário') || lowerParsedCat.includes('calcado') || lowerParsedCat.includes('calçado') || lowerParsedCat.includes('roupa') || lowerParsedCat.includes('sapatilha') || lowerParsedCat.includes('sapato') || lowerParsedCat.includes('mala') || lowerParsedCat.includes('relogio') || lowerParsedCat.includes('relógio') || lowerParsedCat.includes('óculos') || lowerParsedCat.includes('clothes') || lowerParsedCat.includes('fashion') || lowerParsedCat.includes('shoe') || lowerParsedCat.includes('bag') || lowerParsedCat.includes('watch') || lowerParsedCat.includes('glasses') || lowerParsedCat.includes('apparel')) {
                     category = 'Moda e Acessórios';
-                  } else if (lowerParsedCat.includes('lazer') || lowerParsedCat.includes('desporto') || lowerParsedCat.includes('bicicleta') || lowerParsedCat.includes('hobby') || lowerParsedCat.includes('livro') || lowerParsedCat.includes('musica') || lowerParsedCat.includes('música') || lowerParsedCat.includes('instrumento') || lowerParsedCat.includes('ginásio') || lowerParsedCat.includes('filme') || lowerParsedCat.includes('jogo') || lowerParsedCat.includes('brinquedo')) {
+                  } else if (lowerParsedCat.includes('lazer') || lowerParsedCat.includes('desporto') || lowerParsedCat.includes('bicicleta') || lowerParsedCat.includes('hobby') || lowerParsedCat.includes('livro') || lowerParsedCat.includes('musica') || lowerParsedCat.includes('música') || lowerParsedCat.includes('instrumento') || lowerParsedCat.includes('ginásio') || lowerParsedCat.includes('filme') || lowerParsedCat.includes('jogo') || lowerParsedCat.includes('brinquedo') || lowerParsedCat.includes('sport') || lowerParsedCat.includes('leisure') || lowerParsedCat.includes('bike') || lowerParsedCat.includes('bicycle') || lowerParsedCat.includes('book') || lowerParsedCat.includes('music') || lowerParsedCat.includes('movie') || lowerParsedCat.includes('toy') || lowerParsedCat.includes('game')) {
                     category = 'Lazer e Desporto';
-                  } else if (lowerParsedCat.includes('bebe') || lowerParsedCat.includes('bebé') || lowerParsedCat.includes('crianca') || lowerParsedCat.includes('criança') || lowerParsedCat.includes('carrinho de bebé') || lowerParsedCat.includes('fralda') || lowerParsedCat.includes('roupa de bebé')) {
+                  } else if (lowerParsedCat.includes('bebe') || lowerParsedCat.includes('bebé') || lowerParsedCat.includes('crianca') || lowerParsedCat.includes('criança') || lowerParsedCat.includes('carrinho de bebé') || lowerParsedCat.includes('fralda') || lowerParsedCat.includes('roupa de bebé') || lowerParsedCat.includes('baby') || lowerParsedCat.includes('kids') || lowerParsedCat.includes('child')) {
                     category = 'Bebés e Crianças';
-                  } else if (lowerParsedCat.includes('imigracao') || lowerParsedCat.includes('imigração') || lowerParsedCat.includes('visto') || lowerParsedCat.includes('nacionalidade') || lowerParsedCat.includes('sef') || lowerParsedCat.includes('aima')) {
+                  } else if (lowerParsedCat.includes('imigracao') || lowerParsedCat.includes('imigração') || lowerParsedCat.includes('visto') || lowerParsedCat.includes('nacionalidade') || lowerParsedCat.includes('sef') || lowerParsedCat.includes('aima') || lowerParsedCat.includes('immigration') || lowerParsedCat.includes('visa')) {
                     category = 'Imigração';
-                  } else if (lowerParsedCat.includes('outro') || lowerParsedCat.includes('outros')) {
+                  } else if (lowerParsedCat.includes('trabalho') || lowerParsedCat.includes('emprego') || lowerParsedCat.includes('serviço') || lowerParsedCat.includes('vaga') || lowerParsedCat.includes('recrutamento') || lowerParsedCat.includes('job') || lowerParsedCat.includes('work') || lowerParsedCat.includes('career') || lowerParsedCat.includes('employment') || lowerParsedCat.includes('hiring') || lowerParsedCat.includes('recruitment')) {
+                    category = 'Trabalho/Empregos';
+                  } else if (lowerParsedCat.includes('outro') || lowerParsedCat.includes('outros') || lowerParsedCat.includes('other')) {
                     category = 'Outros';
                   }
 
@@ -526,28 +532,52 @@ Estrutura JSON esperada:
 
                   if (foundCity) {
                     const normCity = decodeHtmlEntities(String(foundCity)).trim().toLowerCase();
-                    const allPortugalCities = ['Lisboa', 'Porto', 'Braga', 'Faro', 'Coimbra', 'Aveiro', 'Setúbal', 'Leiria', 'Madeira', 'Açores', 'Outra'];
-                    
-                    const matched = allPortugalCities.find(c => c.toLowerCase() === normCity || normCity.includes(c.toLowerCase()));
-                    if (matched) {
-                      city = matched;
-                    } else {
-                      // Common municipality/neighborhood fallback mappings for Portugal
-                      if (normCity.includes('lisbon') || normCity.includes('sintra') || normCity.includes('cascais') || normCity.includes('loures') || normCity.includes('odivelas') || normCity.includes('amadora') || normCity.includes('oeiras') || normCity.includes('vila franca de xira') || normCity.includes('mafra')) {
-                        city = 'Lisboa';
-                      } else if (normCity.includes('oporto') || normCity.includes('gaia') || normCity.includes('matosinhos') || normCity.includes('maia') || normCity.includes('gondomar') || normCity.includes('póvoa de varzim')) {
-                        city = 'Porto';
-                      } else if (normCity.includes('guimarães') || normCity.includes('barcelos') || normCity.includes('famalicão')) {
-                        city = 'Braga';
-                      } else if (normCity.includes('albufeira') || normCity.includes('portimão') || normCity.includes('loulé') || normCity.includes('lagos')) {
-                        city = 'Faro';
-                      } else if (normCity.includes('funchal') || normCity.includes('porto santo')) {
-                        city = 'Madeira';
-                      } else if (normCity.includes('ponta delgada') || normCity.includes('angra') || normCity.includes('horta')) {
-                        city = 'Açores';
+                    if (isGumtree) {
+                      const allUkCities = [
+                        'London', 'Manchester', 'Birmingham', 'Liverpool', 'Leeds', 'Bristol', 
+                        'Southampton', 'Portsmouth', 'Bournemouth', 'Reading', 'Milton Keynes', 
+                        'Leicester', 'Coventry', 'Nottingham', 'Glasgow', 'Edinburgh', 'Cardiff', 
+                        'Belfast', 'Weymouth', 'Aberdeen', 'Ayr', 'Bangor', 'Blackpool'
+                      ];
+                      const matched = allUkCities.find(c => c.toLowerCase() === normCity || normCity.includes(c.toLowerCase()));
+                      if (matched) {
+                        city = matched;
                       } else {
-                        // Keep the extracted city as a fallback for custom/personalized city
-                        city = decodeHtmlEntities(String(foundCity)).trim();
+                        if (normCity.includes('london')) {
+                          city = 'London';
+                        } else if (normCity.includes('manchester')) {
+                          city = 'Manchester';
+                        } else if (normCity.includes('birmingham')) {
+                          city = 'Birmingham';
+                        } else {
+                          const decodedCity = decodeHtmlEntities(String(foundCity)).trim();
+                          city = decodedCity.charAt(0).toUpperCase() + decodedCity.slice(1);
+                        }
+                      }
+                    } else {
+                      const allPortugalCities = ['Lisboa', 'Porto', 'Braga', 'Faro', 'Coimbra', 'Aveiro', 'Setúbal', 'Leiria', 'Madeira', 'Açores', 'Outra'];
+                      
+                      const matched = allPortugalCities.find(c => c.toLowerCase() === normCity || normCity.includes(c.toLowerCase()));
+                      if (matched) {
+                        city = matched;
+                      } else {
+                        // Common municipality/neighborhood fallback mappings for Portugal
+                        if (normCity.includes('lisbon') || normCity.includes('sintra') || normCity.includes('cascais') || normCity.includes('loures') || normCity.includes('odivelas') || normCity.includes('amadora') || normCity.includes('oeiras') || normCity.includes('vila franca de xira') || normCity.includes('mafra')) {
+                          city = 'Lisboa';
+                        } else if (normCity.includes('oporto') || normCity.includes('gaia') || normCity.includes('matosinhos') || normCity.includes('maia') || normCity.includes('gondomar') || normCity.includes('póvoa de varzim')) {
+                          city = 'Porto';
+                        } else if (normCity.includes('guimarães') || normCity.includes('barcelos') || normCity.includes('famalicão')) {
+                          city = 'Braga';
+                        } else if (normCity.includes('albufeira') || normCity.includes('portimão') || normCity.includes('loulé') || normCity.includes('lagos')) {
+                          city = 'Faro';
+                        } else if (normCity.includes('funchal') || normCity.includes('porto santo')) {
+                          city = 'Madeira';
+                        } else if (normCity.includes('ponta delgada') || normCity.includes('angra') || normCity.includes('horta')) {
+                          city = 'Açores';
+                        } else {
+                          // Keep the extracted city as a fallback for custom/personalized city
+                          city = decodeHtmlEntities(String(foundCity)).trim();
+                        }
                       }
                     }
                   }
@@ -592,6 +622,13 @@ Estrutura JSON esperada:
                     }
                   }
 
+                  if (isGumtree) {
+                    const ebayImgMatches = responseText.match(/https?:\/\/(?:i\.ebayimg\.com|img\.gumtree\.com)[^\s"';,>]+/gi) || [];
+                    for (const mUrl of ebayImgMatches) {
+                      images.push(mUrl);
+                    }
+                  }
+
                   const isValidImageUrl = (imgUrl: string): boolean => {
                     if (!imgUrl || typeof imgUrl !== 'string') return false;
                     try {
@@ -608,7 +645,7 @@ Estrutura JSON esperada:
                     .filter(img => isValidImageUrl(img))
                     .slice(0, 10);
 
-                  const countryResult = isOlx ? 'Portugal' : null;
+                  const countryResult = isGumtree ? 'Reino Unido' : isOlx ? 'Portugal' : null;
                   res.writeHead(200, { 'Content-Type': 'application/json' });
                   res.end(JSON.stringify({ success: true, data: { title, description, price, category, city, country: countryResult, images } }));
                 } catch (err: any) {
