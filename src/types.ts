@@ -68,6 +68,29 @@ export interface UserProfile {
   referralCredits?: number;
   pointsFromAds?: number;
   country?: 'Portugal' | 'Reino Unido';
+  showcaseActive?: boolean;
+  showcaseName?: string;
+  showcaseSlug?: string;
+  showcaseCategory?: string;
+  showcaseLogo?: string;
+  showcaseCover?: string;
+  showcaseDescription?: string;
+  showcaseWhatsapp?: string;
+  showcaseFacebook?: string;
+  showcaseInstagram?: string;
+  showcasePlan?: 'basic' | 'premium';
+}
+
+export interface ShowcaseProduct {
+  id: string;
+  userId: string;
+  name: string;
+  description: string;
+  price?: number | null;
+  images: string[];
+  active: boolean;
+  order: number;
+  createdAt: any;
 }
 
 export interface Ad {

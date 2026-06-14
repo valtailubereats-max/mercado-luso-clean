@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, deleteDoc, writeBatch, increment, limit, getDocs, onSnapshot } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { clearHomeCache } from '../utils/cache';
 import { Ad, UserProfile, COUNTRY_CODES, CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion } from 'motion/react';
-import { User, Phone, Mail, Edit, Trash2, Clock, CheckCircle, XCircle, Globe, RefreshCcw, Archive, AlertTriangle, Eye, MessageSquare, MapPin, ShoppingBag, Star } from 'lucide-react';
+import { User, Phone, Mail, Edit, Trash2, Clock, CheckCircle, XCircle, Globe, RefreshCcw, Archive, AlertTriangle, Eye, MessageSquare, MapPin, ShoppingBag, Star, Plus } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { formatPrice } from '../utils';
 import OptimizedImage from '../components/OptimizedImage';
 import ReviewModal from '../components/ReviewModal';
 import AdCard from '../components/AdCard';
+import ShowcaseStats from '../components/ShowcaseStats';
 import { calculateTotalPoints, calculateProgressPoints, POINTS_THRESHOLD, POINTS_PER_REFERRAL, POINTS_PER_AD } from '../utils/rewards';
 
 const Profile = () => {
@@ -46,6 +48,178 @@ const Profile = () => {
   const [isBuyerRating, setIsBuyerRating] = useState(false);
   const [reviewedAdIds, setReviewedAdIds] = useState<Set<string>>(new Set());
   const [adsCountryTab, setAdsCountryTab] = useState<'Portugal' | 'Reino Unido'>('Portugal');
+
+  const [showcaseActive, setShowcaseActive] = useState(false);
+  const [showcaseName, setShowcaseName] = useState('');
+  const [showcaseCategory, setShowcaseCategory] = useState('');
+  const [showcaseLogo, setShowcaseLogo] = useState('');
+  const [showcaseCover, setShowcaseCover] = useState('');
+  const [showcaseDescription, setShowcaseDescription] = useState('');
+  const [showcaseWhatsapp, setShowcaseWhatsapp] = useState('');
+  const [showcaseFacebook, setShowcaseFacebook] = useState('');
+  const [showcaseInstagram, setShowcaseInstagram] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const [showcasePlan, setShowcasePlan] = useState<'basic' | 'premium'>('basic');
+  const [showcaseProducts, setShowcaseProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [productName, setProductName] = useState('');
+  const [productDescription, setProductDescription] = useState('');
+  const [productPrice, setProductPrice] = useState<string>('');
+  const [productActive, setProductActive] = useState(true);
+  const [productOrder, setProductOrder] = useState(0);
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isUploadingProductImg, setIsUploadingProductImg] = useState<boolean[]>([false, false]);
+
+  const fetchShowcaseProducts = async () => {
+    if (!user) return;
+    setProductsLoading(true);
+    try {
+      const q = query(
+        collection(db, 'sellerPublicProfiles', user.uid, 'products')
+      );
+      const snap = await getDocs(q);
+      const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      items.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+      setShowcaseProducts(items);
+    } catch (err) {
+      console.error('Error fetching showcase products:', err);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const handleAddProductClick = () => {
+    const currentPlan = showcasePlan || 'basic';
+    const limitMax = currentPlan === 'premium' ? 10 : 5;
+    if (showcaseProducts.length >= limitMax) {
+      alert(`Atingiu o limite de ${limitMax} produtos/serviços para o plano ${currentPlan === 'premium' ? 'Premium' : 'Básico'}.`);
+      return;
+    }
+    const newDocRef = doc(collection(db, 'sellerPublicProfiles', user!.uid, 'products'));
+    setEditingProduct({
+      id: newDocRef.id,
+      userId: user!.uid,
+      name: '',
+      description: '',
+      price: null,
+      images: [],
+      active: true,
+      order: showcaseProducts.length,
+      createdAt: null
+    });
+    setProductName('');
+    setProductDescription('');
+    setProductPrice('');
+    setProductActive(true);
+    setProductOrder(showcaseProducts.length);
+    setProductImages([]);
+    setShowProductModal(true);
+  };
+
+  const handleEditProductClick = (product: any) => {
+    setEditingProduct(product);
+    setProductName(product.name || '');
+    setProductDescription(product.description || '');
+    setProductPrice(product.price != null ? String(product.price) : '');
+    setProductActive(product.active !== false);
+    setProductOrder(product.order || 0);
+    setProductImages(product.images || []);
+    setShowProductModal(true);
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!user) return;
+    if (!window.confirm('Tem a certeza que deseja eliminar este item?')) return;
+    try {
+      await deleteDoc(doc(db, 'sellerPublicProfiles', user.uid, 'products', productId));
+      alert('Item eliminado com sucesso!');
+      fetchShowcaseProducts();
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      handleFirestoreError(err, OperationType.DELETE, `sellerPublicProfiles/${user.uid}/products/${productId}`);
+    }
+  };
+
+  const uploadProductImage = async (file: File, index: number, targetProductId: string) => {
+    if (!user) return;
+    const updatedUploading = [...isUploadingProductImg];
+    updatedUploading[index] = true;
+    setIsUploadingProductImg(updatedUploading);
+
+    try {
+      const fileName = `image_${index}_${Date.now()}__${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const fileRef = ref(storage, `showcases/${user.uid}/products/${targetProductId}/${fileName}`);
+      const uploadSnapshot = await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(uploadSnapshot.ref);
+
+      const newImages = [...productImages];
+      newImages[index] = url;
+      // Filter out empty spaces and limit to 2
+      const cleanedImages = newImages.filter(val => val);
+      setProductImages(cleanedImages);
+    } catch (err) {
+      console.error('Error uploading product image:', err);
+      alert('Erro ao carregar imagem: ' + err);
+    } finally {
+      const updatedUploadingDone = [...isUploadingProductImg];
+      updatedUploadingDone[index] = false;
+      setIsUploadingProductImg(updatedUploadingDone);
+    }
+  };
+
+  const removeProductImage = (index: number) => {
+    const newImages = [...productImages];
+    newImages.splice(index, 1);
+    setProductImages(newImages);
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingProduct) return;
+    if (!productName.trim()) {
+      alert('O nome do item é mandatório.');
+      return;
+    }
+    if (!productDescription.trim()) {
+      alert('A descrição do item é mandatória.');
+      return;
+    }
+
+    setIsSavingProduct(true);
+    try {
+      const parsedPrice = productPrice.trim() !== '' ? parseFloat(productPrice) : null;
+      const productRef = doc(db, 'sellerPublicProfiles', user.uid, 'products', editingProduct.id);
+      
+      const payload: any = {
+        id: editingProduct.id,
+        userId: user.uid,
+        name: productName.trim(),
+        description: productDescription.trim(),
+        price: parsedPrice,
+        images: productImages,
+        active: productActive,
+        order: Number(productOrder),
+        createdAt: editingProduct.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(productRef, payload, { merge: true });
+      alert('Item guardado com sucesso!');
+      setShowProductModal(false);
+      setEditingProduct(null);
+      fetchShowcaseProducts();
+    } catch (err) {
+      console.error('Error saving product:', err);
+      handleFirestoreError(err, OperationType.WRITE, `sellerPublicProfiles/${user.uid}/products/${editingProduct.id}`);
+    } finally {
+      setIsSavingProduct(false);
+    }
+  };
 
   useEffect(() => {
     if (profile?.country === 'Reino Unido' || profile?.country === 'Portugal') {
@@ -277,9 +451,20 @@ const Profile = () => {
         // Primeira vez: Deixa em branco para forçar o utilizador a escolher o país
         setCountry('');
       }
+      setShowcaseActive(profile.showcaseActive || false);
+      setShowcaseName(profile.showcaseName || '');
+      setShowcaseCategory(profile.showcaseCategory || '');
+      setShowcaseLogo(profile.showcaseLogo || '');
+      setShowcaseCover(profile.showcaseCover || '');
+      setShowcaseDescription(profile.showcaseDescription || '');
+      setShowcaseWhatsapp(profile.showcaseWhatsapp || profile.phone || '');
+      setShowcaseFacebook(profile.showcaseFacebook || '');
+      setShowcaseInstagram(profile.showcaseInstagram || '');
+      setShowcasePlan(profile.showcasePlan || 'basic');
       fetchUserAds();
       fetchUserReviews(user?.uid || '');
       updateReferralStatsAndCredits();
+      fetchShowcaseProducts();
     }
   }, [profile]);
 
@@ -329,6 +514,27 @@ const Profile = () => {
     }
   };
 
+  const uploadShowcaseFile = async (file: File, type: 'logo' | 'cover'): Promise<string> => {
+    const isLogo = type === 'logo';
+    if (isLogo) setUploadingLogo(true);
+    else setUploadingCover(true);
+
+    try {
+      const uniqueName = `showcases/${type}_${user?.uid}_${Date.now()}__${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const fileRef = ref(storage, uniqueName);
+      const uploadSnapshot = await uploadBytes(fileRef, file);
+      const downloadUrl = await getDownloadURL(uploadSnapshot.ref);
+      return downloadUrl;
+    } catch (err) {
+      console.error('Erro no upload de showcase file:', err);
+      alert('Ocorreu um erro ao fazer upload do ficheiro para o Firebase Storage.');
+      throw err;
+    } finally {
+      if (isLogo) setUploadingLogo(false);
+      else setUploadingCover(false);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -360,8 +566,67 @@ const Profile = () => {
         return;
       }
 
+      let generatedSlug = '';
+      if (showcaseActive) {
+        if (!showcaseName.trim()) {
+          alert('Nome do negócio da Vitrine Digital é obrigatório.');
+          setLoading(false);
+          return;
+        }
+        if (!showcaseCategory.trim()) {
+          alert('Categoria principal do negócio é obrigatória.');
+          setLoading(false);
+          return;
+        }
+        if (!showcaseLogo) {
+          alert('Logotipo do negócio é obrigatório.');
+          setLoading(false);
+          return;
+        }
+        if (!showcaseDescription.trim()) {
+          alert('Descrição do negócio é obrigatória.');
+          setLoading(false);
+          return;
+        }
+        if (!showcaseWhatsapp.trim()) {
+          alert('Telemóvel (WhatsApp) do negócio é obrigatório.');
+          setLoading(false);
+          return;
+        }
+        const cleanedSlug = showcaseName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+          .replace(/(^-|-$)+/g, '');
+        generatedSlug = `${cleanedSlug}-${user.uid.substring(0, 5)}`;
+      }
+
+      const showcasePayload = {
+        showcaseActive,
+        showcaseName: showcaseActive ? showcaseName : '',
+        showcaseSlug: showcaseActive ? generatedSlug : '',
+        showcaseCategory: showcaseActive ? showcaseCategory : '',
+        showcaseLogo: showcaseActive ? showcaseLogo : '',
+        showcaseCover: showcaseActive ? showcaseCover : '',
+        showcaseDescription: showcaseActive ? showcaseDescription : '',
+        showcaseWhatsapp: showcaseActive ? showcaseWhatsapp : '',
+        showcaseFacebook: showcaseActive ? (showcaseFacebook || '') : '',
+        showcaseInstagram: showcaseActive ? (showcaseInstagram || '') : '',
+        showcasePlan: showcaseActive ? showcasePlan : 'basic',
+      };
+
       // Use setDoc with merge: true to avoid "No document to update" if creation failed
-      await setDoc(docRef, { name, phone: fullPhone, city, country }, { merge: true });
+      await setDoc(docRef, { 
+        name, 
+        phone: fullPhone, 
+        city, 
+        country,
+        ...showcasePayload
+      }, { merge: true });
       
       // Sincronizar para o perfil público (sellerPublicProfiles)
       try {
@@ -375,7 +640,8 @@ const Profile = () => {
           city: city,
           country: country,
           createdAt: publicSnap.exists() && publicSnap.data().createdAt ? publicSnap.data().createdAt : fallbackCreated,
-          updatedAt: now
+          updatedAt: now,
+          ...showcasePayload
         }, { merge: true });
       } catch (syncErr) {
         console.error('[Sync] Erro ao sincronizar para sellerPublicProfiles:', syncErr);
@@ -658,10 +924,359 @@ const Profile = () => {
               />
             </div>
           </div>
+          {/* DIVISOR DE VITRINE DIGITAL */}
+          <div className="md:col-span-2 border-t border-slate-100 my-4 pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Vitrine Digital para Empreendedores</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Ative a sua própria montra exclusiva de pequenos negócios no Mercado Luso</p>
+              </div>
+            </div>
+
+            {/* TOGGLE DA VITRINE */}
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between gap-4 mb-6">
+              <div>
+                <span className="text-base font-bold text-slate-800 block">Ativar Minha Vitrine Digital</span>
+                <span className="text-xs text-slate-500 block">Apenas negócios ativos serão listados na página pública de Empreendedores.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowcaseActive(!showcaseActive)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  showcaseActive ? 'bg-indigo-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    showcaseActive ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* FORMULÁRIO COMPLETO SE ATIVO */}
+            {showcaseActive && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 overflow-hidden"
+              >
+                {/* Nome do Negócio */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Nome do Negócio *</label>
+                  <input
+                    type="text"
+                    value={showcaseName}
+                    onChange={(e) => setShowcaseName(e.target.value)}
+                    required={showcaseActive}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                    placeholder="Nome da sua empresa ou negócio"
+                  />
+                  {showcaseName && (
+                    <p className="text-xs text-indigo-500 font-mono">
+                      Link da Vitrine: /empreendedores/{showcaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim().replace(/(^-|-$)+/g, '')}-{user?.uid.substring(0, 5)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Categoria Principal */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Categoria Principal *</label>
+                  <select
+                    value={showcaseCategory}
+                    onChange={(e) => setShowcaseCategory(e.target.value)}
+                    required={showcaseActive}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold cursor-pointer appearance-none text-slate-700"
+                  >
+                    <option value="">Selecione a categoria principal</option>
+                    <option value="Restauração & Alimentos">🍕 Restauração & Alimentos</option>
+                    <option value="Beleza & Estética">💄 Beleza & Estética</option>
+                    <option value="Serviços Profissionais">💼 Serviços Profissionais</option>
+                    <option value="Construção & Reformas">🛠️ Construção & Reformas</option>
+                    <option value="Comércio & Lojas">🛍️ Comércio & Lojas</option>
+                    <option value="Tecnologia & Digital">💻 Tecnologia & Digital</option>
+                    <option value="Turismo & Lazer">✈️ Turismo & Lazer</option>
+                    <option value="Outros">🌟 Outros</option>
+                  </select>
+                </div>
+
+                {/* WhatsApp do Negócio */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Telemóvel / WhatsApp do Negócio *</label>
+                  <input
+                    type="text"
+                    value={showcaseWhatsapp}
+                    onChange={(e) => setShowcaseWhatsapp(e.target.value)}
+                    required={showcaseActive}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                    placeholder="Ex: +351 912 345 678"
+                  />
+                  <p className="text-xs text-slate-400">Insira com o código do país (ex: +351 para Portugal, +44 para Reino Unido).</p>
+                </div>
+
+                {/* Facebook */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Facebook (Opcional)</label>
+                  <input
+                    type="url"
+                    value={showcaseFacebook}
+                    onChange={(e) => setShowcaseFacebook(e.target.value)}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                    placeholder="Link da sua página (ex: facebook.com/suapagina)"
+                  />
+                </div>
+
+                {/* Instagram */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Instagram (Opcional)</label>
+                  <input
+                    type="url"
+                    value={showcaseInstagram}
+                    onChange={(e) => setShowcaseInstagram(e.target.value)}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                    placeholder="Link do seu perfil (ex: instagram.com/seuusuario)"
+                  />
+                </div>
+
+                <div className="hidden md:block">
+                  {/* Spacing layout keeper */}
+                </div>
+
+                {/* Logotipo */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider font-sans block">Logotipo do Negócio (1:1) *</label>
+                  
+                  <div className="flex gap-4 items-center bg-slate-50 p-4 border-2 border-slate-100 rounded-2xl">
+                    <div className="w-20 h-20 shrink-0 bg-slate-200 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
+                      {showcaseLogo && showcaseLogo.trim() !== '' ? (
+                        <img src={showcaseLogo || null} alt="Logo preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl">🏬</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="showcase-logo-picker"
+                        className="hidden"
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            try {
+                              const url = await uploadShowcaseFile(e.target.files[0], 'logo');
+                              setShowcaseLogo(url);
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('showcase-logo-picker')?.click()}
+                        disabled={uploadingLogo}
+                        className="px-4 py-2 text-xs font-black rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors disabled:opacity-50"
+                      >
+                        {uploadingLogo ? 'A carregar...' : 'Selecionar logotipo'}
+                      </button>
+                      <p className="text-[10px] text-slate-400 block">Ficheiro quadrado (PNG ou JPG) recomendado.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Imagem de Capa */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider font-sans block">Imagem de Capa (Opcional)</label>
+                  
+                  <div className="flex gap-4 items-center bg-slate-50 p-4 border-2 border-slate-100 rounded-2xl">
+                    <div className="w-20 h-12 shrink-0 bg-slate-200 border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden">
+                      {showcaseCover && showcaseCover.trim() !== '' ? (
+                        <img src={showcaseCover || null} alt="Cover preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🖼️</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="showcase-cover-picker"
+                        className="hidden"
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            try {
+                              const url = await uploadShowcaseFile(e.target.files[0], 'cover');
+                              setShowcaseCover(url);
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('showcase-cover-picker')?.click()}
+                        disabled={uploadingCover}
+                        className="px-4 py-2 text-xs font-black rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors disabled:opacity-50"
+                      >
+                        {uploadingCover ? 'A carregar...' : 'Selecionar capa'}
+                      </button>
+                      <p className="text-[10px] text-slate-400 block">Imagem horizontal (1200x400) recomendada.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descrição */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Descrição do Negócio / Quem Somos *</label>
+                  <textarea
+                    value={showcaseDescription}
+                    onChange={(e) => setShowcaseDescription(e.target.value)}
+                    required={showcaseActive}
+                    rows={4}
+                    className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold resize-none text-sm text-slate-800"
+                    placeholder="Fale brevemente do seu negócio, os produtos ou serviços que vende e os seus diferenciais competitivos..."
+                  />
+                </div>
+
+                {/* Plano da Vitrine Digital */}
+                <div className="md:col-span-2 bg-indigo-50/50 p-6 border border-indigo-150 rounded-2xl space-y-3 mt-2">
+                  <label className="text-sm font-black text-indigo-950 uppercase tracking-wider block">Plano da Vitrine Digital</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowcasePlan('basic')}
+                      className={`p-4 rounded-xl border-2 text-left flex flex-col justify-between transition-all ${
+                        showcasePlan === 'basic'
+                          ? 'border-indigo-600 bg-white ring-2 ring-indigo-100'
+                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div>
+                        <span className="font-bold text-slate-900 text-sm block">Plano Básico (Grátis)</span>
+                        <span className="text-xs text-slate-500 mt-1 block">Limite Máximo: Até 5 produtos ou serviços</span>
+                      </div>
+                      <span className="text-[10px] text-indigo-600 font-extrabold mt-3 uppercase tracking-wide">
+                        {showcasePlan === 'basic' ? '✅ Ativo' : 'Selecionar'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowcasePlan('premium')}
+                      className={`p-4 rounded-xl border-2 text-left flex flex-col justify-between transition-all ${
+                        showcasePlan === 'premium'
+                          ? 'border-indigo-600 bg-white ring-2 ring-indigo-100'
+                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div>
+                        <span className="font-bold text-slate-900 text-sm block">Plano Premium</span>
+                        <span className="text-xs text-slate-500 mt-1 block">Limite Máximo: Até 10 produtos ou serviços</span>
+                      </div>
+                      <span className="text-[10px] text-indigo-600 font-extrabold mt-3 uppercase tracking-wide">
+                        {showcasePlan === 'premium' ? '✅ Ativo' : 'Selecionar'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* PRODUTOS E SERVIÇOS DA VITRINE */}
+                <div className="md:col-span-2 border-t border-slate-150 my-6 pt-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        📦 Produtos e Serviços da Vitrine
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                          {showcaseProducts.length} / {showcasePlan === 'premium' ? 10 : 5}
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">Cadastre e organize os itens que quer mostrar diretamente na sua Vitrine Digital pública.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddProductClick}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <Plus size={16} />
+                      Adicionar Item
+                    </button>
+                  </div>
+
+                  {productsLoading ? (
+                    <div className="p-8 text-center text-slate-400 text-xs">A carregar itens da vitrine...</div>
+                  ) : showcaseProducts.length === 0 ? (
+                    <div className="p-8 border-2 border-dashed border-slate-150 rounded-2xl text-center text-slate-400 text-sm">
+                      Ainda não cadastrou produtos ou serviços para a sua Vitrine Digital. O limite do seu plano é de até {showcasePlan === 'premium' ? 10 : 5} itens.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {showcaseProducts.map((p) => (
+                        <div key={p.id} className="p-4 bg-white border border-slate-150 rounded-2xl flex gap-3 shadow-xs items-center justify-between">
+                          <div className="flex gap-3 items-center min-w-0">
+                            <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center border border-slate-100">
+                              {p.images && p.images[0] ? (
+                                <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-lg text-slate-400">📦</span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h5 className="font-bold text-slate-900 truncate text-sm">{p.name}</h5>
+                              <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{p.description}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {p.price != null && (
+                                  <span className="text-xs font-semibold text-indigo-600">{formatPrice(p.price)}</span>
+                                )}
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                                  p.active ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                                }`}>
+                                  {p.active ? 'Ativo' : 'Inativo'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleEditProductClick(p)}
+                              className="p-2 text-slate-500 hover:text-slate-950 hover:bg-slate-50 rounded-lg transition-all"
+                              title="Editar"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(p.id)}
+                              className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all"
+                              title="Eliminar"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* ESTATÍSTICAS DA VITRINE */}
+                <div className="md:col-span-2 border-t border-slate-150 pt-6">
+                  <ShowcaseStats sellerId={user?.uid || ''} products={showcaseProducts} />
+                </div>
+              </motion.div>
+            )}
+          </div>
+
           <div className="md:col-span-2">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploadingLogo || uploadingCover}
               className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
             >
               {loading ? 'A guardar...' : 'Guardar Alterações'}
@@ -1346,6 +1961,185 @@ const Profile = () => {
             }
           }}
         />
+      )}
+
+      {/* MODAL CADASTRAR/EDITAR ITEM DA VITRINE */}
+      {showProductModal && editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]"
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <h3 className="text-lg font-bold text-slate-900">
+                {productName ? `Editar: ${productName}` : 'Adicionar Item à Vitrine'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProductModal(false);
+                  setEditingProduct(null);
+                }}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body (Scrollable) */}
+            <form onSubmit={handleSaveProduct} className="p-6 overflow-y-auto space-y-4">
+              {/* Nome */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Nome do Produto/Serviço *</label>
+                <input
+                  type="text"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                  placeholder="Ex: Bolo de Chocolate Personalizado"
+                />
+              </div>
+
+              {/* Descrição */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Descrição *</label>
+                <textarea
+                  value={productDescription}
+                  onChange={(e) => setProductDescription(e.target.value)}
+                  required
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm resize-none"
+                  placeholder="Descreva detalhes como ingredientes, prazos ou especificações..."
+                />
+              </div>
+
+              {/* Preço & Ordem & Ativo em uma fila */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Preço Opcional (€ / £)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={productPrice}
+                    onChange={(e) => setProductPrice(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                    placeholder="Ex: 25.00 (sob consulta se vazio)"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Ordem de Exibição (0, 1...)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productOrder}
+                    onChange={(e) => setProductOrder(parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* Status Ativo/Inativo */}
+              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div>
+                  <span className="text-sm font-bold text-slate-700 block">Item Ativo</span>
+                  <span className="text-[10px] text-slate-400">Itens inativos não serão exibidos aos clientes.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProductActive(!productActive)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    productActive ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      productActive ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Fotos (Até 2) */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Fotos do Item (Até 2)</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {[0, 1].map((idx) => {
+                    const currentImg = productImages[idx];
+                    const isUploading = isUploadingProductImg[idx];
+                    return (
+                      <div key={`product-img-upload-${idx}`} className="border-2 border-dashed border-slate-200 rounded-2xl aspect-[4/3] flex flex-col items-center justify-center relative overflow-hidden bg-slate-50">
+                        {currentImg ? (
+                          <>
+                            <img src={currentImg} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => removeProductImage(idx)}
+                                className="p-1 px-2 text-[10px] font-black uppercase text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow"
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="p-3 text-center space-y-2 flex flex-col items-center">
+                            <span className="text-2xl">📸</span>
+                            <span className="text-[9px] font-bold text-slate-400 block line-clamp-2">Foto {idx + 1}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id={`product-image-picker-${idx}`}
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  uploadProductImage(e.target.files[0], idx, editingProduct.id);
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              disabled={isUploading}
+                              onClick={() => document.getElementById(`product-image-picker-${idx}`)?.click()}
+                              className="px-2 py-1 text-[9px] font-black rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 disabled:opacity-50"
+                            >
+                              {isUploading ? 'A carregar...' : 'Fazer Upload'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="pt-4 border-t border-slate-100 flex gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProductModal(false);
+                    setEditingProduct(null);
+                  }}
+                  className="w-1/2 py-3 bg-slate-150 text-slate-700 font-bold rounded-xl text-sm hover:bg-slate-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProduct || isUploadingProductImg.some(Boolean)}
+                  className="w-1/2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                >
+                  {isSavingProduct ? 'A guardar...' : 'Guardar Item'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
       )}
     </div>
   );

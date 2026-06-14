@@ -116,7 +116,7 @@ export default function Fotos() {
               {/* Image box */}
               <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 shrink-0 select-none">
                 <img
-                  src={item.imageUrl || undefined}
+                  src={item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl : null}
                   alt={item.title}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

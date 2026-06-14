@@ -231,6 +231,23 @@
         "createdBy": { "type": "string" }
       },
       "required": ["title", "description", "price", "imageUrl", "active", "createdAt", "createdBy"]
+    },
+    "ShowcaseProduct": {
+      "title": "ShowcaseProduct",
+      "description": "Product or service offered in an entrepreneur's digital showcase",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "active": { "type": "boolean" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "description", "images", "active", "order", "createdAt"]
     }
   },
   "firestore": {
@@ -289,6 +306,10 @@
     "/photoStoreItems/{itemId}": {
       "schema": "PhotoStoreItem",
       "description": "Digital photos for sale"
+    },
+    "/sellerPublicProfiles/{userId}/products/{productId}": {
+      "schema": "ShowcaseProduct",
+      "description": "Products and services in digital showcase"
     }
   }
 }

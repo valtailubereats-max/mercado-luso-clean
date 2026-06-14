@@ -40,6 +40,10 @@ const AdDetails = () => {
   const [shareCopied, setShareCopied] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; type: 'success' | 'error' | 'loading'; message: string } | null>(null);
 
+  // Estados da Vitrine
+  const [showcaseActive, setShowcaseActive] = useState(false);
+  const [showcaseSlug, setShowcaseSlug] = useState('');
+
   const showToastMsg = (type: 'success' | 'error' | 'loading', message: string, duration = 4000) => {
     setToast({ show: true, type, message });
     if (type !== 'loading') {
@@ -114,6 +118,27 @@ const AdDetails = () => {
   const fetchSellerDetails = async (sellerId: string) => {
     try {
       setReviewsLoading(true);
+
+      // Verificar se o vendedor possui Vitrine Digital ativa
+      try {
+        const pRef = doc(db, 'sellerPublicProfiles', sellerId);
+        const pSnap = await getDocWithCacheFallback(pRef, `sellerPublicProfiles/${sellerId}`);
+        if (pSnap.exists()) {
+          const pData = pSnap.data();
+          if (pData?.showcaseActive) {
+            setShowcaseActive(true);
+            setShowcaseSlug(pData.showcaseSlug || '');
+          } else {
+            setShowcaseActive(false);
+            setShowcaseSlug('');
+          }
+        } else {
+          setShowcaseActive(false);
+          setShowcaseSlug('');
+        }
+      } catch (pErr) {
+        console.error('Erro ao verificar vitrine do vendedor:', pErr);
+      }
       
       const ratingAverage = (ad as any)?.sellerRating !== undefined ? (ad as any).sellerRating : ((ad as any)?.rating !== undefined ? (ad as any).rating : 0);
       const ratingCount = (ad as any)?.sellerReviewCount !== undefined ? (ad as any).sellerReviewCount : ((ad as any)?.reviewCount !== undefined ? (ad as any).reviewCount : 0);
@@ -695,6 +720,25 @@ const AdDetails = () => {
                   </button>
                 )}
               </div>
+
+              {/* Bloco da Vitrine Digital do Vendedor se estiver ativa */}
+              {showcaseActive && (
+                <div className="bg-indigo-50/70 border border-indigo-150 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-in">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-2xl">🏪</span>
+                    <div>
+                      <span className="font-extrabold text-indigo-950 text-sm block">Este vendedor possui uma Vitrine Digital.</span>
+                      <span className="text-[10px] text-indigo-650 font-bold block">Conheça todos os seus produtos, marcas e serviços especiais.</span>
+                    </div>
+                  </div>
+                  <Link
+                    to={`/empreendedores/${showcaseSlug}`}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <span>Ver Vitrine</span>
+                  </Link>
+                </div>
+              )}
 
               {/* CTAs */}
               <div className="flex flex-col gap-3">

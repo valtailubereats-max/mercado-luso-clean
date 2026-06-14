@@ -476,7 +476,7 @@ export default function AdminFotos() {
                         <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 w-full text-left">Pré-visualização</label>
                         <div className="aspect-[4/3] w-full max-w-[200px] rounded-lg overflow-hidden border border-slate-200 bg-slate-200 select-none relative">
                           <img
-                            src={(selectedFile ? URL.createObjectURL(selectedFile) : imageUrl) || undefined}
+                            src={(selectedFile ? URL.createObjectURL(selectedFile) : imageUrl) || null}
                             alt="Visualização"
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"
@@ -554,7 +554,7 @@ export default function AdminFotos() {
                       <td className="py-4 px-4">
                         <div className="w-14 h-14 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 select-none shrink-0">
                           <img
-                            src={item.imageUrl || undefined}
+                            src={item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl : null}
                             alt={item.title}
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"

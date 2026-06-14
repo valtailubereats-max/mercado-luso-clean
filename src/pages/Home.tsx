@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, limit, getCountFromServer, orderBy } from 'firebase/firestore';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { db, withTimeout, getDocsWithCacheFallback } from '../firebase';
 import { Ad, CITIES, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { useSettings } from '../context/SettingsContext';
@@ -178,6 +178,8 @@ const Home = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null);
+  const [featuredVitrines, setFeaturedVitrines] = useState<any[]>([]);
+  const [vitrinesLoading, setVitrinesLoading] = useState(true);
 
   // Estados de paginação de 30 em 30 itens
   const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
@@ -343,6 +345,72 @@ const Home = () => {
     fetchUsersCount();
     return () => { active = false; };
   }, [settings?.showTotalUsersBadge, isConfirmedAdminOnly, authLoading]);
+
+  // Buscar vitrines (empreendedores) ativas e seus produtos para destaque na Home
+  useEffect(() => {
+    let active = true;
+    const fetchVitrines = async () => {
+      setVitrinesLoading(true);
+      try {
+        const q = query(
+          collection(db, 'sellerPublicProfiles'),
+          where('showcaseActive', '==', true)
+        );
+        const snap = await getDocsWithCacheFallback(q, 'home/active-showcases');
+        
+        let allVitrines = snap.docs.map(docSnap => ({
+          uid: docSnap.id,
+          ...docSnap.data()
+        }));
+
+        // Filtragem por país para robustez sem exigir índice composto
+        allVitrines = allVitrines.filter((v: any) => v.country === country);
+
+        const loadedVitrines = await Promise.all(
+          allVitrines.map(async (v: any) => {
+            let productsCount = 0;
+            try {
+              const pRef = query(
+                collection(db, 'sellerPublicProfiles', v.uid, 'products'),
+                where('active', '==', true)
+              );
+              const pSnap = await getDocsWithCacheFallback(pRef, `products_active_${v.uid}`);
+              productsCount = pSnap.size;
+            } catch (err) {
+              console.error('Erro ao buscar produtos da vitrine no Home para', v.uid, err);
+            }
+            return {
+              ...v,
+              productsCount
+            };
+          })
+        );
+
+        if (active) {
+          // Ordenação: mais produtos desc, updatedAt desc
+          loadedVitrines.sort((a: any, b: any) => {
+            if (b.productsCount !== a.productsCount) {
+              return b.productsCount - a.productsCount;
+            }
+            const timeA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : (a.updatedAt ? new Date(a.updatedAt).getTime() : 0);
+            const timeB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : (b.updatedAt ? new Date(b.updatedAt).getTime() : 0);
+            return timeB - timeA;
+          });
+
+          setFeaturedVitrines(loadedVitrines.slice(0, 10));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar vitrines em destaque na Home:', err);
+      } finally {
+        if (active) {
+          setVitrinesLoading(false);
+        }
+      }
+    };
+
+    fetchVitrines();
+    return () => { active = false; };
+  }, [country]);
 
   // Buscar anúncios destacados para carrossel no topo
   useEffect(() => {
@@ -999,6 +1067,106 @@ const Home = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* 🏪 EMPREENDEDORES EM DESTAQUE */}
+      {featuredVitrines.length > 0 && (
+        <section className="space-y-4 pt-4 pb-6 md:py-6" id="featured-entrepreneurs">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏪</span>
+              <div>
+                <h2 className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-none">
+                  Empreendedores em Destaque
+                </h2>
+                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-1">
+                  Vitrines Digitais em alta na comunidade
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/empreendedores"
+              className="group flex items-center gap-1 text-xs font-black text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-wider"
+            >
+              <span>Ver Todos</span>
+              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+
+          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+            {featuredVitrines.map((vitrine) => {
+              const linkTo = `/empreendedores/${vitrine.showcaseSlug}`;
+              const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=450&h=150&fit=crop&q=80';
+              return (
+                <div 
+                  key={vitrine.uid} 
+                  className="w-[260px] sm:w-[290px] shrink-0 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group scroll-snap-align-start"
+                  style={{ scrollSnapAlign: 'start' }}
+                >
+                  {/* Banner & Logo overlay */}
+                  <div className="relative">
+                    <div className="h-20 w-full bg-slate-100 overflow-hidden relative">
+                      <img 
+                        src={vitrine.showcaseCover || fallbackCover} 
+                        alt={vitrine.showcaseName} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    </div>
+                    
+                    {/* Logo */}
+                    <div className="absolute left-4 -bottom-4 w-12 h-12 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden z-10">
+                      {vitrine.showcaseLogo && vitrine.showcaseLogo.trim() !== '' ? (
+                        <img src={vitrine.showcaseLogo} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="text-lg">🏬</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body details */}
+                  <div className="p-4 pt-6 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Category Label */}
+                        <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-wider block w-fit truncate max-w-[130px]">
+                          {vitrine.showcaseCategory || 'Outros'}
+                        </span>
+
+                        {/* Active products counter badge */}
+                        <span className="text-[9px] font-bold text-slate-550 bg-slate-50 border border-slate-150 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                          📦 {vitrine.productsCount} {vitrine.productsCount === 1 ? 'item' : 'itens'}
+                        </span>
+                      </div>
+
+                      {/* Name */}
+                      <h3 className="font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm line-clamp-1 leading-snug">
+                        {vitrine.showcaseName}
+                      </h3>
+
+                      {/* Location */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-bold">
+                        <MapPin size={11} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{vitrine.city ? `${vitrine.city}, ` : ''}{vitrine.country === 'Portugal' ? '🇵🇹 pt' : '🇬🇧 uk'}</span>
+                      </div>
+                    </div>
+
+                    {/* Action button */}
+                    <div className="pt-2 border-t border-slate-50">
+                      <Link
+                        to={linkTo}
+                        className="w-full py-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-extrabold text-xs flex items-center justify-center gap-1 rounded-xl transition-all cursor-pointer shadow-xs border border-indigo-100 hover:border-indigo-650"
+                      >
+                        Ver Vitrine
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

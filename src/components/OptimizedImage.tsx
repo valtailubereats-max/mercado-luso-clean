@@ -37,7 +37,7 @@ const OptimizedImage: React.FC<OptimizedImageProps & any> = ({
         </div>
       ) : (
         <Component
-          src={src}
+          src={src && src.trim() !== '' ? src : null}
           alt={alt}
           loading="lazy"
           onLoad={() => setIsLoading(false)}

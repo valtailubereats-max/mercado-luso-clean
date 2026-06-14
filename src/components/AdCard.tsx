@@ -42,6 +42,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; type: 'success' | 'error' | 'loading'; message: string } | null>(null);
 
+  // Estados da Vitrine
+  const [showcaseActive, setShowcaseActive] = useState(false);
+  const [showcaseSlug, setShowcaseSlug] = useState('');
+
   const showToastMsg = (type: 'success' | 'error' | 'loading', message: string, duration = 4000) => {
     setToast({ show: true, type, message });
     if (type !== 'loading') {
@@ -105,6 +109,34 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       fetchSellerProfile();
     }
   }, [ad.sellerId, showDetails]);
+
+  React.useEffect(() => {
+    let active = true;
+    const checkShowcaseActive = async () => {
+      if (!ad.sellerId) return;
+      try {
+        const docRef = doc(db, 'sellerPublicProfiles', ad.sellerId);
+        const docSnap = await getDocWithCacheFallback(docRef, `sellerPublicProfiles/${ad.sellerId}`);
+        if (active && docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && data.showcaseActive) {
+            setShowcaseActive(true);
+            setShowcaseSlug(data.showcaseSlug || '');
+          } else {
+            setShowcaseActive(false);
+            setShowcaseSlug('');
+          }
+        } else {
+          setShowcaseActive(false);
+          setShowcaseSlug('');
+        }
+      } catch (err) {
+        console.error('Error checking showcase active:', err);
+      }
+    };
+    checkShowcaseActive();
+    return () => { active = false; };
+  }, [ad.sellerId]);
 
   const fetchSellerProfile = async () => {
     try {
@@ -472,6 +504,20 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
               <Tag size={isFeaturedVariant ? 10 : 12} className="text-teal-600 shrink-0 opacity-75" />
               <span className="truncate">{ad.category}</span>
             </div>
+            {showcaseActive && (
+              <div className="mt-1 flex items-center">
+                <Link
+                  to={`/empreendedores/${showcaseSlug}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-150 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-indigo-700 rounded-lg px-2 py-0.5 text-[10px] font-black tracking-wide transition-all duration-250 cursor-pointer shadow-xs"
+                >
+                  <span>🏪</span>
+                  <span>Vitrine Digital</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Linha horizontal de ações */}
@@ -712,6 +758,28 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                           </div>
                         </div>
                       </div>
+
+                      {showcaseActive && (
+                        <div className="bg-indigo-50/70 border border-indigo-150 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 animate-fade-in text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">🏪</span>
+                            <div>
+                              <span className="font-extrabold text-indigo-950 text-xs block">Este vendedor possui uma Vitrine Digital.</span>
+                              <span className="text-[9px] text-indigo-600 block leading-tight">Conheça todos os seus produtos e serviços especiais.</span>
+                            </div>
+                          </div>
+                          <Link
+                            to={`/empreendedores/${showcaseSlug}`}
+                            onClick={(e) => {
+                              // Closes modal or stops propagation if needed
+                              setShowDetails(false);
+                            }}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black rounded-lg transition-all shadow-md text-center shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+                          >
+                            <span>Ver Vitrine</span>
+                          </Link>
+                        </div>
+                      )}
 
                       <div className="flex flex-col gap-3">
                         {ad.status === 'sold' || ad.adStatus === 'sold' ? (

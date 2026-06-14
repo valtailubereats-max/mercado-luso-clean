@@ -29,6 +29,8 @@ import FAQ from './pages/FAQ';
 import AdminSuggestions from './pages/AdminSuggestions';
 import Fotos from './pages/Fotos';
 import AdminFotos from './pages/AdminFotos';
+import Empreendedores from './pages/Empreendedores';
+import EmpreendedorDetalhes from './pages/EmpreendedorDetalhes';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
@@ -303,6 +305,7 @@ const Navbar = () => {
             </button>
             <Link to="/" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">Explorar</Link>
             <Link to="/fotos" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors" id="nav-fotos-link">Fotos</Link>
+            <Link to="/empreendedores" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors" id="nav-empreendedores-link">Empreendedores</Link>
 
             {user ? <>
               <Link to="/create-ad" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-medium">
@@ -330,7 +333,7 @@ const Navbar = () => {
                         {adminPendingAds.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há anúncios pendentes.</div> :
                         adminPendingAds.map((ad, idx) => (
                           <Link key={`nav-ad-${ad.id || idx}-${idx}`} to="/admin" onClick={() => setShowAdminNotifications(false)} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3">
-                            <img src={ad.imageUrl || undefined} alt={ad.title} className="w-12 h-12 object-cover rounded-lg bg-slate-100 shrink-0" />
+                            <img src={ad.imageUrl || null} alt={ad.title} className="w-12 h-12 object-cover rounded-lg bg-slate-100 shrink-0" />
                             <div className="min-w-0">
                               <p className="text-sm font-bold text-slate-900 truncate">{ad.title}</p>
                               <p className="text-xs text-slate-500 mt-0.5">Vendedor: {ad.sellerName}</p>
@@ -540,6 +543,7 @@ const Navbar = () => {
             <div className="px-4 py-6 space-y-4 flex flex-col">
               <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Explorar</Link>
               <Link to="/fotos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-705 text-slate-700">Fotos</Link>
+              <Link to="/empreendedores" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Empreendedores</Link>
               
               {user ? <>
                 {isAdmin && (
@@ -790,6 +794,8 @@ export default function App() {
                 <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
                 <Route path="/admin/team" element={<AdminLayout><AdminTeam /></AdminLayout>} />
                 <Route path="/fotos" element={<Fotos />} />
+                <Route path="/empreendedores" element={<Empreendedores />} />
+                <Route path="/empreendedores/:slug" element={<EmpreendedorDetalhes />} />
                 <Route path="/admin/fotos" element={<AdminLayout><AdminFotos /></AdminLayout>} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />

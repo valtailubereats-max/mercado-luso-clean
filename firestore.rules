@@ -123,7 +123,21 @@ service cloud.firestore {
              data.displayName is string &&
              data.country is string &&
              data.createdAt is timestamp &&
-             data.updatedAt is timestamp;
+             data.updatedAt is timestamp &&
+             (!('showcasePlan' in data) || data.showcasePlan in ['basic', 'premium']);
+    }
+
+    function isValidShowcaseProduct(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'description', 'images', 'active', 'order', 'createdAt']) &&
+             data.id is string &&
+             data.userId is string &&
+             data.name is string && data.name.size() > 0 &&
+             data.description is string &&
+             data.images is list &&
+             data.active is bool &&
+             data.order is number &&
+             data.createdAt is timestamp &&
+             (!('price' in data) || data.price == null || data.price is number);
     }
 
     match /settings/{settingsId} {
@@ -145,6 +159,13 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isOwner(userId) && isValidSellerPublicProfile(request.resource.data);
       allow update: if isOwner(userId) && isValidSellerPublicProfile(request.resource.data);
+
+      match /products/{productId} {
+        allow read: if true;
+        allow create: if isOwner(userId) && isValidShowcaseProduct(request.resource.data) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId) && isValidShowcaseProduct(request.resource.data) && request.resource.data.userId == userId;
+        allow delete: if isOwner(userId);
+      }
     }
 
     match /notifications/{notificationId} {
