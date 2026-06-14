@@ -24,9 +24,13 @@ import {
   X,
   Tag,
   Save,
-  Undo
+  Undo,
+  Download,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { storage } from '../firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { 
   MarketingMaterial, 
   MarketingCategory,
@@ -70,7 +74,114 @@ const AdminMarketing = () => {
   const [formMediaUrl, setFormMediaUrl] = useState('');
   const [formVisualValue, setFormVisualValue] = useState('from-indigo-600 to-indigo-400');
   
+  // File Upload and Lightbox State
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lightboxMedia, setLightboxMedia] = useState<{ type: 'Texto' | 'Imagem/Banner' | 'Vídeo' | 'Link'; url: string; title: string } | null>(null);
+  
   const baseUrl = window.location.origin;
+
+  const handleDownload = async (url: string, title: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      let filename = title.replace(/\s+/g, '_').toLowerCase();
+      if (url.includes('.mp4')) filename += '.mp4';
+      else if (url.includes('.png')) filename += '.png';
+      else if (url.includes('.webp')) filename += '.webp';
+      else if (url.includes('.jpg') || url.includes('.jpeg')) filename += '.jpg';
+      else filename += '_media';
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.warn('Download error, opening in new tab instead:', err);
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const allowedVideoTypes = ['video/mp4'];
+
+    const isImage = formType === 'Imagem/Banner';
+    const isVideo = formType === 'Vídeo';
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (isImage) {
+      const isValidImageExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(extension || '');
+      const isValidImageType = allowedImageTypes.includes(file.type);
+      if (!isValidImageExtension && !isValidImageType) {
+        setUploadError('Formato de imagem não suportado. Use apenas JPG, JPEG, PNG ou WEBP.');
+        return;
+      }
+    }
+
+    if (isVideo) {
+      const isValidVideoExtension = extension === 'mp4';
+      const isValidVideoType = allowedVideoTypes.includes(file.type);
+      if (!isValidVideoExtension && !isValidVideoType) {
+        setUploadError('Formato de vídeo não suportado. Use apenas MP4.');
+        return;
+      }
+    }
+
+    setUploadError(null);
+    setUploadSuccess(false);
+
+    let folder = 'imagens';
+    if (isVideo) {
+      folder = 'videos';
+    } else if (formCategory.toLowerCase().includes('banner') || formCategory === 'Banners') {
+      folder = 'banners';
+    }
+
+    const timestamp = Date.now();
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    const storagePath = `marketing/${folder}/${timestamp}_${cleanFileName}`;
+
+    const storageRef = ref(storage, storagePath);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    setUploadProgress(0);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        setUploadProgress(progress);
+      },
+      (error) => {
+        console.error('[Marketing Upload] Failed:', error);
+        setUploadError('Erro no envio: ' + (error.message || 'Tente novamente.'));
+        setUploadProgress(null);
+      },
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          setFormMediaUrl(downloadUrl);
+          setUploadProgress(null);
+          setUploadSuccess(true);
+        } catch (downloadErr) {
+          console.error('[Marketing Upload] Error getting download URL:', downloadErr);
+          setUploadError('Falha ao obter URL pública do Storage.');
+          setUploadProgress(null);
+        }
+      }
+    );
+  };
 
   // Load materials and categories from storage
   useEffect(() => {
@@ -91,19 +202,41 @@ const AdminMarketing = () => {
   };
 
   const handleShare = async (material: MarketingMaterial) => {
-    const shareText = material.content;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: material.title,
-          text: shareText,
-          url: baseUrl,
-        });
-      } catch (err) {
-        console.log('Erro ao partilhar:', err);
+    const hasMedia = !!material.mediaUrl && (material.type === 'Imagem/Banner' || material.type === 'Vídeo' || material.type === 'Link');
+    
+    if (hasMedia) {
+      const mediaUrl = material.mediaUrl!;
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: material.title,
+            url: mediaUrl,
+          });
+        } catch (err) {
+          if ((err as Error).name !== 'AbortError') {
+            handleCopy(mediaUrl, material.id);
+          }
+        }
+      } else {
+        handleCopy(mediaUrl, material.id);
       }
     } else {
-      handleCopy(shareText, material.id);
+      const shareText = material.content;
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: material.title,
+            text: shareText,
+            url: baseUrl,
+          });
+        } catch (err) {
+          if ((err as Error).name !== 'AbortError') {
+            handleCopy(shareText, material.id);
+          }
+        }
+      } else {
+        handleCopy(shareText, material.id);
+      }
     }
   };
 
@@ -374,9 +507,44 @@ const AdminMarketing = () => {
             className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group relative"
           >
             {/* Visual Preview */}
-            <div className={`aspect-video bg-gradient-to-br ${material.visualValue || 'from-indigo-600 to-indigo-400'} p-6 flex flex-col justify-center items-center text-center relative overflow-hidden`}>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl" />
+            <div className="aspect-video relative overflow-hidden flex flex-col justify-center items-center text-center">
+              {/* Media Preview Backdrop */}
+              {material.mediaUrl && material.type === 'Imagem/Banner' ? (
+                <>
+                  <img 
+                    src={material.mediaUrl} 
+                    alt={material.title} 
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-slate-900/40" />
+                </>
+              ) : material.mediaUrl && material.type === 'Vídeo' ? (
+                <>
+                  <video 
+                    src={material.mediaUrl} 
+                    muted 
+                    loop 
+                    playsInline 
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onMouseOver={(e) => {
+                      e.currentTarget.play().catch(() => {});
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.pause();
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-slate-900/50 group-hover:bg-slate-900/30 transition-all duration-300" />
+                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/60 backdrop-blur-md rounded text-[9px] font-black text-white/95 uppercase tracking-wide">
+                    Passar p/ Reproduzir
+                  </div>
+                </>
+              ) : (
+                <div className={`absolute inset-0 bg-gradient-to-br ${material.visualValue || 'from-indigo-600 to-indigo-400'}`} />
+              )}
+              
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl pointer-events-none" />
               
               <div className="relative z-10 flex flex-col items-center">
                 <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl mb-3 inline-block text-white">
@@ -433,19 +601,61 @@ const AdminMarketing = () => {
               <h4 className="font-bold text-slate-900 mb-2 leading-tight">{material.title}</h4>
               <p className="text-slate-500 text-sm mb-4 line-clamp-2">{material.description}</p>
 
-              {/* Conditional Display of Attachment/Media Link */}
+              {/* Enhanced Media Control Block for Images and Videos */}
               {material.mediaUrl && (
-                <div className="mb-4 bg-slate-50 border border-slate-100 p-2.5 rounded-xl flex items-center gap-2">
-                  <div className="p-1 px-2 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded">URL</div>
-                  <span className="text-xs text-slate-500 font-medium truncate flex-1">{material.mediaUrl}</span>
-                  <a 
-                    href={material.mediaUrl} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-xs text-indigo-600 hover:underline font-bold"
-                  >
-                    Abrir
-                  </a>
+                <div className="mb-4 space-y-2">
+                  <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl flex items-center gap-2">
+                    <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                      Mídia
+                    </span>
+                    <span className="text-xs text-slate-500 font-semibold truncate flex-1 font-mono">
+                      {material.mediaUrl.split('/').pop()?.split('?')[0] || 'ficheiro'}
+                    </span>
+                  </div>
+                  
+                  {(material.type === 'Imagem/Banner' || material.type === 'Vídeo') ? (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        onClick={() => setLightboxMedia({ type: material.type, url: material.mediaUrl!, title: material.title })}
+                        className="py-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-100 text-slate-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                        title="Visualizar mídia em tamanho maior"
+                      >
+                        <Eye size={12} className="shrink-0" />
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(material.mediaUrl!);
+                          alert('Link do ficheiro copiado para a área de transferência!');
+                        }}
+                        className="py-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-100 text-slate-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                        title="Copiar link direto"
+                      >
+                        <Copy size={12} className="shrink-0" />
+                        Link
+                      </button>
+                      <button
+                        onClick={() => handleDownload(material.mediaUrl!, material.title)}
+                        className="py-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-100 text-slate-600 hover:text-indigo-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                        title="Descarregar ficheiro"
+                      >
+                        <Download size={12} className="shrink-0" />
+                        Baixar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end">
+                      <a 
+                        href={material.mediaUrl} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition-all"
+                      >
+                        <Link2 size={12} />
+                        Abrir Link Externo
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -473,10 +683,19 @@ const AdminMarketing = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleShare(material)}
-                    className="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
+                    className={`flex-1 ${copiedId === material.id ? 'bg-emerald-600 shadow-emerald-150' : 'bg-indigo-600 shadow-indigo-100'} text-white py-3 rounded-2xl font-bold text-sm hover:opacity-95 transition-all shadow-lg flex items-center justify-center gap-2`}
                   >
-                    <Share2 size={16} />
-                    Partilhar / Copiar
+                    {copiedId === material.id ? (
+                      <>
+                        <Check size={16} />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Share2 size={16} />
+                        Partilhar / Copiar
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => handleCopy(material.content, material.id)}
@@ -797,7 +1016,7 @@ const AdminMarketing = () => {
                     />
                   </div>
 
-                  {/* Attachment/Media File link (Optional, show depending on type or universally as optional) */}
+                  {/* Attachment/Media File link */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
                       Ficheiro / Link de Mídia (Opcional)
@@ -807,10 +1026,95 @@ const AdminMarketing = () => {
                       value={formMediaUrl}
                       onChange={(e) => setFormMediaUrl(e.target.value)}
                       placeholder="Ex: https://assets.mercadoluso.com/flyer.png"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 font-medium transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 font-medium transition-all font-mono"
                     />
                     <p className="text-[10px] text-slate-400 font-semibold">Anexe o link do design no Canva, vídeo explicativo ou imagem promocional.</p>
                   </div>
+
+                  {/* Interactive Firebase Drag-and-Drop / File Upload Zone depending on Type */}
+                  {(formType === 'Imagem/Banner' || formType === 'Vídeo') && (
+                    <div className="space-y-2 mt-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block font-sans">
+                        Enviar Ficheiro (Firebase Storage)
+                      </label>
+                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-all relative">
+                        {uploadProgress !== null ? (
+                          <div className="w-full text-center space-y-2 py-2">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin"></span>
+                              <span className="text-sm font-bold text-slate-700 font-sans mt-0.5">A carregar ficheiro... {uploadProgress}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                              <div className="bg-indigo-600 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3 text-center">
+                            <div className="flex flex-wrap gap-2 justify-center items-center">
+                              {formMediaUrl ? (
+                                <div className="flex flex-col items-center">
+                                  {formType === 'Imagem/Banner' ? (
+                                    <img src={formMediaUrl} alt="Preview" className="h-16 w-32 object-cover rounded-xl border border-slate-200 shadow-sm mb-2" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <div className="h-16 w-32 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 mb-2">
+                                      <Video size={24} />
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setFormMediaUrl('')}
+                                      className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-all"
+                                    >
+                                      Remover/Limpar
+                                    </button>
+                                    <label className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                                      Substituir Ficheiro
+                                      <input 
+                                        type="file" 
+                                        accept={formType === 'Imagem/Banner' ? '.jpg,.jpeg,.png,.webp' : '.mp4'} 
+                                        onChange={handleFileChange} 
+                                        className="hidden" 
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              ) : (
+                                <label className="flex flex-col items-center cursor-pointer">
+                                  <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-slate-400 hover:text-indigo-500 transition-all mb-2">
+                                    {formType === 'Imagem/Banner' ? <ImageIcon size={24} /> : <Video size={24} />}
+                                  </div>
+                                  <span className="text-xs font-bold text-indigo-600 hover:text-indigo-700">Selecionar ficheiro</span>
+                                  <span className="text-[10px] text-slate-400 font-medium mt-1">
+                                    {formType === 'Imagem/Banner' 
+                                      ? 'Imagens suportadas: JPG, JPEG, PNG, WEBP' 
+                                      : 'Vídeos suportados: MP4'}
+                                  </span>
+                                  <input 
+                                    type="file" 
+                                    accept={formType === 'Imagem/Banner' ? '.jpg,.jpeg,.png,.webp' : '.mp4'} 
+                                    onChange={handleFileChange} 
+                                    className="hidden" 
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {uploadSuccess && (
+                          <div className="absolute top-2 right-2 bg-emerald-50 text-emerald-600 rounded-xl px-2.5 py-1 text-[10px] font-bold flex items-center gap-1">
+                            <Check size={12} />
+                            Sucesso!
+                          </div>
+                        )}
+                        {uploadError && (
+                          <div className="mt-2 text-xs font-bold text-red-500 text-center font-sans">
+                            {uploadError}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Main Content (Text / Template copy) */}
                   <div className="space-y-2">
@@ -844,6 +1148,77 @@ const AdminMarketing = () => {
                 </form>
               </motion.div>
             </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox / Media Viewer Modal */}
+      <AnimatePresence>
+        {lightboxMedia && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLightboxMedia(null)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white rounded-[2.5rem] shadow-2xl max-w-4xl w-full overflow-hidden p-6 z-10 flex flex-col items-center"
+            >
+              <div className="w-full flex items-center justify-between mb-4">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight font-sans">
+                  {lightboxMedia.title}
+                </h3>
+                <button 
+                  onClick={() => setLightboxMedia(null)}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="w-full flex justify-center bg-slate-900/5 rounded-2xl overflow-hidden p-2 max-h-[70vh]">
+                {lightboxMedia.type === 'Imagem/Banner' ? (
+                  <img 
+                    src={lightboxMedia.url} 
+                    alt={lightboxMedia.title} 
+                    className="max-h-[60vh] object-contain rounded-xl shadow-md" 
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <video 
+                    src={lightboxMedia.url} 
+                    controls 
+                    autoPlay
+                    className="max-h-[60vh] object-contain rounded-xl shadow-md w-full"
+                  />
+                )}
+              </div>
+
+              <div className="w-full flex flex-col sm:flex-row gap-3 mt-6 justify-end">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(lightboxMedia.url);
+                    alert('Link do ficheiro copiado para a área de transferência!');
+                  }}
+                  className="bg-slate-100 text-slate-700 font-bold px-6 py-3 rounded-2xl text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2 font-sans"
+                >
+                  <Copy size={16} />
+                  Copiar Link do Ficheiro
+                </button>
+                <button
+                  onClick={() => handleDownload(lightboxMedia.url, lightboxMedia.title)}
+                  className="bg-indigo-600 text-white font-bold px-8 py-3 rounded-2xl text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 font-sans"
+                >
+                  <Download size={16} />
+                  Descarregar Ficheiro
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
