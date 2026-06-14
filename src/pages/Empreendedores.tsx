@@ -68,7 +68,7 @@ const Empreendedores = () => {
         const rawShowcases = snap.docs.map(doc => ({
           uid: doc.id,
           ...doc.data()
-        }));
+        })).filter((elem: any) => elem.showcaseApproved === true);
 
         let totalProducts = 0;
         const processed = await Promise.all(rawShowcases.map(async (elem: any) => {
@@ -260,7 +260,7 @@ const Empreendedores = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" id="showcases-grid">
+        <div className="flex md:grid overflow-x-auto md:overflow-x-visible pb-6 md:pb-0 snap-x snap-mandatory gap-6 animate-fade-in [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" id="showcases-grid">
           {filteredShowcases.map((elem, idx) => {
             const linkTo = `/empreendedores/${elem.showcaseSlug}`;
             const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80'; // professional back pattern
@@ -271,7 +271,7 @@ const Empreendedores = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
-                className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md hover:shadow-xl transition-all flex flex-col justify-between"
+                className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md hover:shadow-xl transition-all flex flex-col justify-between w-[290px] sm:w-[320px] shrink-0 snap-center md:w-auto md:shrink md:snap-align-none"
               >
                 {/* Visual Top Area with Capa & Logo overlap */}
                 <div className="relative">

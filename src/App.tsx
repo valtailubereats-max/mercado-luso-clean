@@ -31,6 +31,8 @@ import Fotos from './pages/Fotos';
 import AdminFotos from './pages/AdminFotos';
 import Empreendedores from './pages/Empreendedores';
 import EmpreendedorDetalhes from './pages/EmpreendedorDetalhes';
+import EmpreendedorProduto from './pages/EmpreendedorProduto';
+import AdminShowcases from './pages/AdminShowcases';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
@@ -303,9 +305,6 @@ const Navbar = () => {
             <button onClick={handleShare} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1">
               <Share2 size={20} /> <span>Partilhar</span>
             </button>
-            <Link to="/" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">Explorar</Link>
-            <Link to="/fotos" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors" id="nav-fotos-link">Fotos</Link>
-            <Link to="/empreendedores" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors" id="nav-empreendedores-link">Empreendedores</Link>
 
             {user ? <>
               <Link to="/create-ad" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-medium">
@@ -409,6 +408,32 @@ const Navbar = () => {
                       id="desktop-account-menu"
                     >
                       <Link
+                        to="/"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                      >
+                        🧭 Explorar
+                      </Link>
+                      <Link
+                        to="/fotos"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        id="nav-fotos-link"
+                      >
+                        📸 Fotos
+                      </Link>
+                      <Link
+                        to="/empreendedores"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        id="nav-empreendedores-link"
+                      >
+                        🏪 Empreendedores
+                      </Link>
+
+                      <div className="border-t border-slate-100 my-2" />
+
+                      <Link
                         to="/profile"
                         onClick={() => setShowUserDropdown(false)}
                         className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
@@ -503,8 +528,68 @@ const Navbar = () => {
                   )}
                 </AnimatePresence>
               </div>
-            </> :
-            <Link to="/login" className="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-medium">Entrar</Link>}
+            </> : (
+              <div className="flex items-center gap-3">
+                <Link to="/login" className="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-medium">Entrar</Link>
+                
+                <div className="relative" ref={userDropdownRef}>
+                  <button
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1.5 p-2 cursor-pointer outline-none transition-all hover:bg-slate-100/50 rounded-xl"
+                    id="guest-menu-toggle"
+                  >
+                    <Menu size={20} />
+                    <span>Menu</span>
+                  </button>
+
+                  <AnimatePresence>
+                    {showUserDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2.5 z-[100] text-slate-800"
+                        id="desktop-guest-menu"
+                      >
+                        <Link
+                          to="/"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        >
+                          🧭 Explorar
+                        </Link>
+                        <Link
+                          to="/fotos"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-fotos-link"
+                        >
+                          📸 Fotos
+                        </Link>
+                        <Link
+                          to="/empreendedores"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-empreendedores-link"
+                        >
+                          🏪 Empreendedores
+                        </Link>
+
+                        <div className="border-t border-slate-100 my-2" />
+
+                        <Link
+                          to="/links"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-50 text-emerald-600 transition-colors text-sm font-black"
+                        >
+                          <span>🔗 Links Úteis</span>
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu */}
@@ -787,6 +872,7 @@ export default function App() {
                 <Route path="/anuncio/:id" element={<AdDetails />} />
                 <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
                 <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+                <Route path="/admin/showcases" element={<AdminLayout><AdminShowcases /></AdminLayout>} />
                 <Route path="/admin/import" element={<AdminLayout><AdminImport /></AdminLayout>} />
                 <Route path="/admin/marketing" element={<AdminLayout><AdminMarketing /></AdminLayout>} />
                 <Route path="/admin/ads" element={<AdminLayout><AdminAds /></AdminLayout>} />
@@ -796,6 +882,7 @@ export default function App() {
                 <Route path="/fotos" element={<Fotos />} />
                 <Route path="/empreendedores" element={<Empreendedores />} />
                 <Route path="/empreendedores/:slug" element={<EmpreendedorDetalhes />} />
+                <Route path="/empreendedores/:slug/produto/:productId" element={<EmpreendedorProduto />} />
                 <Route path="/admin/fotos" element={<AdminLayout><AdminFotos /></AdminLayout>} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />

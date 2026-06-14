@@ -248,6 +248,30 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "name", "description", "images", "active", "order", "createdAt"]
+    },
+    "ShowcaseProductInterest": {
+      "title": "ShowcaseProductInterest",
+      "description": "Expressed buyer interest in showcase products & services",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "showcaseSlug": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "productPrice": { "type": "number" },
+        "productImageUrl": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "buyerEmail": { "type": "string" },
+        "buyerPhone": { "type": "string" },
+        "message": { "type": "string" },
+        "source": { "type": "string", "enum": ["whatsapp"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "country": { "type": "string" },
+        "city": { "type": "string" }
+      },
+      "required": ["id", "sellerId", "showcaseSlug", "productId", "productName", "source", "createdAt"]
     }
   },
   "firestore": {
@@ -310,6 +334,10 @@
     "/sellerPublicProfiles/{userId}/products/{productId}": {
       "schema": "ShowcaseProduct",
       "description": "Products and services in digital showcase"
+    },
+    "/showcaseProductInterests/{interestId}": {
+      "schema": "ShowcaseProductInterest",
+      "description": "Expressed buyer interests in showcase products & services"
     }
   }
 }

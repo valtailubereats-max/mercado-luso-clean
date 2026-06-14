@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'motion/react';
 import { 
   ArrowLeft, 
@@ -26,186 +27,82 @@ import {
 
 const PageProductCard = ({ p, profile }: { p: any; profile: any; key?: any }) => {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const pPhone = profile.showcaseWhatsapp ? profile.showcaseWhatsapp.replace(/\+/g, '').replace(/\D/g, '') : '';
+  const navigate = useNavigate();
   const hasPrice = p.price != null && p.price !== "";
   
-  let text = '';
-  if (hasPrice) {
-    text = `Olá! Gostaria de pedir o produto ${p.name} no valor de ${p.price}€ que vi na sua vitrine ${profile.showcaseName} no Mercado Luso. Está disponível?`;
-  } else {
-    text = `Olá! Gostaria de obter mais informações sobre o produto ${p.name} que vi na sua vitrine ${profile.showcaseName} no Mercado Luso.`;
-  }
-  
-  const pWhatsappUrl = `https://wa.me/${pPhone}?text=${encodeURIComponent(text)}`;
-
   const handleOpenDetails = () => {
-    setIsModalOpen(true);
-    if (profile.uid) {
-      incrementProductView(profile.uid, p.id);
-    }
+    navigate(`/empreendedores/${profile.showcaseSlug}/produto/${p.id}`);
   };
 
   return (
-    <>
-      <div className="bg-white border border-slate-150 rounded-3xl shadow-xs overflow-hidden flex flex-col hover:border-indigo-100 transition-all group">
-        {/* Product Image Viewer */}
-        <div 
-          onClick={handleOpenDetails}
-          className="aspect-[4/3] w-full bg-slate-50 overflow-hidden relative border-b border-slate-100 shrink-0 cursor-pointer"
-        >
-          {p.images && p.images[activeImgIndex] ? (
-            <img 
-              src={p.images[activeImgIndex]} 
-              alt={p.name} 
-              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-300">
-              <span className="text-4xl">🏬</span>
-            </div>
-          )}
-          {hasPrice && (
-            <span className="absolute bottom-3 right-3 bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-xl shadow-md">
-              {p.price} €
-            </span>
-          )}
-
-          {/* Multi-images Thumbnail Tracker */}
-          {p.images && p.images.length > 1 && (
-            <div className="absolute top-3 left-3 flex gap-1.5 bg-slate-900/40 backdrop-blur-xs p-1.5 rounded-xl z-10" onClick={(e) => e.stopPropagation()}>
-              {p.images.map((img: string, idx: number) => (
-                <button
-                  key={`idx-img-thumb-${idx}`}
-                  type="button"
-                  onClick={() => setActiveImgIndex(idx)}
-                  className={`w-3 h-3 rounded-full border border-white transition-all ${
-                    activeImgIndex === idx ? 'bg-indigo-600 scale-110' : 'bg-white/80'
-                  }`}
-                  title={`Ver foto ${idx + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Product details */}
-        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-          <div className="space-y-1.5 cursor-pointer" onClick={handleOpenDetails}>
-            <div className="flex items-center justify-between gap-1.5 pt-0.5">
-              <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-base line-clamp-1">{p.name}</h3>
-              <span className="text-[10px] text-indigo-600 font-extrabold shrink-0 hover:underline">Ver detalhes</span>
-            </div>
-            <p className="text-xs text-slate-550 font-medium line-clamp-3 leading-relaxed">{p.description}</p>
+    <div className="bg-white border border-slate-150 rounded-3xl shadow-xs overflow-hidden flex flex-col hover:border-indigo-100 transition-all group">
+      {/* Product Image Viewer */}
+      <div 
+        onClick={handleOpenDetails}
+        className="aspect-[4/3] w-full bg-slate-50 overflow-hidden relative border-b border-slate-100 shrink-0 cursor-pointer"
+      >
+        {p.images && p.images[activeImgIndex] ? (
+          <img 
+            src={p.images[activeImgIndex]} 
+            alt={p.name} 
+            className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-300">
+            <span className="text-4xl">🏬</span>
           </div>
+        )}
+        {hasPrice && (
+          <span className="absolute bottom-3 right-3 bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-xl shadow-md">
+            {p.price} €
+          </span>
+        )}
 
-          <a
-            href={pWhatsappUrl}
-            target="_blank"
-            onClick={() => {
-              if (profile?.uid) {
-                incrementWhatsappClick(profile.uid, p.id);
-              }
-            }}
-            rel="noopener noreferrer"
-            className="w-full py-3.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-extrabold text-xs flex items-center justify-center gap-2 border border-emerald-100 transition-all cursor-pointer shadow-xs"
-          >
-            <MessageSquare size={14} />
-            Pedir pelo WhatsApp
-          </a>
-        </div>
+        {/* Multi-images Thumbnail Tracker */}
+        {p.images && p.images.length > 1 && (
+          <div className="absolute top-3 left-3 flex gap-1.5 bg-slate-900/40 backdrop-blur-xs p-1.5 rounded-xl z-10" onClick={(e) => e.stopPropagation()}>
+            {p.images.map((img: string, idx: number) => (
+              <button
+                key={`idx-img-thumb-${idx}`}
+                type="button"
+                onClick={() => setActiveImgIndex(idx)}
+                className={`w-3 h-3 rounded-full border border-white transition-all ${
+                  activeImgIndex === idx ? 'bg-indigo-600 scale-110' : 'bg-white/80'
+                }`}
+                title={`Ver foto ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Modal / Expander */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50" onClick={() => setIsModalOpen(false)}>
-          <div 
-            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-900/15 text-slate-800 hover:bg-slate-900/30 transition-all cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-
-            {/* Image section */}
-            <div className="aspect-[4/3] w-full bg-slate-100 relative">
-              {p.images && p.images[activeImgIndex] ? (
-                <img 
-                  src={p.images[activeImgIndex]} 
-                  alt={p.name} 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300">
-                  <span className="text-6xl">🏬</span>
-                </div>
-              )}
-              {hasPrice && (
-                <span className="absolute bottom-4 right-4 bg-indigo-600 text-white text-sm font-black px-4 py-2 rounded-xl shadow-lg">
-                  {p.price} €
-                </span>
-              )}
-
-              {/* Multi-images thumbnails inside modal */}
-              {p.images && p.images.length > 1 && (
-                <div className="absolute top-4 left-4 flex gap-1.5 bg-slate-900/40 backdrop-blur-xs p-1.5 rounded-xl z-10">
-                  {p.images.map((img: string, idx: number) => (
-                    <button
-                      key={`idx-img-modal-thumb-${idx}`}
-                      type="button"
-                      onClick={() => setActiveImgIndex(idx)}
-                      className={`w-3.5 h-3.5 rounded-full border border-white transition-all ${
-                        activeImgIndex === idx ? 'bg-indigo-600 scale-110' : 'bg-white/80'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Details body */}
-            <div className="p-6 space-y-6">
-              <div className="space-y-2">
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md uppercase tracking-wider block w-fit">
-                  {profile.showcaseCategory || 'Outros'}
-                </span>
-                <h3 className="text-xl font-black text-slate-900">{p.name}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{p.description}</p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-50 flex gap-4">
-                <a
-                  href={pWhatsappUrl}
-                  target="_blank"
-                  onClick={() => {
-                    if (profile?.uid) {
-                      incrementWhatsappClick(profile.uid, p.id);
-                    }
-                  }}
-                  rel="noopener noreferrer"
-                  className="flex-1 py-4 px-6 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-100 hover:scale-[1.01] transition-all cursor-pointer text-sm"
-                >
-                  <MessageSquare size={16} />
-                  <span>Pedir pelo WhatsApp</span>
-                </a>
-              </div>
-            </div>
+      {/* Product details */}
+      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+        <div className="space-y-1.5 cursor-pointer" onClick={handleOpenDetails}>
+          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+            <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-base line-clamp-1">{p.name}</h3>
+            <span className="text-[10px] text-indigo-600 font-extrabold shrink-0 hover:underline">Ver detalhes</span>
           </div>
+          <p className="text-xs text-slate-550 font-medium line-clamp-3 leading-relaxed">{p.description}</p>
         </div>
-      )}
-    </>
+
+        <button
+          onClick={handleOpenDetails}
+          className="w-full py-3.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-extrabold text-xs flex items-center justify-center gap-2 border border-emerald-100 transition-all cursor-pointer shadow-xs"
+        >
+          <MessageSquare size={14} />
+          Pedir pelo WhatsApp
+        </button>
+      </div>
+    </div>
   );
 };
 
 const EmpreendedorDetalhes = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user, isAdmin, isModerator } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -301,6 +198,30 @@ const EmpreendedorDetalhes = () => {
     );
   }
 
+  const isOwner = user && user.uid === profile.uid;
+  const isStaff = isAdmin || isModerator;
+  const isPending = profile.showcaseApproved !== true;
+
+  if (isPending && !isOwner && !isStaff) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-6" id="pending-showcase">
+        <span className="text-6xl block">⏳</span>
+        <h2 className="text-2xl font-black text-slate-800">Vitrine em Moderação</h2>
+        <p className="text-slate-500 text-sm leading-relaxed">
+          Esta vitrine de negócios acabou de ser criada ou editada e está em análise pela equipe de moderação. 
+          Ficará visível para o público em geral assim que for aprovada!
+        </p>
+        <Link 
+          to="/empreendedores" 
+          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl transition-all shadow-md shadow-indigo-100 text-sm"
+        >
+          <ArrowLeft size={16} />
+          Voltar a Empreendedores
+        </Link>
+      </div>
+    );
+  }
+
   const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80';
   const rawCountry = profile.country || '';
   const countryFormatted = rawCountry === 'Portugal' ? '🇵🇹 Portugal' : rawCountry === 'Reino Unido' ? '🇬🇧 Reino Unido' : rawCountry;
@@ -313,6 +234,15 @@ const EmpreendedorDetalhes = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-8" id="showcase-detail">
+      {isPending && (isOwner || isStaff) && (
+        <div className="bg-amber-550 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 text-xs font-bold flex items-start gap-2.5 shadow-sm">
+          <span className="text-base">⏳</span>
+          <div className="space-y-1">
+            <p className="font-extrabold text-amber-950">MODO PREVIEW DICA</p>
+            <p className="font-medium text-amber-800">Esta vitrine ainda não foi aprovada pela administração e está oculta do público. Apenas você por ser o dono ou um moderador/admin consegue visualizar esta página.</p>
+          </div>
+        </div>
+      )}
       {/* Visual Back Arrow Container */}
       <div className="flex justify-between items-center">
         <Link

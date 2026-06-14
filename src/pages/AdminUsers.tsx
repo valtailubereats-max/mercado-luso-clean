@@ -56,6 +56,10 @@ const AdminUsers = () => {
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [editShowcaseActive, setEditShowcaseActive] = useState(false);
+  const [editShowcaseApproved, setEditShowcaseApproved] = useState(false);
+  const [editShowcaseName, setEditShowcaseName] = useState('');
+
   const handleOpenEditModal = (user: UserProfile) => {
     setEditingUser(user);
     setEditName(user.name || '');
@@ -66,6 +70,9 @@ const AdminUsers = () => {
     setEditRole(user.role || 'user');
     setEditReferralCredits(user.referralCredits || 0);
     setEditPointsFromAds(user.pointsFromAds || 0);
+    setEditShowcaseActive(user.showcaseActive || false);
+    setEditShowcaseApproved(user.showcaseApproved || false);
+    setEditShowcaseName(user.showcaseName || '');
     setEditError(null);
     setEditSuccess(null);
   };
@@ -130,6 +137,8 @@ const AdminUsers = () => {
         role: editRole,
         referralCredits: Number(editReferralCredits) || 0,
         pointsFromAds: Number(editPointsFromAds) || 0,
+        showcaseActive: editShowcaseActive,
+        showcaseApproved: editShowcaseApproved,
       };
 
       await setDoc(userDocRef, updatedFields, { merge: true });
@@ -139,15 +148,26 @@ const AdminUsers = () => {
         const publicRef = doc(db, 'sellerPublicProfiles', editingUserId);
         const publicSnap = await getDoc(publicRef);
         const now = new Date();
-        const fallbackCreated = editingUser?.acceptedTermsAt ? (editingUser.acceptedTermsAt.toDate ? editingUser.acceptedTermsAt.toDate() : editingUser.acceptedTermsAt) : now;
         
-        await setDoc(publicRef, {
+        const publicPayload: any = {
           displayName: editName.trim(),
           city: editCity.trim(),
           country: editCountry || null,
-          createdAt: publicSnap.exists() && publicSnap.data().createdAt ? publicSnap.data().createdAt : fallbackCreated,
-          updatedAt: now
-        }, { merge: true });
+          updatedAt: now,
+          showcaseActive: editShowcaseActive,
+          showcaseApproved: editShowcaseApproved,
+        };
+        
+        if (!publicSnap.exists()) {
+          const fallbackCreated = editingUser?.acceptedTermsAt 
+            ? (typeof editingUser.acceptedTermsAt.toDate === 'function' 
+                ? editingUser.acceptedTermsAt.toDate() 
+                : (editingUser.acceptedTermsAt instanceof Date ? editingUser.acceptedTermsAt : new Date(editingUser.acceptedTermsAt))) 
+            : now;
+          publicPayload.createdAt = fallbackCreated instanceof Date && !isNaN(fallbackCreated.getTime()) ? fallbackCreated : now;
+        }
+        
+        await setDoc(publicRef, publicPayload, { merge: true });
       } catch (syncErr) {
         console.error('[Sync] Erro ao sincronizar para sellerPublicProfiles:', syncErr);
       }
@@ -165,6 +185,8 @@ const AdminUsers = () => {
         role: editRole,
         referralCredits: Number(editReferralCredits) || 0,
         pointsFromAds: Number(editPointsFromAds) || 0,
+        showcaseActive: editShowcaseActive,
+        showcaseApproved: editShowcaseApproved,
       } : u));
 
       // Close modal gracefully after a short delay
@@ -438,7 +460,18 @@ const AdminUsers = () => {
                           {(user.name?.[0] || user.email?.[0] || '?').toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate">{user.name || 'Sem nome'}</p>
+                          <p className="font-bold text-slate-900 truncate flex items-center gap-1.5">
+                            {user.name || 'Sem nome'}
+                            {user.showcaseActive && (
+                              <span className={`inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                                user.showcaseApproved 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
+                              }`}>
+                                {user.showcaseApproved ? '💚 Vitrine' : '⏳ Pendente'}
+                              </span>
+                            )}
+                          </p>
                           <p className="text-xs text-slate-500 truncate flex items-center gap-1">
                             <Mail size={12} />
                             {user.email}
@@ -707,6 +740,57 @@ const AdminUsers = () => {
                       onChange={(e) => setEditPointsFromAds(Math.max(0, parseInt(e.target.value) || 0))}
                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
                     />
+                  </div>
+                </div>
+
+                {/* Showcase Moderation Block */}
+                <div className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-2xl space-y-4">
+                  <h4 className="text-[11px] font-black text-indigo-950 uppercase tracking-wider">Moderação de Vitrine Digital</h4>
+                  
+                  {editShowcaseActive && editShowcaseName && (
+                    <p className="text-xs font-extrabold text-indigo-800">
+                      Nome da Vitrine: <span className="text-slate-900">"{editShowcaseName}"</span>
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Vitrine Ativada pelo Dono:</span>
+                      <span className="text-[10px] text-slate-500 block">Indica se o empreendedor ativou a vitrine na conta dele.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditShowcaseActive(!editShowcaseActive)}
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        editShowcaseActive ? 'bg-indigo-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          editShowcaseActive ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 border-t border-indigo-100/50 pt-3">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block flex items-center gap-1">Aprovado pela Moderação: {editShowcaseApproved ? '💚' : '⏳'}</span>
+                      <span className="text-[10px] text-slate-500 block">Se desmarcado, a vitrine fica em análise e oculta do público.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditShowcaseApproved(!editShowcaseApproved)}
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        editShowcaseApproved ? 'bg-emerald-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          editShowcaseApproved ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
 

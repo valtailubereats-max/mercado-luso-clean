@@ -15,7 +15,8 @@ import {
   Megaphone,
   Briefcase,
   MessageSquare,
-  Camera
+  Camera,
+  Store
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -39,7 +40,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }, [loading, user, location.pathname, location.search, navigate]);
 
   React.useEffect(() => {
-    if (!loading && user && isStaff && isModerator && location.pathname !== '/admin/ads' && location.pathname !== '/admin/marketing') {
+    if (!loading && user && isStaff && isModerator && location.pathname !== '/admin/ads' && location.pathname !== '/admin/marketing' && location.pathname !== '/admin/showcases') {
       navigate('/admin/ads', { replace: true });
     }
   }, [isModerator, isStaff, loading, location.pathname, navigate, user]);
@@ -48,6 +49,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Upload, label: 'Importar via IA', path: '/admin/import' },
     { icon: ShoppingBag, label: 'Gerir Anúncios', path: '/admin/ads' },
+    { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
     { icon: Users, label: 'Utilizadores', path: '/admin/users' },
     { icon: Briefcase, label: 'Gestão de Equipe', path: '/admin/team' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
@@ -98,7 +100,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       <nav className="flex-1 space-y-1">
         {menuItems
-          .filter((item) => !isModerator || item.path === '/admin/ads' || item.path === '/admin/marketing')
+          .filter((item) => !isModerator || item.path === '/admin/ads' || item.path === '/admin/marketing' || item.path === '/admin/showcases')
           .map((item) => {
             const isActive = location.pathname === item.path;
             return (

@@ -16,6 +16,7 @@ import OptimizedImage from '../components/OptimizedImage';
 import ReviewModal from '../components/ReviewModal';
 import AdCard from '../components/AdCard';
 import ShowcaseStats from '../components/ShowcaseStats';
+import ShowcaseInterests from '../components/ShowcaseInterests';
 import { calculateTotalPoints, calculateProgressPoints, POINTS_THRESHOLD, POINTS_PER_REFERRAL, POINTS_PER_AD } from '../utils/rewards';
 
 const Profile = () => {
@@ -607,6 +608,7 @@ const Profile = () => {
 
       const showcasePayload = {
         showcaseActive,
+        showcaseApproved: profile && profile.showcaseApproved !== undefined ? profile.showcaseApproved : false,
         showcaseName: showcaseActive ? showcaseName : '',
         showcaseSlug: showcaseActive ? generatedSlug : '',
         showcaseCategory: showcaseActive ? showcaseCategory : '',
@@ -633,16 +635,25 @@ const Profile = () => {
         const publicRef = doc(db, 'sellerPublicProfiles', user.uid);
         const publicSnap = await getDoc(publicRef);
         const now = new Date();
-        const fallbackCreated = profile?.acceptedTermsAt ? (profile.acceptedTermsAt.toDate ? profile.acceptedTermsAt.toDate() : profile.acceptedTermsAt) : now;
         
-        await setDoc(publicRef, {
+        const publicPayload: any = {
           displayName: name,
           city: city,
           country: country,
-          createdAt: publicSnap.exists() && publicSnap.data().createdAt ? publicSnap.data().createdAt : fallbackCreated,
           updatedAt: now,
           ...showcasePayload
-        }, { merge: true });
+        };
+        
+        if (!publicSnap.exists()) {
+          const fallbackCreated = profile?.acceptedTermsAt 
+            ? (typeof profile.acceptedTermsAt.toDate === 'function' 
+                ? profile.acceptedTermsAt.toDate() 
+                : (profile.acceptedTermsAt instanceof Date ? profile.acceptedTermsAt : new Date(profile.acceptedTermsAt))) 
+            : now;
+          publicPayload.createdAt = fallbackCreated instanceof Date && !isNaN(fallbackCreated.getTime()) ? fallbackCreated : now;
+        }
+        
+        await setDoc(publicRef, publicPayload, { merge: true });
       } catch (syncErr) {
         console.error('[Sync] Erro ao sincronizar para sellerPublicProfiles:', syncErr);
       }
@@ -956,6 +967,33 @@ const Profile = () => {
                 />
               </button>
             </div>
+
+            {/* STATUS DE APROVAÇÃO DA VITRINE */}
+            {showcaseActive && (
+              <div className={`p-5 rounded-2xl mb-6 border flex items-start gap-3.5 text-xs font-bold leading-relaxed ${
+                profile?.showcaseApproved === true 
+                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                  : 'bg-amber-50 border-amber-200 text-amber-800'
+              }`}>
+                {profile?.showcaseApproved === true ? (
+                  <>
+                    <span className="text-lg shrink-0 mt-0.5">💚</span>
+                    <div className="space-y-1">
+                      <p className="font-extrabold text-emerald-950 text-sm">A sua vitrine está APROVADA!</p>
+                      <p className="font-medium text-emerald-700 leading-relaxed text-xs">Ela está ativa e totalmente visível para o público em geral na página de Empreendedores.</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg shrink-0 mt-0.5 animate-pulse">⏳</span>
+                    <div className="space-y-1">
+                      <p className="font-extrabold text-amber-950 text-sm">Vitrine em análise da Moderação</p>
+                      <p className="font-medium text-amber-700 leading-relaxed text-xs">A sua vitrine digital e produtos e serviços associados só ficarão visíveis publicamente após a equipa de Moderação ou Administração aprovar as informações.</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* FORMULÁRIO COMPLETO SE ATIVO */}
             {showcaseActive && (
@@ -1277,8 +1315,9 @@ const Profile = () => {
                 </div>
 
                 {/* ESTATÍSTICAS DA VITRINE */}
-                <div className="md:col-span-2 border-t border-slate-150 pt-6">
+                <div className="md:col-span-2 border-t border-slate-150 pt-6 space-y-6">
                   <ShowcaseStats sellerId={user?.uid || ''} products={showcaseProducts} />
+                  <ShowcaseInterests sellerId={user?.uid || ''} />
                 </div>
               </motion.div>
             )}

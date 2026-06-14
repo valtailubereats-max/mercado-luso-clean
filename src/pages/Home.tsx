@@ -363,8 +363,8 @@ const Home = () => {
           ...docSnap.data()
         }));
 
-        // Filtragem por país para robustez sem exigir índice composto
-        allVitrines = allVitrines.filter((v: any) => v.country === country);
+        // Filtragem por país e aprovação da moderação para robustez sem exigir índice composto
+        allVitrines = allVitrines.filter((v: any) => v.country === country && v.showcaseApproved === true);
 
         const loadedVitrines = await Promise.all(
           allVitrines.map(async (v: any) => {

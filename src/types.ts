@@ -69,6 +69,7 @@ export interface UserProfile {
   pointsFromAds?: number;
   country?: 'Portugal' | 'Reino Unido';
   showcaseActive?: boolean;
+  showcaseApproved?: boolean;
   showcaseName?: string;
   showcaseSlug?: string;
   showcaseCategory?: string;
