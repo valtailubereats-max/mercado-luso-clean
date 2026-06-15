@@ -60,6 +60,13 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidAdImagesAndPlan(data) {
+      let isFeaturedAd = data.get('isFeatured', false) == true || data.get('plan', 'free') == 'featured' || data.get('plan', 'free') == 'highlight';
+      let imagesList = data.get('images', []);
+      return imagesList is list &&
+             (isFeaturedAd ? (imagesList.size() <= 4) : (imagesList.size() <= 2));
+    }
+
     function isValidSettings(data) {
       return data.keys().hasAll(['id', 'planDurations', 'expirationAction', 'warningDays']) &&
              data.planDurations is map &&
@@ -124,7 +131,8 @@ service cloud.firestore {
              data.country is string &&
              data.createdAt is timestamp &&
              data.updatedAt is timestamp &&
-             (!('showcasePlan' in data) || data.showcasePlan in ['basic', 'premium']);
+             (!('showcasePlan' in data) || data.showcasePlan in ['basic', 'premium']) &&
+             (!('productsCount' in data) || data.productsCount is number);
     }
 
     function isValidShowcaseProduct(data) {
@@ -182,8 +190,17 @@ service cloud.firestore {
 
       match /products/{productId} {
         allow read: if true;
-        allow create: if isOwner(userId) && isValidShowcaseProduct(request.resource.data) && request.resource.data.userId == userId;
-        allow update: if isOwner(userId) && isValidShowcaseProduct(request.resource.data) && request.resource.data.userId == userId;
+        allow create: if isOwner(userId) && isValidShowcaseProduct(request.resource.data) && request.resource.data.userId == userId &&
+                      (
+                        request.resource.data.active == false ||
+                        get(/databases/$(database)/documents/sellerPublicProfiles/$(userId)).data.get('productsCount', 0) < 6
+                      );
+        allow update: if isOwner(userId) && isValidShowcaseProduct(request.resource.data) && request.resource.data.userId == userId &&
+                      (
+                        request.resource.data.active == false ||
+                        resource.data.active == true ||
+                        get(/databases/$(database)/documents/sellerPublicProfiles/$(userId)).data.get('productsCount', 0) < 6
+                      );
         allow delete: if isOwner(userId);
       }
     }
@@ -221,6 +238,7 @@ service cloud.firestore {
 
       allow create: if isAuthenticated() &&
                     isValidAd(request.resource.data) &&
+                    isValidAdImagesAndPlan(request.resource.data) &&
                     request.resource.data.status == 'pending' &&
                     (
                       request.resource.data.category != 'Trabalho/Empregos' ||
@@ -229,6 +247,14 @@ service cloud.firestore {
                     );
 
       allow update: if (
+        (
+          isAuthenticated() &&
+          resource.data.sellerId == request.auth.uid &&
+          isValidAd(request.resource.data) &&
+          isValidAdImagesAndPlan(request.resource.data) &&
+          request.resource.data.status == 'pending'
+        ) ||
+
         (resource.data.status == 'approved' && isValidAdCounterUpdate()) ||
 
         (

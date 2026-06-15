@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { 
   Users, ShoppingBag, MousePointer2, Bell, TrendingUp, MapPin, Calendar, Clock, Download,
-  ShieldCheck, Briefcase, Store, Megaphone, CheckCircle2, ShieldAlert
+  ShieldCheck, Briefcase, Store, Megaphone, CheckCircle2, ShieldAlert, Star
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -56,6 +56,8 @@ const AdminDashboard = () => {
     staffCount: 0,
     trabalhosCount: 0,
     vitrinesCount: 0,
+    featuredAdsCount: 0,
+    paidVitrinesCount: 0,
     leadsCount: 0,
     notificationsCount: 0,
     marketingCount: 0,
@@ -225,6 +227,8 @@ const AdminDashboard = () => {
         return cat === 'trabalho/empregos' || cat === 'trabalho' || cat === 'trabalhos' || cat === 'emprego' || cat === 'empregos';
       }).length;
       const vitrinesCount = profilesList.length;
+      const featuredAdsCount = adsList.filter(a => a.isFeatured === true).length;
+      const paidVitrinesCount = profilesList.filter(p => p.showcasePaid === true).length;
       const leadsCount = adInterestsList.length + showcaseInterestsList.length;
       const marketingCount = marketingList.length;
 
@@ -236,6 +240,8 @@ const AdminDashboard = () => {
         staffCount,
         trabalhosCount,
         vitrinesCount,
+        featuredAdsCount,
+        paidVitrinesCount,
         leadsCount,
         notificationsCount: personalNotificationCount,
         marketingCount,
@@ -619,8 +625,30 @@ const AdminDashboard = () => {
                 <Store size={18} />
               </div>
               <div>
-                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Vitrines</span>
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Vitrines Totais</span>
                 <span className="text-2xl font-black text-slate-900">{realtimeStats.vitrinesCount}</span>
+              </div>
+            </div>
+
+            {/* Vitrines Pagas */}
+            <div className="p-5 bg-emerald-50/40 border border-emerald-100 rounded-2.5xl flex flex-col justify-between hover:border-emerald-200 transition-all">
+              <div className="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Vitrines Pagas ({realtimeStats.country === 'Reino Unido' ? '£8.99' : '€8.99'})</span>
+                <span className="text-2xl font-black text-emerald-700">{realtimeStats.paidVitrinesCount}</span>
+              </div>
+            </div>
+
+            {/* Anúncios em Destaque */}
+            <div className="p-5 bg-amber-50/40 border border-amber-100 rounded-2.5xl flex flex-col justify-between hover:border-amber-200 transition-all">
+              <div className="w-9 h-9 bg-amber-100 text-amber-500 rounded-xl flex items-center justify-center mb-4">
+                <Star size={18} />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Anúncios em Destaque (£/€4.99)</span>
+                <span className="text-2xl font-black text-amber-600">{realtimeStats.featuredAdsCount}</span>
               </div>
             </div>
 

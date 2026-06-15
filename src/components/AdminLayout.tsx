@@ -52,7 +52,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: ShoppingBag, label: 'Gerir Anúncios', path: '/admin/ads' },
     { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
     { icon: Users, label: 'Utilizadores', path: '/admin/users' },
-    { icon: Briefcase, label: 'Gestão de Equipe', path: '/admin/team' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
     { icon: QrCode, label: 'Convites', path: '/admin/invitations' },
     { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },

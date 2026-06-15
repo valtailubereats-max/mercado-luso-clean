@@ -694,7 +694,7 @@ const Home = () => {
   }, [filteredAds, limitAmount]);
 
   return (
-    <div className="flex flex-col gap-3 md:gap-6">
+    <div className="flex flex-col gap-2 md:gap-4">
       {/* HERO BANNER LUXURY SLIM + PAINEL LUSÓFONO */}
       <section className="relative -mt-6 md:-mt-8 transition-all duration-500">
 
@@ -1027,15 +1027,15 @@ const Home = () => {
 
       {/* ✨ ANÚNCIOS EM DESTAQUE */}
       {filteredFeaturedAds.length > 0 && (
-        <section className="space-y-2 md:space-y-3 pt-0 pb-2 md:py-1">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+        <section className="space-y-1 pt-0 pb-1.5 md:space-y-1.5 md:pb-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1">
             <div className="flex items-center gap-2">
               <span className="text-xl">✨</span>
               <div>
                 <h2 className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-none">
                   Anúncios em Destaque
                 </h2>
-                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-1">
+                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-0.5">
                   Anúncios promovidos pela comunidade
                 </p>
               </div>
@@ -1070,15 +1070,15 @@ const Home = () => {
 
       {/* 🏪 EMPREENDEDORES EM DESTAQUE */}
       {featuredVitrines.length > 0 && (
-        <section className="space-y-4 pt-4 pb-6 md:py-6" id="featured-entrepreneurs">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <section className="space-y-2 pt-2.5 pb-4 md:pt-3 md:pb-5" id="featured-entrepreneurs">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1">
             <div className="flex items-center gap-2">
               <span className="text-xl">🏪</span>
               <div>
                 <h2 className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-none">
                   Empreendedores em Destaque
                 </h2>
-                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-1">
+                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-0.5">
                   Vitrines Digitais em alta na comunidade
                 </p>
               </div>

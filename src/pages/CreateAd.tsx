@@ -46,7 +46,7 @@ const CreateAd = () => {
     city: prefill?.city || PORTUGAL_CITIES[0],
     country: (prefill?.country || 'Portugal') as 'Portugal' | 'Reino Unido',
     category: urlCategory || prefill?.category || categories[0] || 'Outros',
-    plan: 'free' as 'free' | 'intermediate' | 'premium',
+    plan: 'free' as 'free' | 'highlight',
     duration: 30, // Default for free
     contactEmail: '',
     externalUrl: '',
@@ -60,6 +60,13 @@ const CreateAd = () => {
     useProfilePhone: true,
     contactPhone: ''
   });
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingAdData, setPendingAdData] = useState<any>(null);
+  const [mockCardNumber, setMockCardNumber] = useState('4242 •••• •••• 4242');
+  const [mockExpiry, setMockExpiry] = useState('12/29');
+  const [mockCVC, setMockCVC] = useState('321');
+  const [mockCardName, setMockCardName] = useState('');
 
   useEffect(() => {
     const pCategory = new URLSearchParams(location.search).get('category');
@@ -395,9 +402,8 @@ const CreateAd = () => {
 
   const maxAllowed = React.useMemo(() => {
     if (formData.category === 'Imigração') return 2;
-    if (!settings) return 1;
-    return settings.maxImages?.[formData.plan] || (formData.plan === 'free' ? 1 : formData.plan === 'intermediate' ? 3 : 5);
-  }, [settings, formData.plan, formData.category]);
+    return formData.plan === 'free' ? 2 : 4;
+  }, [formData.plan, formData.category]);
 
   // Se o utilizador selecionar 'Imigração' mas tiver mais do que 2 imagens do produto, corta para 2.
   useEffect(() => {
@@ -409,6 +415,17 @@ const CreateAd = () => {
       }));
     }
   }, [formData.category]);
+
+  // Corta imagens para 2 se o utilizador trocar de Destaque para Grátis
+  useEffect(() => {
+    if (formData.plan === 'free' && formData.images.length > 2) {
+      alert('O anúncio normal gratuito permite apenas 2 fotos. As fotos excedentes foram removidas do anúncio.');
+      setFormData(prev => ({
+        ...prev,
+        images: prev.images.slice(0, 2)
+      }));
+    }
+  }, [formData.plan]);
 
   const processFiles = async (files: File[]) => {
     if (uploadRef.current) return;
@@ -550,6 +567,14 @@ const CreateAd = () => {
         return;
       }
 
+      // Proteger limites comerciais de fotos no frontend
+      const commercialLimit = formData.category === 'Imigração' ? 2 : (formData.plan === 'free' ? 2 : 4);
+      if (formData.images.length > commercialLimit) {
+        alert(`O plano selecionado permite no máximo ${commercialLimit} imagens. Por favor, remova as imagens excedentes antes de guardar.`);
+        setLoading(false);
+        return;
+      }
+
       const adId = id || doc(collection(db, 'ads')).id;
       
       // Calculate expiration date
@@ -616,6 +641,13 @@ const CreateAd = () => {
         companyName: isJob ? formData.companyName.trim() : '',
         experienceRequired: isJob ? formData.experienceRequired : ''
       };
+
+      if (formData.plan === 'highlight' && !originalAd?.isFeatured) {
+        setPendingAdData(adData);
+        setShowPaymentModal(true);
+        setLoading(false);
+        return;
+      }
 
       await setDoc(doc(db, 'ads', adId), adData, { merge: true });
 
@@ -708,6 +740,71 @@ const CreateAd = () => {
       }
     } catch (err) {
       handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, `ads/${id || 'new'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMockPaymentSuccess = async () => {
+    if (!pendingAdData) return;
+    setLoading(true);
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 30); // 30 dias de duração
+
+      const finalizedAdData = {
+        ...pendingAdData,
+        isFeatured: true,
+        featuredUntil: tomorrow
+      };
+
+      await setDoc(doc(db, 'ads', finalizedAdData.id), finalizedAdData, { merge: true });
+
+      // Create Admin Notifications
+      try {
+        const staffQuery = query(
+          collection(db, 'users'),
+          where('role', 'in', ['admin', 'moderator'])
+        );
+        const staffSnapshot = await getDocs(staffQuery);
+        
+        const staffUids: string[] = [];
+        const creatorUid = user?.uid;
+
+        staffSnapshot.forEach(docSnap => {
+          const uid = docSnap.id;
+          if (uid !== creatorUid) {
+            staffUids.push(uid);
+          }
+        });
+
+        for (const staffUid of staffUids) {
+          const notifId = `pending_${finalizedAdData.id}_${staffUid}_${Date.now()}`;
+          const notifData = {
+            userId: staffUid,
+            title: 'Novo destaque aprovado / pendente',
+            message: `Há um novo destaque pendente de aprovação: "${finalizedAdData.title}"`,
+            createdAt: serverTimestamp(),
+            read: false,
+            adId: finalizedAdData.id,
+            type: 'ad_pending'
+          };
+          await setDoc(doc(db, 'notifications', notifId), notifData);
+        }
+      } catch (notifErr) {
+        console.warn('Notification warning:', notifErr);
+      }
+
+      clearHomeCache();
+      alert(formData.country === 'Reino Unido'
+        ? 'Pagamento de £4.99 confirmado com sucesso via Stripe! O seu anúncio agora é Destaque ⭐ por 30 dias!'
+        : 'Pagamento de €4.99 confirmado com sucesso via Stripe! O seu anúncio agora é Destaque ⭐ por 30 dias!'
+      );
+      setShowPaymentModal(false);
+      navigate('/profile?tab=anuncios');
+    } catch (err) {
+      console.error(err);
+      alert('Ocorreu um erro ao concluir o pagamento.');
     } finally {
       setLoading(false);
     }
@@ -1415,45 +1512,90 @@ const CreateAd = () => {
             )}
 
             <div className="space-y-4 md:col-span-2">
-              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Plano de Duração</label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="text-sm font-bold text-slate-705 uppercase tracking-wider block">Tipo de Anúncio & Destaque</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Plano Gratuito (Normal) */}
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, plan: 'free' })}
-                  className={`p-4 rounded-2xl border-2 transition-all text-left ${formData.plan === 'free' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
+                  className={`p-6 rounded-3xl border-2 text-left transition-all ${
+                    formData.plan === 'free' 
+                      ? 'border-indigo-600 bg-indigo-50/50 ring-4 ring-indigo-100' 
+                      : 'border-slate-100 bg-slate-50 hover:border-slate-300'
+                  }`}
                 >
-                  <p className="font-bold text-slate-900">Plano Gratuito</p>
-                  <p className="text-xs text-slate-500 mb-2">Ideal para vendas rápidas</p>
-                  <select
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0, plan: 'free' })}
-                    className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm outline-none"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <option value={15}>15 Dias</option>
-                    <option value={30}>30 Dias</option>
-                  </select>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-extrabold text-slate-900 text-lg">Anúncio Normal</p>
+                      <p className="text-xs text-slate-500 mt-1">Ideal para vendas e transações pontuais gratuitas</p>
+                    </div>
+                    <span className="text-xs font-black bg-slate-200 text-slate-800 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      Grátis
+                    </span>
+                  </div>
+                  
+                  <ul className="text-xs text-slate-600 space-y-1.5 my-4">
+                    <li className="flex items-center gap-1.5">✅ Até 2 fotos</li>
+                    <li className="flex items-center gap-1.5">✅ Aparece nas listagens normais</li>
+                    <li className="flex items-center gap-1.5">✅ Pesquisa e favoritos</li>
+                  </ul>
+
+                  <div className="mt-4 pt-4 border-t border-slate-200/50" onClick={(e) => e.stopPropagation()}>
+                    <label className="text-[10px] uppercase font-black tracking-wider text-slate-400 block mb-1.5">Duração do Anúncio</label>
+                    <select
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0, plan: 'free' })}
+                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none cursor-pointer"
+                    >
+                      <option value={15}>15 Dias</option>
+                      <option value={30}>30 Dias</option>
+                    </select>
+                  </div>
                 </button>
 
+                {/* Plano em Destaque (Paid) */}
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, plan: 'intermediate' })}
-                  className={`p-4 rounded-2xl border-2 transition-all text-left ${formData.plan === 'intermediate' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
+                  onClick={() => setFormData({ ...formData, plan: 'highlight' })}
+                  className={`p-6 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
+                    formData.plan === 'highlight' 
+                      ? 'border-amber-400 bg-amber-50/20 ring-4 ring-amber-100' 
+                      : 'border-slate-100 bg-slate-50 hover:border-slate-300'
+                  }`}
                 >
-                  <p className="font-bold text-slate-900">Plano Intermédio</p>
-                  <p className="text-xs text-slate-500 mb-2">Maior visibilidade</p>
-                  <p className="text-sm font-bold text-indigo-600">180 Dias</p>
+                  <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-white text-[9px] font-black px-3.5 py-1.5 rounded-bl-2xl uppercase tracking-wider animate-pulse">
+                    Popular ⭐
+                  </div>
+                  
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-extrabold text-slate-900 text-lg">Anúncio em Destaque</p>
+                      <p className="text-xs text-slate-500 mt-1">Destaque prioritário absoluto para máxima conversão</p>
+                    </div>
+                  </div>
+                  
+                  <ul className="text-xs text-slate-600 space-y-1.5 my-4">
+                    <li className="flex items-center gap-1.5">🌟 <strong>Até 4 fotos</strong> nas galerias</li>
+                    <li className="flex items-center gap-1.5">🌟 Prioridade visual no topo & Home</li>
+                    <li className="flex items-center gap-1.5">🌟 <strong>Carrossel de Destaques</strong></li>
+                    <li className="flex items-center gap-1.5">🌟 Selo visual ⭐ Destaque</li>
+                  </ul>
+
+                  <div className="mt-4 pt-4 border-t border-slate-200/50 flex justify-between items-center bg-white/50 p-3 rounded-2xl border border-dashed border-amber-200">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-amber-800 block">Duração Fixa</span>
+                      <span className="text-xs font-extrabold text-slate-900 block mt-0.5">30 Dias</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] uppercase font-bold text-amber-800 block">Investimento</span>
+                      <span className="text-sm font-black text-amber-600 block mt-0.5">
+                        {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                      </span>
+                    </div>
+                  </div>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, plan: 'premium' })}
-                  className={`p-4 rounded-2xl border-2 transition-all text-left ${formData.plan === 'premium' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
-                >
-                  <p className="font-bold text-slate-900">Plano Premium</p>
-                  <p className="text-xs text-slate-500 mb-2">Duração máxima</p>
-                  <p className="text-sm font-bold text-indigo-600">1 Ano</p>
-                </button>
               </div>
             </div>
 
@@ -1482,6 +1624,154 @@ const CreateAd = () => {
           </button>
         </form>
       </motion.div>
+
+      {/* Stripe Checkout Modal Simulator */}
+      <AnimatePresence>
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100"
+            >
+              {/* Header */}
+              <div className="relative p-6 bg-gradient-to-br from-indigo-900 to-slate-950 text-white">
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setLoading(false);
+                  }}
+                  className="absolute top-4 right-4 text-white/75 hover:text-white bg-white/10 p-2 rounded-full transition-all"
+                >
+                  <X size={16} />
+                </button>
+                <div className="flex items-center gap-2 text-indigo-400 font-black tracking-widest text-[10px] uppercase">
+                  <span>Stripe Secure Checkout</span>
+                </div>
+                <h3 className="text-xl font-bold mt-2">Destaque o seu anúncio</h3>
+                <p className="text-xs text-slate-300 mt-1">Multiplique em até 10x as visualizações e feche negócio rápido.</p>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5">
+                {/* Summary */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>Subscrição (30 dias Destaque)</span>
+                    <span className="font-bold text-slate-900">
+                      {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>Taxas e processamento</span>
+                    <span className="font-semibold text-emerald-600">Grátis</span>
+                  </div>
+                  <div className="border-t border-slate-200/50 pt-2 flex justify-between text-sm font-bold text-slate-900">
+                    <span>Total a pagar</span>
+                    <span className="text-indigo-600">
+                      {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Credit Card Fields */}
+                <div className="space-y-3">
+                  <span className="text-xs font-bold text-slate-700 block uppercase tracking-wider">Dados do Cartão (Simulação)</span>
+                  
+                  <div className="border-2 border-slate-200 focus-within:border-indigo-600 rounded-2xl px-4 py-3 bg-white space-y-3 transition-all shadow-sm">
+                    {/* Card Number */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Número do Cartão</label>
+                      <input
+                        type="text"
+                        value={mockCardNumber}
+                        onChange={(e) => setMockCardNumber(e.target.value)}
+                        className="w-full bg-transparent border-none p-0 outline-none text-sm text-slate-900 font-medium placeholder-slate-300"
+                        placeholder="4242 4242 4242 4242"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-2">
+                      {/* Exp */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Validade</label>
+                        <input
+                          type="text"
+                          value={mockExpiry}
+                          onChange={(e) => setMockExpiry(e.target.value)}
+                          className="w-full bg-transparent border-none p-0 outline-none text-sm text-slate-900 font-medium placeholder-slate-300"
+                          placeholder="MM/AA"
+                        />
+                      </div>
+                      {/* CVC */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CVC</label>
+                        <input
+                          type="password"
+                          value={mockCVC}
+                          onChange={(e) => setMockCVC(e.target.value)}
+                          className="w-full bg-transparent border-none p-0 outline-none text-sm text-slate-900 font-medium placeholder-slate-300"
+                          placeholder="CVC"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Holder Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nome no Cartão</label>
+                    <input
+                      type="text"
+                      value={mockCardName}
+                      onChange={(e) => setMockCardName(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-600 text-sm"
+                      placeholder="Ex: João Silva"
+                    />
+                  </div>
+                </div>
+
+                {/* Security and Logos */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1">🔒 Processamento seguro SSL</span>
+                  <div className="flex gap-1.5 opacity-60">
+                    <span className="px-1 py-0.5 border border-slate-200 rounded bg-slate-50 font-black text-[8px] tracking-tighter">VISA</span>
+                    <span className="px-1 py-0.5 border border-slate-200 rounded bg-slate-50 font-black text-[8px] tracking-tighter">MC</span>
+                    <span className="px-1 py-0.5 border border-slate-200 rounded bg-slate-50 font-black text-[8px] tracking-tighter">STRIPE</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2 pt-2">
+                  <button
+                    onClick={handleMockPaymentSuccess}
+                    disabled={loading}
+                    className="w-full bg-indigo-600 text-white font-extrabold py-4 rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-100 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCcw className="animate-spin" size={16} /> A processar transação...
+                      </span>
+                    ) : (
+                      <span>Efetuar Pagamento de {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}</span>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setLoading(false);
+                    }}
+                    className="w-full text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all"
+                  >
+                    Cancelar e voltar ao anúncio
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

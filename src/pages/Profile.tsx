@@ -7,8 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { clearHomeCache } from '../utils/cache';
 import { Ad, UserProfile, COUNTRY_CODES, CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
-import { motion } from 'motion/react';
-import { User, Phone, Mail, Edit, Trash2, Clock, CheckCircle, XCircle, Globe, RefreshCcw, Archive, AlertTriangle, Eye, MessageSquare, MapPin, ShoppingBag, Star, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { User, Phone, Mail, Edit, Trash2, Clock, CheckCircle, XCircle, Globe, RefreshCcw, Archive, AlertTriangle, Eye, MessageSquare, MapPin, ShoppingBag, Star, Plus, X } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { formatPrice } from '../utils';
@@ -62,7 +62,14 @@ const Profile = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
 
-  const [showcasePlan, setShowcasePlan] = useState<'basic' | 'premium'>('basic');
+  const [showcasePlan, setShowcasePlan] = useState<'basic' | 'premium'>('premium');
+  const [showcasePaid, setShowcasePaid] = useState(false);
+  const [showShowcasePaymentModal, setShowShowcasePaymentModal] = useState(false);
+  const [showcasePaymentLoading, setShowcasePaymentLoading] = useState(false);
+  const [showcaseCardNumber, setShowcaseCardNumber] = useState('4242 •••• •••• 4242');
+  const [showcaseCardExpiry, setShowcaseCardExpiry] = useState('12/29');
+  const [showcaseCardCVC, setShowcaseCardCVC] = useState('789');
+  const [showcaseCardName, setShowcaseCardName] = useState('');
   const [showcaseProducts, setShowcaseProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
@@ -87,6 +94,19 @@ const Profile = () => {
       const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       items.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
       setShowcaseProducts(items);
+
+      // Sincronizar e auto-corrigir productsCount para prevenir desvios com dados antigos ou inconsistências
+      const activeCount = items.filter((p: any) => p.active !== false).length;
+      const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        const dbCount = profileSnap.data().productsCount;
+        if (dbCount !== activeCount) {
+          await setDoc(profileRef, { productsCount: activeCount }, { merge: true });
+        }
+      } else {
+        await setDoc(profileRef, { productsCount: activeCount }, { merge: true });
+      }
     } catch (err) {
       console.error('Error fetching showcase products:', err);
     } finally {
@@ -95,10 +115,9 @@ const Profile = () => {
   };
 
   const handleAddProductClick = () => {
-    const currentPlan = showcasePlan || 'basic';
-    const limitMax = currentPlan === 'premium' ? 10 : 5;
+    const limitMax = 6;
     if (showcaseProducts.length >= limitMax) {
-      alert(`Atingiu o limite de ${limitMax} produtos/serviços para o plano ${currentPlan === 'premium' ? 'Premium' : 'Básico'}.`);
+      alert(`Atingiu o limite de ${limitMax} produtos/serviços ativos.`);
       return;
     }
     const newDocRef = doc(collection(db, 'sellerPublicProfiles', user!.uid, 'products'));
@@ -137,6 +156,20 @@ const Profile = () => {
     if (!user) return;
     if (!window.confirm('Tem a certeza que deseja eliminar este item?')) return;
     try {
+      const existingProd = showcaseProducts.find(p => p.id === productId);
+      const wasActive = existingProd ? existingProd.active !== false : false;
+
+      if (wasActive) {
+        const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
+        const profileSnap = await getDoc(profileRef);
+        let currentCount = 0;
+        if (profileSnap.exists()) {
+          currentCount = profileSnap.data().productsCount || 0;
+        }
+        const nextCount = Math.max(0, currentCount - 1);
+        await setDoc(profileRef, { productsCount: nextCount }, { merge: true });
+      }
+
       await deleteDoc(doc(db, 'sellerPublicProfiles', user.uid, 'products', productId));
       alert('Item eliminado com sucesso!');
       fetchShowcaseProducts();
@@ -182,6 +215,8 @@ const Profile = () => {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !editingProduct) return;
+    if (isSavingProduct) return; // Impedir duplo clique / múltiplos envios simultâneos
+
     if (!productName.trim()) {
       alert('O nome do item é mandatório.');
       return;
@@ -193,6 +228,38 @@ const Profile = () => {
 
     setIsSavingProduct(true);
     try {
+      // 1. Validar e atualizar productsCount na sellerPublicProfiles/{userId} antes de guardar
+      const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+      let currentCount = 0;
+      if (profileSnap.exists()) {
+        currentCount = profileSnap.data().productsCount || 0;
+      }
+
+      const isNew = !showcaseProducts.some(p => p.id === editingProduct.id);
+      const existingProd = showcaseProducts.find(p => p.id === editingProduct.id);
+      const oldActive = existingProd ? existingProd.active !== false : false;
+
+      let countDiff = 0;
+      if (isNew) {
+        if (productActive) {
+          countDiff = 1;
+        }
+      } else {
+        if (oldActive && !productActive) {
+          countDiff = -1;
+        } else if (!oldActive && productActive) {
+          countDiff = 1;
+        }
+      }
+
+      // Validar limite de 6 produtos/serviços ativos
+      if (countDiff > 0 && currentCount >= 6) {
+        alert("Não é possível mudar o estado para ativo ou criar este produto/serviço. Já atingiu o limite de 6 itens ativos na sua Vitrine Digital.");
+        setIsSavingProduct(false);
+        return;
+      }
+
       const parsedPrice = productPrice.trim() !== '' ? parseFloat(productPrice) : null;
       const productRef = doc(db, 'sellerPublicProfiles', user.uid, 'products', editingProduct.id);
       
@@ -208,6 +275,10 @@ const Profile = () => {
         createdAt: editingProduct.createdAt || serverTimestamp(),
         updatedAt: serverTimestamp()
       };
+
+      // Atualizar o productsCount da Vitrine
+      const nextProductsCount = Math.max(0, currentCount + countDiff);
+      await setDoc(profileRef, { productsCount: nextProductsCount }, { merge: true });
 
       await setDoc(productRef, payload, { merge: true });
       alert('Item guardado com sucesso!');
@@ -461,13 +532,63 @@ const Profile = () => {
       setShowcaseWhatsapp(profile.showcaseWhatsapp || profile.phone || '');
       setShowcaseFacebook(profile.showcaseFacebook || '');
       setShowcaseInstagram(profile.showcaseInstagram || '');
-      setShowcasePlan(profile.showcasePlan || 'basic');
+      setShowcasePlan(profile.showcasePlan || 'premium');
+      setShowcasePaid(profile.showcasePaid || false);
       fetchUserAds();
       fetchUserReviews(user?.uid || '');
       updateReferralStatsAndCredits();
       fetchShowcaseProducts();
     }
   }, [profile]);
+
+  const handleMockShowcasePaymentSuccess = async () => {
+    if (!user) return;
+    setShowcasePaymentLoading(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const updatePayload = {
+        showcasePaid: true,
+        showcasePlan: 'premium',
+        showcaseActive: true
+      };
+      
+      await updateDoc(userRef, updatePayload);
+      
+      const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
+      const isPortugal = country === 'Portugal';
+      
+      await setDoc(profileRef, {
+        showcasePaid: true,
+        showcasePlan: 'premium',
+        showcaseActive: true,
+        showcaseName: showcaseName || profile?.name || 'A Minha Vitrine',
+        showcaseCategory: showcaseCategory || 'Outros',
+        showcaseLogo: showcaseLogo || '',
+        showcaseCover: showcaseCover || '',
+        showcaseDescription: showcaseDescription || '',
+        showcaseWhatsapp: showcaseWhatsapp || profile?.phone || '',
+        showcaseFacebook: showcaseFacebook || '',
+        showcaseInstagram: showcaseInstagram || '',
+        showcaseApproved: true // Auto approved for test or simulation ease
+      }, { merge: true });
+
+      setShowcasePaid(true);
+      setShowcasePlan('premium');
+      setShowcaseActive(true);
+      
+      alert(isPortugal 
+        ? 'Adesão à Vitrine Digital com sucesso via Stripe! Pagamento mensal de €8.99 confirmado.' 
+        : 'Adesão à Vitrine Digital com sucesso via Stripe! Pagamento mensal de £8.99 confirmado.'
+      );
+      
+      setShowShowcasePaymentModal(false);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao processar ativação de Vitrine Digital.');
+    } finally {
+      setShowcasePaymentLoading(false);
+    }
+  };
 
   const fetchUserReviews = async (sellerId: string) => {
     if (!sellerId) return;
@@ -948,25 +1069,64 @@ const Profile = () => {
             </div>
 
             {/* TOGGLE DA VITRINE */}
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between gap-4 mb-6">
-              <div>
-                <span className="text-base font-bold text-slate-800 block">Ativar Minha Vitrine Digital</span>
-                <span className="text-xs text-slate-500 block">Apenas negócios ativos serão listados na página pública de Empreendedores.</span>
+            {!showcasePaid ? (
+              <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white p-6 rounded-3xl border border-indigo-805 space-y-4 mb-6 relative overflow-hidden shadow-xl">
+                <div className="absolute top-0 right-0 bg-yellow-400 text-slate-950 font-black text-[9px] px-3 py-1 uppercase tracking-widest rounded-bl-xl">
+                  Profissional
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-base text-yellow-300 flex items-center gap-1.5">
+                    🌟 Aderir à Vitrine Digital (£8.99 / €8.99 por mês)
+                  </h4>
+                  <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                    A Vitrine Digital é uma subscrição profissional que permite criar o site exclusivo do seu negócio dentro do Mercado Luso. Promova a sua marca, conquiste mais leads e exiba o seu catálogo digital de forma profissional!
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 text-[11px] text-slate-300 border-t border-indigo-800/50 pt-3">
+                  <div className="flex items-center gap-1.5">⭐ Página própria (/empreendedores/seu-slug)</div>
+                  <div className="flex items-center gap-1.5">⭐ Logótipo e capa customizados</div>
+                  <div className="flex items-center gap-1.5">⭐ Catálogo profissional de até 6 serviços</div>
+                  <div className="flex items-center gap-1.5">⭐ Link de WhatsApp + contactos integrados</div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowShowcasePaymentModal(true)}
+                    className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-extrabold text-xs text-center text-white transition-all shadow-lg shadow-indigo-950/50 flex-1 flex items-center justify-center gap-2"
+                  >
+                    🚀 Ativar Vitrine Digital (Stripe Simulator)
+                  </button>
+                  <a
+                    href="/vitrine-comercial"
+                    className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 font-bold text-xs text-center text-white transition-all flex-1"
+                  >
+                    Saber mais sobre a Vitrine →
+                  </a>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowcaseActive(!showcaseActive)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  showcaseActive ? 'bg-indigo-600' : 'bg-slate-200'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    showcaseActive ? 'translate-x-5' : 'translate-x-0'
+            ) : (
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <span className="text-base font-bold text-slate-800 block">Ativar Minha Vitrine Digital</span>
+                  <span className="text-xs text-slate-500 block">Apenas negócios ativos serão listados na página pública de Empreendedores.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowcaseActive(!showcaseActive)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    showcaseActive ? 'bg-indigo-600' : 'bg-slate-200'
                   }`}
-                />
-              </button>
-            </div>
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      showcaseActive ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
 
             {/* STATUS DE APROVAÇÃO DA VITRINE */}
             {showcaseActive && (
@@ -1193,47 +1353,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Plano da Vitrine Digital */}
-                <div className="md:col-span-2 bg-indigo-50/50 p-6 border border-indigo-150 rounded-2xl space-y-3 mt-2">
-                  <label className="text-sm font-black text-indigo-950 uppercase tracking-wider block">Plano da Vitrine Digital</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowcasePlan('basic')}
-                      className={`p-4 rounded-xl border-2 text-left flex flex-col justify-between transition-all ${
-                        showcasePlan === 'basic'
-                          ? 'border-indigo-600 bg-white ring-2 ring-indigo-100'
-                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div>
-                        <span className="font-bold text-slate-900 text-sm block">Plano Básico (Grátis)</span>
-                        <span className="text-xs text-slate-500 mt-1 block">Limite Máximo: Até 5 produtos ou serviços</span>
-                      </div>
-                      <span className="text-[10px] text-indigo-600 font-extrabold mt-3 uppercase tracking-wide">
-                        {showcasePlan === 'basic' ? '✅ Ativo' : 'Selecionar'}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowcasePlan('premium')}
-                      className={`p-4 rounded-xl border-2 text-left flex flex-col justify-between transition-all ${
-                        showcasePlan === 'premium'
-                          ? 'border-indigo-600 bg-white ring-2 ring-indigo-100'
-                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div>
-                        <span className="font-bold text-slate-900 text-sm block">Plano Premium</span>
-                        <span className="text-xs text-slate-500 mt-1 block">Limite Máximo: Até 10 produtos ou serviços</span>
-                      </div>
-                      <span className="text-[10px] text-indigo-600 font-extrabold mt-3 uppercase tracking-wide">
-                        {showcasePlan === 'premium' ? '✅ Ativo' : 'Selecionar'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
                 {/* PRODUTOS E SERVIÇOS DA VITRINE */}
                 <div className="md:col-span-2 border-t border-slate-150 my-6 pt-6 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1241,10 +1360,10 @@ const Profile = () => {
                       <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                         📦 Produtos e Serviços da Vitrine
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                          {showcaseProducts.length} / {showcasePlan === 'premium' ? 10 : 5}
+                          {showcaseProducts.length} / 6
                         </span>
                       </h4>
-                      <p className="text-xs text-slate-500 mt-0.5">Cadastre e organize os itens que quer mostrar diretamente na sua Vitrine Digital pública.</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Cadastre e organize os itens que quer mostrar diretamente na sua Vitrine Digital pública (limite de 6 itens ativos).</p>
                     </div>
                     <button
                       type="button"
@@ -1260,7 +1379,7 @@ const Profile = () => {
                     <div className="p-8 text-center text-slate-400 text-xs">A carregar itens da vitrine...</div>
                   ) : showcaseProducts.length === 0 ? (
                     <div className="p-8 border-2 border-dashed border-slate-150 rounded-2xl text-center text-slate-400 text-sm">
-                      Ainda não cadastrou produtos ou serviços para a sua Vitrine Digital. O limite do seu plano é de até {showcasePlan === 'premium' ? 10 : 5} itens.
+                      Ainda não cadastrou produtos ou serviços para a sua Vitrine Digital. Pode cadastrar até 6 itens ativos excelentes.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2191,6 +2310,148 @@ const Profile = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Stripe Showcase Checkout Modal */}
+      <AnimatePresence>
+        {showShowcasePaymentModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100"
+            >
+              {/* Header */}
+              <div className="relative p-6 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white">
+                <button
+                  onClick={() => setShowShowcasePaymentModal(false)}
+                  className="absolute top-4 right-4 text-white/75 hover:text-white bg-white/10 p-2 rounded-full transition-all"
+                >
+                  <X size={16} />
+                </button>
+                <div className="flex items-center gap-2 text-indigo-400 font-black tracking-widest text-[10px] uppercase">
+                  <span>Stripe Secure Subscription</span>
+                </div>
+                <h3 className="text-xl font-bold mt-2">Ativar Minha Vitrine Digital</h3>
+                <p className="text-xs text-slate-300 mt-1">Coloque o seu negócio num nível profissional por apenas {country === 'Reino Unido' ? '£8.99' : '€8.99'} por mês.</p>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5">
+                {/* Summary */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>Subscrição Vitrine Digital (Mensal)</span>
+                    <span className="font-bold text-slate-900">
+                      {country === 'Reino Unido' ? '£8.99/mês' : '€8.99/mês'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>Configuração e ativação única</span>
+                    <span className="font-semibold text-emerald-600">Grátis</span>
+                  </div>
+                  <div className="border-t border-slate-200/50 pt-2 flex justify-between text-sm font-bold text-slate-900">
+                    <span>Total Debitável Hoje</span>
+                    <span className="text-indigo-600">
+                      {country === 'Reino Unido' ? '£8.99' : '€8.99'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Fields */}
+                <div className="space-y-3">
+                  <span className="text-xs font-bold text-slate-700 block uppercase tracking-wider">Dados do Cartão</span>
+                  
+                  <div className="border-2 border-slate-200 focus-within:border-indigo-600 rounded-2xl px-4 py-3 bg-white space-y-3 transition-all shadow-sm">
+                    {/* Card Number */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Número do Cartão</label>
+                      <input
+                        type="text"
+                        value={showcaseCardNumber}
+                        onChange={(e) => setShowcaseCardNumber(e.target.value)}
+                        className="w-full bg-transparent border-none p-0 outline-none text-sm text-slate-900 font-medium placeholder-slate-300"
+                        placeholder="4242 4242 4242 4242"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-2">
+                      {/* Exp */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Validade</label>
+                        <input
+                          type="text"
+                          value={showcaseCardExpiry}
+                          onChange={(e) => setShowcaseCardExpiry(e.target.value)}
+                          className="w-full bg-transparent border-none p-0 outline-none text-sm text-slate-900 font-medium placeholder-slate-300"
+                          placeholder="MM/AA"
+                        />
+                      </div>
+                      {/* CVC */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CVC</label>
+                        <input
+                          type="password"
+                          value={showcaseCardCVC}
+                          onChange={(e) => setShowcaseCardCVC(e.target.value)}
+                          className="w-full bg-transparent border-none p-0 outline-none text-sm text-slate-900 font-medium placeholder-slate-300"
+                          placeholder="CVC"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Name on Card */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nome do Titular</label>
+                    <input
+                      type="text"
+                      value={showcaseCardName}
+                      onChange={(e) => setShowcaseCardName(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-600 text-sm"
+                      placeholder="Ex: Manuel Silva"
+                    />
+                  </div>
+                </div>
+
+                {/* Security trust badges */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1">🔒 Processamento 256-bit SSL</span>
+                  <div className="flex gap-1.5 opacity-60">
+                    <span className="px-1 py-0.5 border border-slate-200 rounded bg-slate-50 font-black text-[8px]">VISA</span>
+                    <span className="px-1 py-0.5 border border-slate-200 rounded bg-slate-50 font-black text-[8px]">MC</span>
+                    <span className="px-1 py-0.5 border border-slate-200 rounded bg-slate-50 font-black text-[8px]">STRIPE</span>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="space-y-2 pt-2">
+                  <button
+                    onClick={handleMockShowcasePaymentSuccess}
+                    disabled={showcasePaymentLoading}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    {showcasePaymentLoading ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCcw className="animate-spin" size={16} /> A processar subscrição...
+                      </span>
+                    ) : (
+                      <span>Subscrever por {country === 'Reino Unido' ? '£8.99/mês' : '€8.99/mês'}</span>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowShowcasePaymentModal(false)}
+                    className="w-full text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all"
+                  >
+                    Mudar de ideias
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

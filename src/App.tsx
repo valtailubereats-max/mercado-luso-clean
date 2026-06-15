@@ -33,6 +33,7 @@ import Empreendedores from './pages/Empreendedores';
 import EmpreendedorDetalhes from './pages/EmpreendedorDetalhes';
 import EmpreendedorProduto from './pages/EmpreendedorProduto';
 import AdminShowcases from './pages/AdminShowcases';
+import VitrineComercial from './pages/VitrineComercial';
 import Convite from './pages/Convite';
 import AdminInvitations from './pages/AdminInvitations';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
@@ -867,6 +868,7 @@ export default function App() {
                 <Route path="/admin/team" element={<AdminLayout><AdminTeam /></AdminLayout>} />
                 <Route path="/fotos" element={<Fotos />} />
                 <Route path="/empreendedores" element={<Empreendedores />} />
+                <Route path="/vitrine-comercial" element={<VitrineComercial />} />
                 <Route path="/empreendedores/:slug" element={<EmpreendedorDetalhes />} />
                 <Route path="/empreendedores/:slug/produto/:productId" element={<EmpreendedorProduto />} />
                 <Route path="/admin/fotos" element={<AdminLayout><AdminFotos /></AdminLayout>} />
