@@ -61,7 +61,7 @@ service cloud.firestore {
     }
 
     function isValidAdImagesAndPlan(data) {
-      let isFeaturedAd = data.get('isFeatured', false) == true || data.get('plan', 'free') == 'featured' || data.get('plan', 'free') == 'highlight';
+      let isFeaturedAd = data.get('isFeatured', false) == true || data.get('plan', 'free') in ['featured', 'highlight', 'local', 'national', 'intermediate', 'premium'];
       let imagesList = data.get('images', []);
       return imagesList is list &&
              (isFeaturedAd ? (imagesList.size() <= 4) : (imagesList.size() <= 2));
@@ -131,7 +131,7 @@ service cloud.firestore {
              data.country is string &&
              data.createdAt is timestamp &&
              data.updatedAt is timestamp &&
-             (!('showcasePlan' in data) || data.showcasePlan in ['basic', 'premium']) &&
+             (!('showcasePlan' in data) || data.showcasePlan in ['basic', 'premium', 'showcase']) &&
              (!('productsCount' in data) || data.productsCount is number);
     }
 

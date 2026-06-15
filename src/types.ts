@@ -1,6 +1,6 @@
 export type AdStatus = 'pending' | 'approved' | 'rejected' | 'expired' | 'archived' | 'sold';
 export type AdLifecycleStatus = 'active' | 'near_expiration' | 'expired' | 'archived' | 'sold';
-export type AdPlan = 'free' | 'intermediate' | 'premium';
+export type AdPlan = 'free' | 'local' | 'national' | 'highlight' | 'intermediate' | 'premium';
 
 export interface RenewalAction {
   date: any; // Firestore Timestamp
@@ -30,14 +30,26 @@ export interface MarketplaceSettings {
   id: 'global';
   planDurations: {
     free: number; // days
-    intermediate: number;
-    premium: number;
+    local: number;
+    national: number;
+    showcase?: number;
+    intermediate?: number;
+    premium?: number;
+  };
+  planPrices: {
+    local: number;
+    national: number;
+    showcase: number;
   };
   maxImages: {
     free: number;
-    intermediate: number;
-    premium: number;
+    local: number;
+    national: number;
+    showcase?: number;
+    intermediate?: number;
+    premium?: number;
   };
+  maxShowcaseProducts?: number;
   expirationAction: 'archive' | 'delete';
   warningDays: number;
   categories?: string[];

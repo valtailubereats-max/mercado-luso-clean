@@ -36,6 +36,28 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const data = docSnap.data() as MarketplaceSettings;
           setSettings({
             ...data,
+            planDurations: {
+              free: data.planDurations?.free || 30,
+              local: data.planDurations?.local || 30,
+              national: data.planDurations?.national || 30,
+              showcase: data.planDurations?.showcase || 30,
+              intermediate: data.planDurations?.intermediate || 180,
+              premium: data.planDurations?.premium || 365
+            },
+            planPrices: data.planPrices || {
+              local: 4.99,
+              national: 7.99,
+              showcase: 8.99
+            },
+            maxImages: {
+              free: data.maxImages?.free || 2,
+              local: data.maxImages?.local || 4,
+              national: data.maxImages?.national || 4,
+              showcase: data.maxImages?.showcase || 6,
+              intermediate: data.maxImages?.intermediate || 3,
+              premium: data.maxImages?.premium || 5
+            },
+            maxShowcaseProducts: data.maxShowcaseProducts || 6,
             showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
             showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false,
             compactCardMode: data.compactCardMode !== undefined ? data.compactCardMode : false,
@@ -45,8 +67,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // Initialize if doesn't exist
           const defaultSettings: MarketplaceSettings = {
             id: 'global',
-            planDurations: { free: 30, intermediate: 180, premium: 365 },
-            maxImages: { free: 1, intermediate: 3, premium: 5 },
+            planDurations: { free: 30, local: 30, national: 30, showcase: 30, intermediate: 180, premium: 365 },
+            planPrices: { local: 4.99, national: 7.99, showcase: 8.99 },
+            maxImages: { free: 2, local: 4, national: 4, showcase: 6, intermediate: 3, premium: 5 },
+            maxShowcaseProducts: 6,
             expirationAction: 'archive',
             warningDays: 3,
             categories: CATEGORIES,

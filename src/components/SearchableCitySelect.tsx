@@ -9,6 +9,7 @@ interface SearchableCitySelectProps {
   placeholder?: string;
   required?: boolean;
   country?: 'Portugal' | 'Reino Unido' | '';
+  disabled?: boolean;
 }
 
 export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
@@ -17,6 +18,7 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
   placeholder = "Escreva ou escolha a sua cidade",
   required = false,
   country = 'Portugal',
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -78,13 +80,15 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
         type="button"
         id="searchable-city-select-trigger"
         onClick={() => {
+          if (disabled) return;
           if (!country) {
             alert('Por favor, selecione primeiro o país.');
             return;
           }
           setIsOpen(!isOpen);
         }}
-        className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium text-left flex items-center justify-between text-slate-900 group"
+        disabled={disabled}
+        className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium text-left flex items-center justify-between text-slate-900 group disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none"
       >
         <span className="flex items-center gap-1.5 truncate">
           {value ? (

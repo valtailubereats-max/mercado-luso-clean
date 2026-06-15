@@ -65,6 +65,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       : new Date(ad.featuredUntil) > new Date()
   );
 
+  const isNationalHighlight = isAdFeatured && (ad.featuredLevel === 'national' || ad.plan === 'national' || !ad.featuredLevel);
+
   const isCompactActive = settings?.compactCardMode === true;
   const isFeaturedVariant = variant === 'featured';
   const useCompactMode = isCompactActive && !isFeaturedVariant;
@@ -441,20 +443,28 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         }}
         className={`card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer relative transition-all duration-300 ${
           isFeaturedVariant
-            ? '!bg-gradient-to-br !from-[#fffdf4] !to-[#faf5e6] !border-amber-200/80 shadow-lg shadow-amber-100/40 hover:!border-amber-300 hover:shadow-xl hover:shadow-amber-100/60'
+            ? isNationalHighlight
+              ? '!bg-gradient-to-br !from-[#f5f8ff] !to-[#eef2ff] !border-indigo-200 shadow-lg shadow-indigo-100/40 hover:!border-indigo-400 hover:shadow-xl hover:shadow-indigo-100/60'
+              : '!bg-gradient-to-br !from-[#fffdf4] !to-[#faf5e6] !border-amber-200/80 shadow-lg shadow-amber-100/40 hover:!border-amber-300 hover:shadow-xl hover:shadow-amber-100/60'
             : isAdFeatured 
-              ? 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
+              ? isNationalHighlight
+                ? 'ring-2 ring-indigo-500 border border-indigo-400 shadow-md shadow-indigo-100/50 scale-[1.01]'
+                : 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
               : ''
         }`}
       >
         <div className={`relative aspect-square overflow-hidden ${isFeaturedVariant ? 'bg-[#faf5e6]' : 'bg-slate-50'}`}>
           {isAdFeatured && (
-            <div className={`absolute z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-white font-black rounded-full shadow-md flex items-center justify-center ${
+            <div className={`absolute z-10 bg-gradient-to-r ${
+              isNationalHighlight
+                ? 'from-indigo-600 to-indigo-500 text-white font-sans'
+                : 'from-amber-500 to-yellow-400 text-white font-sans'
+            } font-black rounded-full shadow-md flex items-center justify-center ${
               isFeaturedVariant 
                 ? 'top-2 left-2 text-[10px] w-6 h-6' 
                 : 'top-3 left-3 text-xs w-7 h-7'
             }`}>
-              <span>✨</span>
+              <span>{isNationalHighlight ? '👑' : '⭐'}</span>
             </div>
           )}
           {(ad.status === 'sold' || ad.adStatus === 'sold') && (
@@ -705,9 +715,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 <div className="p-4 md:p-6 pb-12 md:pb-16 font-sans">
                   <div className="mb-3 flex flex-wrap gap-2">
                     {isAdFeatured && (
-                      <span className="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse">
-                        <span>✨</span>
-                        <span>Anúncio Destacado</span>
+                      <span className={`${
+                        isNationalHighlight
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-amber-500 text-white'
+                      } text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse`}>
+                        <span>{isNationalHighlight ? '👑' : '⭐'}</span>
+                        <span>{isNationalHighlight ? 'Destaque Nacional' : 'Destaque Local'}</span>
                       </span>
                     )}
                     <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100">

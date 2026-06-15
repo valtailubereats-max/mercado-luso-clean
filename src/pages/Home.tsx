@@ -647,7 +647,24 @@ const Home = () => {
       return adCountry === country;
     });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
-    if (city !== 'Todas') result = result.filter(ad => ad.city === city);
+    
+    // Filtro inteligente de cidades para destaques Locais vs Nacionais
+    result = result.filter(ad => {
+      const isNational = ad.featuredLevel === 'national' || ad.plan === 'national' || !ad.featuredLevel;
+      
+      if (city === 'Todas') {
+        // Na homepage nacional, mostramos apenas destaques Nacionais (Premium)
+        return isNational;
+      } else {
+        // Numa cidade específica, mostramos Destaques Nacionais + Destaques Locais daquela cidade
+        const isLocal = ad.featuredLevel === 'local' || ad.plan === 'local' || ad.plan === 'highlight' || ad.plan === 'intermediate';
+        if (isNational) return true;
+        if (isLocal) {
+          return ad.city?.toLowerCase().trim() === city.toLowerCase().trim();
+        }
+        return false;
+      }
+    });
 
     return result.sort((a, b) => {
       const timeA = a.featuredUntil?.seconds ? a.featuredUntil.seconds * 1000 : new Date(a.featuredUntil).getTime();

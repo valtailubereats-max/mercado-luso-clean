@@ -111,7 +111,28 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
         const data = settingsSnap.data() as MarketplaceSettings;
         setSettings({
           ...data,
-          maxImages: data.maxImages || { free: 1, intermediate: 3, premium: 5 },
+          planDurations: {
+            free: data.planDurations?.free || 30,
+            local: data.planDurations?.local || 30,
+            national: data.planDurations?.national || 30,
+            showcase: data.planDurations?.showcase || 30,
+            intermediate: data.planDurations?.intermediate || 180,
+            premium: data.planDurations?.premium || 365
+          },
+          planPrices: data.planPrices || {
+            local: 4.99,
+            national: 7.99,
+            showcase: 8.99
+          },
+          maxImages: data.maxImages || {
+            free: 2,
+            local: 4,
+            national: 4,
+            showcase: 6,
+            intermediate: 3,
+            premium: 5
+          },
+          maxShowcaseProducts: data.maxShowcaseProducts || 6,
           categories: data.categories || CATEGORIES,
           ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150,
           showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
@@ -125,8 +146,10 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
       } else {
         const defaultSettings: MarketplaceSettings = {
           id: 'global',
-          planDurations: { free: 30, intermediate: 180, premium: 365 },
-          maxImages: { free: 1, intermediate: 3, premium: 5 },
+          planDurations: { free: 30, local: 30, national: 30, showcase: 30, intermediate: 180, premium: 365 },
+          planPrices: { local: 4.99, national: 7.99, showcase: 8.99 },
+          maxImages: { free: 2, local: 4, national: 4, showcase: 6, intermediate: 3, premium: 5 },
+          maxShowcaseProducts: 6,
           expirationAction: 'archive',
           warningDays: 3,
           categories: CATEGORIES,
@@ -243,65 +266,174 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
       </AnimatePresence>
 
       <form onSubmit={handleUpdateSettings} className="space-y-8">
-        {/* Plan Durations */}
+        {/* Settings: Planos e Preços de Monetização */}
         <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
               <Clock size={20} />
             </div>
-            <h2 className="text-xl font-bold text-slate-900">Duração dos Planos (Dias)</h2>
+            <h2 className="text-xl font-bold text-slate-900">Configuração dos Planos Comerciais</h2>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: 'Plano Grátis', key: 'free' },
-              { label: 'Plano Intermédio', key: 'intermediate' },
-              { label: 'Plano Premium', key: 'premium' },
-            ].map((plan) => (
-              <div key={plan.key} className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{plan.label}</label>
-                <input
-                  type="number"
-                  value={settings.planDurations[plan.key as keyof typeof settings.planDurations]}
-                  onChange={(e) => setSettings({ 
-                    ...settings, 
-                    planDurations: { ...settings.planDurations, [plan.key]: parseInt(e.target.value) || 0 } 
-                  })}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Image Limits */}
-        <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-              <ImageIcon size={20} />
-            </div>
-            <h2 className="text-xl font-bold text-slate-900">Limite de Imagens</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: 'Plano Grátis', key: 'free' },
-              { label: 'Plano Intermédio', key: 'intermediate' },
-              { label: 'Plano Premium', key: 'premium' },
-            ].map((plan) => (
-              <div key={plan.key} className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{plan.label}</label>
-                <input
-                  type="number"
-                  value={settings.maxImages[plan.key as keyof typeof settings.maxImages]}
-                  onChange={(e) => setSettings({ 
-                    ...settings, 
-                    maxImages: { ...settings.maxImages, [plan.key]: parseInt(e.target.value) || 0 } 
-                  })}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold"
-                />
+          <div className="space-y-6">
+            {/* Anúncio Gratuito */}
+            <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4">
+              <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                <span>⚪</span> Anúncio Gratuito
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Duração (Dias)</label>
+                  <input
+                    type="number"
+                    value={settings.planDurations.free}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      planDurations: { ...settings.planDurations, free: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-indigo-600 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Máximo de Fotos</label>
+                  <input
+                    type="number"
+                    value={settings.maxImages.free}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      maxImages: { ...settings.maxImages, free: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-indigo-600 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Destaque Local */}
+            <div className="p-5 bg-amber-50/20 rounded-2xl border border-amber-100 space-y-4">
+              <h3 className="text-sm font-black text-amber-700 uppercase tracking-widest flex items-center gap-2">
+                <span>⭐</span> Destaque Local
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Valor (£ / €)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={settings.planPrices?.local ?? 4.99}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      planPrices: { ...settings.planPrices, local: parseFloat(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-amber-200 rounded-xl focus:border-amber-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Duração (Dias)</label>
+                  <input
+                    type="number"
+                    value={settings.planDurations.local}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      planDurations: { ...settings.planDurations, local: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-amber-200 rounded-xl focus:border-amber-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Máximo de Fotos</label>
+                  <input
+                    type="number"
+                    value={settings.maxImages.local}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      maxImages: { ...settings.maxImages, local: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-amber-200 rounded-xl focus:border-amber-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Destaque Nacional */}
+            <div className="p-5 bg-indigo-50/20 rounded-2xl border border-indigo-100 space-y-4">
+              <h3 className="text-sm font-black text-indigo-700 uppercase tracking-widest flex items-center gap-2">
+                <span>👑</span> Destaque Nacional
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Valor (£ / €)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={settings.planPrices?.national ?? 7.99}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      planPrices: { ...settings.planPrices, national: parseFloat(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Duração (Dias)</label>
+                  <input
+                    type="number"
+                    value={settings.planDurations.national}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      planDurations: { ...settings.planDurations, national: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Máximo de Fotos</label>
+                  <input
+                    type="number"
+                    value={settings.maxImages.national}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      maxImages: { ...settings.maxImages, national: parseInt(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Vitrine Digital */}
+            <div className="p-5 bg-teal-50/20 rounded-2xl border border-teal-100 space-y-4">
+              <h3 className="text-sm font-black text-teal-700 uppercase tracking-widest flex items-center gap-2">
+                <span>🏪</span> Vitrine Digital
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Valor Mensal (£ / €)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={settings.planPrices?.showcase ?? 8.99}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      planPrices: { ...settings.planPrices, showcase: parseFloat(e.target.value) || 0 }
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-teal-200 rounded-xl focus:border-teal-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500">Máximo de Produtos</label>
+                  <input
+                    type="number"
+                    value={settings.maxShowcaseProducts ?? 6}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      maxShowcaseProducts: parseInt(e.target.value) || 0
+                    })}
+                    className="w-full px-4 py-2.5 bg-white border border-teal-200 rounded-xl focus:border-teal-500 outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

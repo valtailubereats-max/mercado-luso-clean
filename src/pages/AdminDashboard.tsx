@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback, auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { 
   Users, ShoppingBag, MousePointer2, Bell, TrendingUp, MapPin, Calendar, Clock, Download,
-  ShieldCheck, Briefcase, Store, Megaphone, CheckCircle2, ShieldAlert, Star
+  ShieldCheck, Briefcase, Store, Megaphone, CheckCircle2, ShieldAlert, Star, Crown
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -57,6 +57,8 @@ const AdminDashboard = () => {
     trabalhosCount: 0,
     vitrinesCount: 0,
     featuredAdsCount: 0,
+    featuredLocalCount: 0,
+    featuredNationalCount: 0,
     paidVitrinesCount: 0,
     leadsCount: 0,
     notificationsCount: 0,
@@ -165,6 +167,36 @@ const AdminDashboard = () => {
         console.error('[Dashboard Live Aggregator] Error fetching ads collection:', err);
       }
 
+      // Silent Auto-Migration of legacy ad plans (intermediate -> local, premium -> national)
+      let migratedCount = 0;
+      const legacyAds = adsList.filter(a => a.plan === 'intermediate' || a.plan === 'premium');
+      if (legacyAds.length > 0) {
+        console.log(`[Auto-Migration] Found ${legacyAds.length} files with deprecated plans. Healing database schema...`);
+        for (const ad of legacyAds) {
+          try {
+            const adRef = doc(db, 'ads', ad.id);
+            const isIntermediate = ad.plan === 'intermediate';
+            await setDoc(adRef, {
+              plan: isIntermediate ? 'local' : 'national',
+              featuredLevel: isIntermediate ? 'local' : 'national',
+              updatedAt: new Date()
+            }, { merge: true });
+            migratedCount++;
+            console.log(`[Auto-Migration] Healed ad ID: ${ad.id} (${ad.plan} -> ${isIntermediate ? 'local' : 'national'})`);
+          } catch (mErr) {
+            console.error(`[Auto-Migration] Could not heal ad ID ${ad.id}:`, mErr);
+          }
+        }
+        if (migratedCount > 0) {
+          try {
+            const adsSnap = await getDocs(collection(db, 'ads'));
+            adsList = adsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          } catch (refetchErr) {
+            console.error('[Auto-Migration] Re-fetch error:', refetchErr);
+          }
+        }
+      }
+
       let usersList: any[] = [];
       try {
         const usersSnap = await getDocs(collection(db, 'users'));
@@ -228,6 +260,8 @@ const AdminDashboard = () => {
       }).length;
       const vitrinesCount = profilesList.length;
       const featuredAdsCount = adsList.filter(a => a.isFeatured === true).length;
+      const featuredLocalCount = adsList.filter(a => a.isFeatured === true && (a.featuredLevel === 'local' || a.plan === 'local' || a.plan === 'highlight' || a.plan === 'intermediate')).length;
+      const featuredNationalCount = adsList.filter(a => a.isFeatured === true && (a.featuredLevel === 'national' || a.plan === 'national' || !a.featuredLevel)).length;
       const paidVitrinesCount = profilesList.filter(p => p.showcasePaid === true).length;
       const leadsCount = adInterestsList.length + showcaseInterestsList.length;
       const marketingCount = marketingList.length;
@@ -241,6 +275,8 @@ const AdminDashboard = () => {
         trabalhosCount,
         vitrinesCount,
         featuredAdsCount,
+        featuredLocalCount,
+        featuredNationalCount,
         paidVitrinesCount,
         leadsCount,
         notificationsCount: personalNotificationCount,
@@ -641,14 +677,25 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Anúncios em Destaque */}
-            <div className="p-5 bg-amber-50/40 border border-amber-100 rounded-2.5xl flex flex-col justify-between hover:border-amber-200 transition-all">
+            {/* Destaques Locais */}
+            <div className="p-5 bg-amber-50/40 border border-amber-100 rounded-2.5xl flex flex-col justify-between hover:border-amber-200 transition-all" id="admin-featured-local">
               <div className="w-9 h-9 bg-amber-100 text-amber-500 rounded-xl flex items-center justify-center mb-4">
                 <Star size={18} />
               </div>
               <div>
-                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Anúncios em Destaque (£/€4.99)</span>
-                <span className="text-2xl font-black text-amber-600">{realtimeStats.featuredAdsCount}</span>
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Destaques Locais (£/€4.99)</span>
+                <span className="text-2xl font-black text-amber-600">{realtimeStats.featuredLocalCount}</span>
+              </div>
+            </div>
+
+            {/* Destaques Nacionais */}
+            <div className="p-5 bg-indigo-50/40 border border-indigo-100 rounded-2.5xl flex flex-col justify-between hover:border-indigo-200 transition-all" id="admin-featured-national">
+              <div className="w-9 h-9 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                <Crown size={18} />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Destaques Nacionais (£/€7.99)</span>
+                <span className="text-2xl font-black text-indigo-650">{realtimeStats.featuredNationalCount}</span>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -24,6 +24,23 @@ const CreateAd = () => {
   const [fetching, setFetching] = useState(false);
   const [originalAd, setOriginalAd] = useState<Ad | null>(null);
 
+  const isEditLocked = useMemo(() => {
+    if (!id || !originalAd || !originalAd.isFeatured) return false;
+    
+    let activatedAt: Date;
+    if (originalAd.featuredActivatedAt) {
+      activatedAt = originalAd.featuredActivatedAt.seconds
+        ? originalAd.featuredActivatedAt.toDate()
+        : new Date(originalAd.featuredActivatedAt);
+    } else {
+      const timeRef = originalAd.createdAt || originalAd.updatedAt || Date.now();
+      activatedAt = timeRef.seconds ? timeRef.toDate() : new Date(timeRef);
+    }
+
+    const hoursPassed = (Date.now() - activatedAt.getTime()) / (1000 * 60 * 60);
+    return hoursPassed > 24;
+  }, [originalAd, id]);
+
   const [importUrl, setImportUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -46,7 +63,7 @@ const CreateAd = () => {
     city: prefill?.city || PORTUGAL_CITIES[0],
     country: (prefill?.country || 'Portugal') as 'Portugal' | 'Reino Unido',
     category: urlCategory || prefill?.category || categories[0] || 'Outros',
-    plan: 'free' as 'free' | 'highlight',
+    plan: 'free' as 'free' | 'local' | 'national' | 'highlight',
     duration: 30, // Default for free
     contactEmail: '',
     externalUrl: '',
@@ -402,8 +419,11 @@ const CreateAd = () => {
 
   const maxAllowed = React.useMemo(() => {
     if (formData.category === 'Imigração') return 2;
+    if (settings?.maxImages) {
+      return settings.maxImages[formData.plan as keyof typeof settings.maxImages] || 4;
+    }
     return formData.plan === 'free' ? 2 : 4;
-  }, [formData.plan, formData.category]);
+  }, [formData.plan, formData.category, settings]);
 
   // Se o utilizador selecionar 'Imigração' mas tiver mais do que 2 imagens do produto, corta para 2.
   useEffect(() => {
@@ -568,7 +588,8 @@ const CreateAd = () => {
       }
 
       // Proteger limites comerciais de fotos no frontend
-      const commercialLimit = formData.category === 'Imigração' ? 2 : (formData.plan === 'free' ? 2 : 4);
+      const maxImgs = settings?.maxImages ? (settings.maxImages[formData.plan as keyof typeof settings.maxImages] || 4) : (formData.plan === 'free' ? 2 : 4);
+      const commercialLimit = formData.category === 'Imigração' ? 2 : maxImgs;
       if (formData.images.length > commercialLimit) {
         alert(`O plano selecionado permite no máximo ${commercialLimit} imagens. Por favor, remova as imagens excedentes antes de guardar.`);
         setLoading(false);
@@ -583,11 +604,13 @@ const CreateAd = () => {
         if (formData.plan === 'free') {
           days = formData.duration;
         } else {
-          days = settings.planDurations[formData.plan] || 30;
+          days = settings.planDurations[formData.plan as keyof typeof settings.planDurations] || 30;
         }
       } else {
         // Fallback defaults
         if (formData.plan === 'free') days = formData.duration;
+        // Fallback default duration for new designs
+        else if (formData.plan === 'local' || formData.plan === 'national') days = 30;
         else if (formData.plan === 'intermediate') days = 180;
         else if (formData.plan === 'premium') days = 365;
       }
@@ -642,7 +665,26 @@ const CreateAd = () => {
         experienceRequired: isJob ? formData.experienceRequired : ''
       };
 
-      if (formData.plan === 'highlight' && !originalAd?.isFeatured) {
+      // Proteger contra edição não autorizada de campos estratégicos em anúncios destacados com mais de 24h
+      if (!isAdmin && isEditLocked && originalAd) {
+        if (
+          formData.title !== originalAd.title ||
+          JSON.stringify(formData.images) !== JSON.stringify(originalAd.images) ||
+          formData.category !== originalAd.category ||
+          formData.country !== originalAd.country ||
+          formData.city !== originalAd.city ||
+          formData.plan !== originalAd.plan
+        ) {
+          alert('Não é permitido alterar título, imagens, categoria, comunidade ou plano em anúncios em destaque após 24h.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      const isPaidDestaque = formData.plan === 'local' || formData.plan === 'national';
+      const alreadyHasThisDestaque = originalAd?.isFeatured && (originalAd?.plan === formData.plan || (originalAd?.plan === 'highlight' && formData.plan === 'local'));
+
+      if (isPaidDestaque && !alreadyHasThisDestaque) {
         setPendingAdData(adData);
         setShowPaymentModal(true);
         setLoading(false);
@@ -755,7 +797,9 @@ const CreateAd = () => {
       const finalizedAdData = {
         ...pendingAdData,
         isFeatured: true,
-        featuredUntil: tomorrow
+        featuredUntil: tomorrow,
+        featuredLevel: formData.plan === 'national' ? 'national' : 'local',
+        featuredActivatedAt: new Date()
       };
 
       await setDoc(doc(db, 'ads', finalizedAdData.id), finalizedAdData, { merge: true });
@@ -796,10 +840,12 @@ const CreateAd = () => {
       }
 
       clearHomeCache();
-      alert(formData.country === 'Reino Unido'
-        ? 'Pagamento de £4.99 confirmado com sucesso via Stripe! O seu anúncio agora é Destaque ⭐ por 30 dias!'
-        : 'Pagamento de €4.99 confirmado com sucesso via Stripe! O seu anúncio agora é Destaque ⭐ por 30 dias!'
-      );
+      const priceText = formData.country === 'Reino Unido'
+        ? (formData.plan === 'national' ? '£7.99' : '£4.99')
+        : (formData.plan === 'national' ? '€7.99' : '€4.99');
+      const levelText = formData.plan === 'national' ? 'Destaque Nacional ⭐⭐⭐' : 'Destaque Local ⭐';
+
+      alert(`Pagamento de ${priceText} confirmado com sucesso via Stripe! O seu anúncio agora é ${levelText} por 30 dias!`);
       setShowPaymentModal(false);
       navigate('/profile?tab=anuncios');
     } catch (err) {
@@ -952,6 +998,20 @@ const CreateAd = () => {
       >
         <h1 className="text-3xl font-bold text-slate-900 mb-8">{id ? 'Editar Anúncio' : 'Novo Anúncio'}</h1>
 
+        {id && isEditLocked && !isAdmin && (
+          <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-3xl" id="edit-locked-warning">
+            <h3 className="text-md font-extrabold text-amber-800 flex items-center gap-2 mb-1">
+              <span>⚠️</span> Edição Parcial Ativa (Destaque Protegido)
+            </h3>
+            <p className="text-xs sm:text-sm text-amber-700 leading-relaxed">
+              Este anúncio tem um <strong>Destaque ativo há mais de 24 horas</strong>. Para garantir a segurança e a integridade da comunidade (evitando alterações de produto pós-pagamento), os campos estratégicos como <strong>Título, Imagens, Categoria, Localização e Tipo de Destaque</strong> estão bloqueados. 
+            </p>
+            <p className="text-xs sm:text-sm text-amber-700 mt-2 leading-relaxed">
+              Poderá ainda alterar livremente a <strong>Descrição, Contactos de telefone/WhatsApp ou marcar como Vendido/Encerrado</strong>. Agradecemos a compreensão.
+            </p>
+          </div>
+        )}
+
         {!id && (isAdmin || isModerator || profile?.role === 'admin' || profile?.role === 'moderator') && (
           <div className="mb-8 p-6 bg-indigo-50/40 border border-indigo-100/80 rounded-2xl" id="import-ad-section">
             <h3 className="text-md font-bold text-slate-900 flex items-center gap-2 mb-1">
@@ -1060,13 +1120,15 @@ const CreateAd = () => {
                         className="w-full h-full object-cover" 
                         style={index === 0 ? getAdImageStyle(imagePositionX, imagePositionY, imageZoom) : undefined} 
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                      >
-                        <X size={14} />
-                      </button>
+                      {!(isEditLocked && !isAdmin) && (
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                       {index === 0 && (
                         <div className="absolute bottom-0 left-0 right-0 bg-indigo-600 text-white text-[10px] font-bold py-1 text-center uppercase tracking-tighter">
                           Principal
@@ -1077,7 +1139,7 @@ const CreateAd = () => {
                 ))}
               </AnimatePresence>
 
-              {formData.images.length < maxAllowed && (
+              {formData.images.length < maxAllowed && !(isEditLocked && !isAdmin) && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -1245,7 +1307,8 @@ const CreateAd = () => {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all"
+                  disabled={!isAdmin && isEditLocked}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder="Ex: Guia Completo de Imigração para Portugal"
                 />
               </div>
@@ -1255,8 +1318,9 @@ const CreateAd = () => {
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Categoria</label>
               <select
                 value={formData.category}
+                disabled={!isAdmin && isEditLocked}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none"
+                className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="">Seleccione uma categoria...</option>
                 {categories
@@ -1435,8 +1499,9 @@ const CreateAd = () => {
               <div className="relative">
                 <select
                   value={formData.country}
+                  disabled={!isAdmin && isEditLocked}
                   onChange={(e) => handleCountryChange(e.target.value as 'Portugal' | 'Reino Unido')}
-                  className="w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold text-emerald-800 outline-none cursor-pointer appearance-none shadow-sm hover:border-emerald-200 transition-all font-sans"
+                  className="w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold text-emerald-800 outline-none cursor-pointer appearance-none shadow-sm hover:border-emerald-200 transition-all font-sans disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="Portugal" className="font-bold text-slate-900 bg-white">🇵🇹 Portugal</option>
                   <option value="Reino Unido" className="font-bold text-slate-900 bg-white">🇬🇧 Reino Unido</option>
@@ -1453,6 +1518,7 @@ const CreateAd = () => {
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={20} />
                 <SearchableCitySelect
                   value={formData.city}
+                  disabled={!isAdmin && isEditLocked}
                   onChange={(val) => setFormData({ ...formData, city: val })}
                   placeholder="Escreva ou escolha a sua cidade"
                   country={formData.country}
@@ -1512,41 +1578,43 @@ const CreateAd = () => {
             )}
 
             <div className="space-y-4 md:col-span-2">
-              <label className="text-sm font-bold text-slate-705 uppercase tracking-wider block">Tipo de Anúncio & Destaque</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider block">Tipo de Anúncio & Destaque</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-4">
                 
                 {/* Plano Gratuito (Normal) */}
                 <button
                   type="button"
+                  disabled={!isAdmin && isEditLocked}
                   onClick={() => setFormData({ ...formData, plan: 'free' })}
-                  className={`p-6 rounded-3xl border-2 text-left transition-all ${
+                  className={`p-5 rounded-3xl border-2 text-left transition-all ${
                     formData.plan === 'free' 
                       ? 'border-indigo-600 bg-indigo-50/50 ring-4 ring-indigo-100' 
                       : 'border-slate-100 bg-slate-50 hover:border-slate-300'
-                  }`}
+                  } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="font-extrabold text-slate-900 text-lg">Anúncio Normal</p>
-                      <p className="text-xs text-slate-500 mt-1">Ideal para vendas e transações pontuais gratuitas</p>
+                      <p className="font-extrabold text-slate-900 text-sm">Anúncio Normal</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Vendas e transações pontuais grátis</p>
                     </div>
-                    <span className="text-xs font-black bg-slate-200 text-slate-800 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    <span className="text-[9px] font-black bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                       Grátis
                     </span>
                   </div>
                   
-                  <ul className="text-xs text-slate-600 space-y-1.5 my-4">
-                    <li className="flex items-center gap-1.5">✅ Até 2 fotos</li>
-                    <li className="flex items-center gap-1.5">✅ Aparece nas listagens normais</li>
-                    <li className="flex items-center gap-1.5">✅ Pesquisa e favoritos</li>
+                  <ul className="text-[11px] text-slate-600 space-y-1 my-3">
+                    <li className="flex items-center gap-1">✅ Até 2 fotos</li>
+                    <li className="flex items-center gap-1">✅ Listagens normais</li>
+                    <li className="flex items-center gap-1">✅ Pesquisa e favoritos</li>
                   </ul>
 
-                  <div className="mt-4 pt-4 border-t border-slate-200/50" onClick={(e) => e.stopPropagation()}>
-                    <label className="text-[10px] uppercase font-black tracking-wider text-slate-400 block mb-1.5">Duração do Anúncio</label>
+                  <div className="mt-3 pt-3 border-t border-slate-200/50" onClick={(e) => e.stopPropagation()}>
+                    <label className="text-[9px] uppercase font-black tracking-wider text-slate-400 block mb-1">Duração do Anúncio</label>
                     <select
                       value={formData.duration}
+                      disabled={!isAdmin && isEditLocked}
                       onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0, plan: 'free' })}
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none cursor-pointer"
+                      className="w-full p-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold outline-none cursor-pointer disabled:opacity-50"
                     >
                       <option value={15}>15 Dias</option>
                       <option value={30}>30 Dias</option>
@@ -1554,43 +1622,87 @@ const CreateAd = () => {
                   </div>
                 </button>
 
-                {/* Plano em Destaque (Paid) */}
+                {/* ⭐ Destaque Local */}
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, plan: 'highlight' })}
-                  className={`p-6 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
-                    formData.plan === 'highlight' 
+                  disabled={!isAdmin && isEditLocked}
+                  onClick={() => setFormData({ ...formData, plan: 'local' })}
+                  className={`p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
+                    formData.plan === 'local' || formData.plan === 'highlight'
                       ? 'border-amber-400 bg-amber-50/20 ring-4 ring-amber-100' 
                       : 'border-slate-100 bg-slate-50 hover:border-slate-300'
-                  }`}
+                  } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-white text-[9px] font-black px-3.5 py-1.5 rounded-bl-2xl uppercase tracking-wider animate-pulse">
-                    Popular ⭐
+                  <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shrink-0 animate-pulse">
+                    Local ⭐
                   </div>
                   
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-2 mt-2">
                     <div>
-                      <p className="font-extrabold text-slate-900 text-lg">Anúncio em Destaque</p>
-                      <p className="text-xs text-slate-500 mt-1">Destaque prioritário absoluto para máxima conversão</p>
+                      <p className="font-extrabold text-slate-900 text-sm">Destaque Local</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Destaque na sua cidade</p>
                     </div>
                   </div>
                   
-                  <ul className="text-xs text-slate-600 space-y-1.5 my-4">
-                    <li className="flex items-center gap-1.5">🌟 <strong>Até 4 fotos</strong> nas galerias</li>
-                    <li className="flex items-center gap-1.5">🌟 Prioridade visual no topo & Home</li>
-                    <li className="flex items-center gap-1.5">🌟 <strong>Carrossel de Destaques</strong></li>
-                    <li className="flex items-center gap-1.5">🌟 Selo visual ⭐ Destaque</li>
+                  <ul className="text-[11px] text-slate-600 space-y-1 my-3">
+                    <li className="flex items-center gap-1">🌟 <strong>Até 4 fotos</strong></li>
+                    <li className="flex items-center gap-1">🌟 Destaque local</li>
+                    <li className="flex items-center gap-1">🌟 Carrossel local</li>
+                    <li className="flex items-center gap-1">🌟 Etiqueta ⭐</li>
                   </ul>
 
-                  <div className="mt-4 pt-4 border-t border-slate-200/50 flex justify-between items-center bg-white/50 p-3 rounded-2xl border border-dashed border-amber-200">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-amber-800 block">Duração Fixa</span>
-                      <span className="text-xs font-extrabold text-slate-900 block mt-0.5">30 Dias</span>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 p-2 bg-white/50 rounded-xl border border-dashed border-amber-200">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-amber-800">Duração:</span>
+                      <span className="font-extrabold text-slate-930">30 Dias</span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold text-amber-800 block">Investimento</span>
-                      <span className="text-sm font-black text-amber-600 block mt-0.5">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-amber-800">Investimento:</span>
+                      <span className="font-black text-amber-600">
                         {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                {/* ⭐⭐⭐ Destaque Nacional */}
+                <button
+                  type="button"
+                  disabled={!isAdmin && isEditLocked}
+                  onClick={() => setFormData({ ...formData, plan: 'national' })}
+                  className={`p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
+                    formData.plan === 'national' 
+                      ? 'border-indigo-500 bg-indigo-50/20 ring-4 ring-indigo-100' 
+                      : 'border-slate-100 bg-slate-50 hover:border-slate-300'
+                  } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-600 to-indigo-500 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shrink-0 animate-pulse">
+                    Nacional ⭐⭐⭐
+                  </div>
+                  
+                  <div className="flex justify-between items-start mb-2 mt-2">
+                    <div>
+                      <p className="font-extrabold text-slate-900 text-sm">Destaque Nacional</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Visibilidade em todo o país</p>
+                    </div>
+                  </div>
+                  
+                  <ul className="text-[11px] text-slate-600 space-y-1 my-3">
+                    <li className="flex items-center gap-1 font-semibold text-indigo-900">🚀 Prioridade Máxima</li>
+                    <li className="flex items-center gap-1">🌟 <strong>Até 4 fotos</strong></li>
+                    <li className="flex items-center gap-1">🌟 Todas as cidades</li>
+                    <li className="flex items-center gap-1">🌟 Etiqueta ⭐⭐⭐</li>
+                  </ul>
+
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 p-2 bg-indigo-50/50 rounded-xl border border-dashed border-indigo-200">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-indigo-700">Duração:</span>
+                      <span className="font-extrabold text-slate-930">30 Dias</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-indigo-700">Investimento:</span>
+                      <span className="font-black text-indigo-600">
+                        {formData.country === 'Reino Unido' ? '£7.99' : '€7.99'}
                       </span>
                     </div>
                   </div>
