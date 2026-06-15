@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -21,6 +21,7 @@ const AdDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { user, profile, favorites, toggleFavoriteGlobal, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [ad, setAd] = useState<Ad | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,6 +115,18 @@ const AdDetails = () => {
     fetchAdData();
     return () => { active = false; };
   }, [id]);
+
+  useEffect(() => {
+    if (!loading && ad && location.hash === '#localizacao') {
+      const timer = setTimeout(() => {
+        const element = document.getElementById('localizacao');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, ad, location.hash]);
 
   const fetchSellerDetails = async (sellerId: string) => {
     try {
@@ -614,6 +627,59 @@ const AdDetails = () => {
               ))}
             </div>
           )}
+
+          {/* SECÇÃO DE LOCALIZAÇÃO */}
+          <div id="localizacao" className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-xl space-y-6 mt-6 scroll-mt-24 text-left">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                <MapPin size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-900 leading-none">📍 Localização Aproximada</h2>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1.5 font-sans">Região de referência do anúncio</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 font-sans">
+              <div className="space-y-1">
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Cidade</span>
+                <span className="text-lg font-extrabold text-slate-900">{ad.city || 'Não informada'}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">País</span>
+                <span className="text-lg font-extrabold text-slate-900">
+                  {ad.country === 'Reino Unido' ? '🇬🇧 Reino Unido' : '🇵🇹 Portugal'}
+                </span>
+              </div>
+            </div>
+
+            {ad.city && ad.city.trim() !== '' && ad.city.toLowerCase() !== 'todas' && (
+              <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 relative">
+                <iframe
+                  title={`Mapa de ${ad.city}`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.city + ', ' + ad.country)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                />
+              </div>
+            )}
+
+            <div className="flex items-start gap-2.5 text-slate-500 bg-amber-50/40 border border-amber-100 rounded-2xl p-4 text-xs font-semibold font-sans">
+              <span className="text-amber-500 text-lg leading-none mt-0.5">⚠️</span>
+              <div className="space-y-1">
+                <p className="leading-relaxed text-amber-900">
+                  A localização apresentada é aproximada e serve apenas como referência.
+                </p>
+                <p className="leading-relaxed text-amber-800/80">
+                  Localização aproximada baseada na cidade informada pelo anunciante.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* LADO DIREITO: Dados, Vendedor e WhatsApp */}

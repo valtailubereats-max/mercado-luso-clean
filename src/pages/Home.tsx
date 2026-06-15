@@ -708,7 +708,7 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/20 hidden lg:block" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full px-4 sm:px-6 py-2.5 md:py-6 lg:py-8">
+        <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-2 md:py-6 lg:py-8">
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }}
@@ -717,7 +717,7 @@ const Home = () => {
             <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
 
               {/* Área principal: comunidade ativa */}
-              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[140px] md:min-h-[250px] lg:min-h-[300px] px-2 sm:px-5 lg:px-10 py-1.5 sm:py-3 lg:py-4">
+              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[140px] md:min-h-[250px] lg:min-h-[300px] px-1 sm:px-5 lg:px-10 py-1.5 sm:py-3 lg:py-4">
 
                 {/* Título com Tipografia Premium */}
                 <h1 
@@ -757,8 +757,8 @@ const Home = () => {
                 {/* Ícones de Filtro e Contador */}
                 <div className="flex items-center justify-center lg:justify-start gap-3 md:gap-4 flex-wrap">
 
-                  {/* Botão Categoria - Apenas Ícone */}
-                  <div className="relative group">
+                  {/* Botão Categoria - Ícone com Texto Abaixo */}
+                  <div className="relative group flex flex-col items-center">
                     <div 
                       style={{
                         backgroundColor: customBg || 'rgba(255,255,255,0.1)',
@@ -784,6 +784,9 @@ const Home = () => {
                         {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
                       </select>
                     </div>
+                    <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
+                      {category === 'Todas' ? 'Categoria' : category}
+                    </span>
                   </div>
 
                   {/* Botão País com Bandeira e Nome da Comunidade */}
@@ -1095,7 +1098,7 @@ const Home = () => {
             </Link>
           </div>
 
-          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-1.5 px-1.5 xs:-mx-2 xs:px-2 sm:mx-0 sm:px-0 no-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
             {featuredVitrines.map((vitrine) => {
               const linkTo = `/empreendedores/${vitrine.showcaseSlug}`;
               const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=450&h=150&fit=crop&q=80';
@@ -1180,7 +1183,7 @@ const Home = () => {
       {/* Grid de Anúncios */}
       <div ref={resultsSectionRef} className="px-0">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 xs:gap-2.5 sm:gap-4 md:gap-6">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="bg-slate-100 rounded-3xl h-64 animate-pulse" />
             ))}
@@ -1191,7 +1194,7 @@ const Home = () => {
             <h3 className="text-xl font-bold text-slate-400">Nenhum tesouro encontrado</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 xs:gap-2.5 sm:gap-4 md:gap-6">
             {displayedAds.map((ad) => (
               <AdCard key={ad.id} ad={ad} />
             ))}

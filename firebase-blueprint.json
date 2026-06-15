@@ -272,6 +272,21 @@
         "city": { "type": "string" }
       },
       "required": ["id", "sellerId", "showcaseSlug", "productId", "productName", "source", "createdAt"]
+    },
+    "InvitationVisit": {
+      "title": "InvitationVisit",
+      "description": "Metric tracking of visits/actions on invitation page",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaign": { "type": "string" },
+        "action": { "type": "string", "enum": ["visit", "register_click", "login_click"] },
+        "userAgent": { "type": "string" },
+        "userAgentSimplified": { "type": "string" },
+        "country": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "action", "createdAt"]
     }
   },
   "firestore": {
@@ -338,6 +353,10 @@
     "/showcaseProductInterests/{interestId}": {
       "schema": "ShowcaseProductInterest",
       "description": "Expressed buyer interests in showcase products & services"
+    },
+    "/invitationVisits/{visitId}": {
+      "schema": "InvitationVisit",
+      "description": "Tracking of visits and actions on invitation page"
     }
   }
 }

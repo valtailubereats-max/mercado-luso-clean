@@ -16,7 +16,8 @@ import {
   Briefcase,
   MessageSquare,
   Camera,
-  Store
+  Store,
+  QrCode
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,6 +54,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Users, label: 'Utilizadores', path: '/admin/users' },
     { icon: Briefcase, label: 'Gestão de Equipe', path: '/admin/team' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
+    { icon: QrCode, label: 'Convites', path: '/admin/invitations' },
     { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
     { icon: Camera, label: 'Loja de Fotos', path: '/admin/fotos' },
     { icon: Settings, label: 'Definições', path: '/admin/settings' },

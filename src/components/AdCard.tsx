@@ -497,7 +497,17 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
             <div className="flex items-center gap-1 text-slate-600">
               <MapPin size={isFeaturedVariant ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
               <span className="truncate">
-                {ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}
+                {ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'}{' '}
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`${getAdUrl(ad)}#localizacao`);
+                  }}
+                  className="text-indigo-600 font-extrabold cursor-pointer hover:underline transition-colors"
+                  title="Ver localização no anúncio"
+                >
+                  {ad.city}
+                </span>
               </span>
             </div>
             <div className="flex items-center gap-1 text-slate-500">

@@ -33,6 +33,8 @@ import Empreendedores from './pages/Empreendedores';
 import EmpreendedorDetalhes from './pages/EmpreendedorDetalhes';
 import EmpreendedorProduto from './pages/EmpreendedorProduto';
 import AdminShowcases from './pages/AdminShowcases';
+import Convite from './pages/Convite';
+import AdminInvitations from './pages/AdminInvitations';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
@@ -860,7 +862,7 @@ export default function App() {
             <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
             <Navbar />
 
-            <main ref={mainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 cursor-grab active:cursor-grabbing">
+            <main ref={mainRef} className="max-w-7xl mx-auto px-1.5 xs:px-2 sm:px-6 lg:px-8 py-4 sm:py-8 cursor-grab active:cursor-grabbing">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/trabalhos" element={<Trabalhos />} />
@@ -891,6 +893,8 @@ export default function App() {
                 <Route path="/sugestoes" element={<Suggestions />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/links" element={<Links />} />
+                <Route path="/convite" element={<Convite />} />
+                <Route path="/admin/invitations" element={<AdminLayout><AdminInvitations /></AdminLayout>} />
                 <Route path="/admin/suggestions" element={<AdminLayout><AdminSuggestions /></AdminLayout>} />
               </Routes>
             </main>
