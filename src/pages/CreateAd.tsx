@@ -12,6 +12,7 @@ import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
 import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw, Link, AlertCircle, Check } from 'lucide-react';
 import { compressImage } from '../lib/imageUtils';
+import { normalizeDescription } from '../utils/textFormatter';
 
 const CreateAd = () => {
   const { categories } = useSettings();
@@ -813,7 +814,7 @@ const CreateAd = () => {
           return {
             ...prev,
             title: title || prev.title,
-            description: description || prev.description,
+            description: description ? normalizeDescription(description) : prev.description,
             price: price !== undefined && price !== null ? price.toString() : prev.price,
             city: matchedCity || prev.city,
             country: matchedCountry || prev.country,

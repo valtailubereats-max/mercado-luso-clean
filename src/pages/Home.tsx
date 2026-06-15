@@ -18,8 +18,10 @@ import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, 
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
-// @ts-ignore
-import londonAerial from '../assets/images/london_aerial_1780755464204.png';
+// Original de Londres em Standby (fim de tarde):
+// import londonAerialOriginalStandby from '../assets/images/london_aerial_1780755464204.png';
+// Nova foto bem clara, nítida e com aspeto de dia radiante:
+const londonAerial = "https://images.unsplash.com/photo-1513635269975-59663e0ca1ad?auto=format&fit=crop&w=1600&q=80";
 
 import { useClickOutside } from '../hooks/useClickOutside';
 
@@ -703,9 +705,9 @@ const Home = () => {
             className="w-full h-full object-cover scale-105 transition-all duration-700 ease-in-out"
             referrerPolicy="no-referrer"
           />
-          {/* Overlay suave para contraste */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/5 to-black/55 backdrop-saturate-[1.25]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/20 hidden lg:block" />
+          {/* Overlay suave para contraste (ajustado para aspeto de dia radiante, claro e nítido) */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/35 backdrop-saturate-[1.1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 hidden lg:block" />
         </div>
 
         <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-2 md:py-6 lg:py-8">
@@ -719,21 +721,38 @@ const Home = () => {
               {/* Área principal: comunidade ativa */}
               <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[140px] md:min-h-[250px] lg:min-h-[300px] px-1 sm:px-5 lg:px-10 py-1.5 sm:py-3 lg:py-4">
 
-                {/* Título com Tipografia Premium */}
-                <h1 
-                  onClick={() => {
-                    setCategory('Todas');
-                    setCity('Todas');
-                    setSearchTerm('');
-                  }}
-                  title="Resetar filtros"
-                  className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.75)] mb-1 cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all select-none w-[80%] max-w-[80%] mx-auto lg:mx-0 break-words text-balance"
-                >
-                  Mercado da Língua Portuguesa
-                </h1>
-                <p className="text-[10px] md:text-sm font-medium text-white/90 mb-2 md:mb-4 tracking-widest uppercase drop-shadow-md">
-                  Conectando o Mundo Lusófono
-                </p>
+                {/* Painel Lusófono compacto no mobile */}
+                <div className="lg:hidden mb-4 mx-auto w-full max-w-md rounded-[1.5rem] bg-[#046a38]/85 border border-amber-300/25 backdrop-blur-2xl p-3 shadow-2xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 mb-2">
+                    🌍 Comunidade Lusófona
+                  </p>
+                  <div className="grid grid-cols-9 gap-1.5 text-lg leading-none mb-2">
+                    {[
+                      { code: 'pt', flag: '🇵🇹' },
+                      { code: 'br', flag: '🇧🇷' },
+                      { code: 'ao', flag: '🇦🇴' },
+                      { code: 'mz', flag: '🇲🇿' },
+                      { code: 'cv', flag: '🇨🇻' },
+                      { code: 'gw', flag: '🇬🇼' },
+                      { code: 'st', flag: '🇸🇹' },
+                      { code: 'tl', flag: '🇹🇱' },
+                      { code: 'gq', flag: '🇬🇶' },
+                    ].map((item, idx) => (
+                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 px-0.5 shadow-inner">
+                        <img 
+                          src={`https://flagcdn.com/w40/${item.code}.png`} 
+                          alt={item.flag} 
+                          title={item.flag}
+                          className="h-4.5 w-auto object-contain rounded-sm"
+                          referrerPolicy="no-referrer"
+                        />
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/80 font-semibold">
+                    Mais de 300 milhões de falantes de português no mundo.
+                  </p>
+                </div>
 
                 {/* Barra de Pesquisa Minimalista */}
                 <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-3 md:mb-4 group">
@@ -946,39 +965,6 @@ const Home = () => {
                       )}
                     </div>
                   )}
-                </div>
-
-                {/* Painel Lusófono compacto no mobile */}
-                <div className="lg:hidden mt-4 mx-auto w-full max-w-md rounded-[1.5rem] bg-[#046a38]/85 border border-amber-300/25 backdrop-blur-2xl p-3 shadow-2xl">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 mb-2">
-                    🌍 Comunidade Lusófona
-                  </p>
-                  <div className="grid grid-cols-9 gap-1.5 text-lg leading-none mb-2">
-                    {[
-                      { code: 'pt', flag: '🇵🇹' },
-                      { code: 'br', flag: '🇧🇷' },
-                      { code: 'ao', flag: '🇦🇴' },
-                      { code: 'mz', flag: '🇲🇿' },
-                      { code: 'cv', flag: '🇨🇻' },
-                      { code: 'gw', flag: '🇬🇼' },
-                      { code: 'st', flag: '🇸🇹' },
-                      { code: 'tl', flag: '🇹🇱' },
-                      { code: 'gq', flag: '🇬🇶' },
-                    ].map((item, idx) => (
-                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 px-0.5 shadow-inner">
-                        <img 
-                          src={`https://flagcdn.com/w40/${item.code}.png`} 
-                          alt={item.flag} 
-                          title={item.flag}
-                          className="h-4.5 w-auto object-contain rounded-sm"
-                          referrerPolicy="no-referrer"
-                        />
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-white/80 font-semibold">
-                    Mais de 300 milhões de falantes de português no mundo.
-                  </p>
                 </div>
               </div>
 

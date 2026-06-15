@@ -16,6 +16,7 @@ import { formatPrice, getAdUrl, extractIdFromSlug } from '../utils';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import ReviewModal from '../components/ReviewModal';
+import { normalizeDescription } from '../utils/textFormatter';
 
 const AdDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -492,6 +493,7 @@ const AdDetails = () => {
   }
 
   const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
+  const normalizedDescription = normalizeDescription(ad.description);
   
   const hasPrice =
     ad.category !== 'Imigração' &&
@@ -513,11 +515,11 @@ const AdDetails = () => {
       {ad && (
         <Helmet>
           <title>{ad.title} - {ad.city}, {ad.country || 'Portugal'} | Mercado Luso</title>
-          <meta name="description" content={ad.description.substring(0, 160)} />
+          <meta name="description" content={normalizedDescription.substring(0, 160)} />
           <link rel="canonical" href={`https://www.mercado-luso.com${getAdUrl(ad)}`} />
           <meta property="og:url" content={`https://www.mercado-luso.com${getAdUrl(ad)}`} />
           <meta property="og:title" content={`${ad.title} - ${ad.city}, ${ad.country || 'Portugal'} | Mercado Luso`} />
-          <meta property="og:description" content={ad.description.substring(0, 160)} />
+          <meta property="og:description" content={normalizedDescription.substring(0, 160)} />
           <meta property="og:image" content={ad.imageUrl} />
         </Helmet>
       )}
@@ -727,11 +729,11 @@ const AdDetails = () => {
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Descrição detalhada</h3>
               <p className="text-slate-600 text-[15px] leading-relaxed whitespace-pre-line break-words overflow-hidden bg-slate-50/40 p-4 rounded-2xl border border-slate-50">
-                {ad.description.length > 400 && !descriptionExpanded
-                  ? `${ad.description.substring(0, 400).trim()}...`
-                  : ad.description}
+                {normalizedDescription.length > 400 && !descriptionExpanded
+                  ? `${normalizedDescription.substring(0, 400).trim()}...`
+                  : normalizedDescription}
               </p>
-              {ad.description.length > 400 && (
+              {normalizedDescription.length > 400 && (
                 <button
                   onClick={() => setDescriptionExpanded(!descriptionExpanded)}
                   className="text-xs font-black text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"

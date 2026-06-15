@@ -514,20 +514,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
               <Tag size={isFeaturedVariant ? 10 : 12} className="text-teal-600 shrink-0 opacity-75" />
               <span className="truncate">{ad.category}</span>
             </div>
-            {showcaseActive && (
-              <div className="mt-1 flex items-center">
-                <Link
-                  to={`/empreendedores/${showcaseSlug}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-150 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-indigo-700 rounded-lg px-2 py-0.5 text-[10px] font-black tracking-wide transition-all duration-250 cursor-pointer shadow-xs"
-                >
-                  <span>🏪</span>
-                  <span>Vitrine Digital</span>
-                </Link>
-              </div>
-            )}
+            {/* Comentado/Removido a etiqueta de Vitrine Digital no card */}
           </div>
 
           {/* Linha horizontal de ações */}
