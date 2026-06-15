@@ -18,10 +18,10 @@ import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, 
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
-// Original de Londres em Standby (fim de tarde):
-// import londonAerialOriginalStandby from '../assets/images/london_aerial_1780755464204.png';
+// @ts-ignore
+import londonAerialOriginalStandby from '../assets/images/london_aerial_1780755464204.png';
 // Nova foto bem clara, nítida e com aspeto de dia radiante:
-const londonAerial = "https://images.unsplash.com/photo-1513635269975-59663e0ca1ad?auto=format&fit=crop&w=1600&q=80";
+const londonAerialSunny = "https://images.unsplash.com/photo-1505761671935-60b6a7453675?auto=format&fit=crop&w=1600&q=80";
 
 import { useClickOutside } from '../hooks/useClickOutside';
 
@@ -30,6 +30,7 @@ const PAGE_SIZE = 30;
 const Home = () => {
   const { settings, categories } = useSettings();
   const resultsSectionRef = useRef<HTMLDivElement>(null);
+  const [londonBg, setLondonBg] = useState(londonAerialSunny);
 
   const handleSearchFocus = () => {
     setTimeout(() => {
@@ -700,10 +701,14 @@ const Home = () => {
         {/* Imagem de Fundo dinâmica: Portugal / Reino Unido */}
         <div className="absolute inset-0 z-0 overflow-hidden shadow-2xl rounded-b-[2rem] md:rounded-b-[3rem]">
           <img 
-            src={country === 'Portugal' ? lisbonAerial : londonAerial} 
+            src={country === 'Portugal' ? lisbonAerial : londonBg} 
             alt={country} 
             className="w-full h-full object-cover scale-105 transition-all duration-700 ease-in-out"
-            referrerPolicy="no-referrer"
+            onError={() => {
+              if (londonBg !== londonAerialOriginalStandby) {
+                setLondonBg(londonAerialOriginalStandby);
+              }
+            }}
           />
           {/* Overlay suave para contraste (ajustado para aspeto de dia radiante, claro e nítido) */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/35 backdrop-saturate-[1.1]" />
@@ -900,8 +905,8 @@ const Home = () => {
                     )}
                   </div>
 
-                  {/* Botão Localização - Apenas Ícone */}
-                  <div className="relative group">
+                  {/* Botão Localização - Ícone com Texto Abaixo */}
+                  <div className="relative group flex flex-col items-center">
                     <div 
                       style={{
                         backgroundColor: customBg || 'rgba(255,255,255,0.1)',
@@ -920,6 +925,9 @@ const Home = () => {
                         {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
                       </select>
                     </div>
+                    <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
+                      {city === 'Todas' ? 'Cidade' : city}
+                    </span>
                   </div>
 
                   {/* Contador de Anúncios Slim */}
