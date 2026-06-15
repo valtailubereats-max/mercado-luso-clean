@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Sparkles, Shield, Compass, Heart } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const Convite: React.FC = () => {
@@ -38,7 +38,9 @@ const Convite: React.FC = () => {
           device = 'Tablet';
         }
 
+        const visitDocRef = doc(collection(db, 'invitationVisits'));
         const visitData = {
+          id: visitDocRef.id,
           action: 'visit',
           campaign: campaign,
           country: savedCountry,
@@ -48,7 +50,7 @@ const Convite: React.FC = () => {
         };
 
         // Grava no Firestore
-        await addDoc(collection(db, 'invitationVisits'), visitData);
+        await setDoc(visitDocRef, visitData);
         localStorage.setItem('ml_last_invite_visit', now.toString());
       } catch (err) {
         console.error('Erro ao registar visita na plataforma:', err);
@@ -71,7 +73,9 @@ const Convite: React.FC = () => {
         device = 'Mobile';
       }
 
+      const actionDocRef = doc(collection(db, 'invitationVisits'));
       const actionData = {
+        id: actionDocRef.id,
         action: action,
         campaign: campaign,
         country: savedCountry,
@@ -80,7 +84,7 @@ const Convite: React.FC = () => {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'invitationVisits'), actionData);
+      await setDoc(actionDocRef, actionData);
     } catch (err) {
       console.error('Erro ao registar clique de convite:', err);
     } finally {

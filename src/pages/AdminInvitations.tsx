@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useAuth } from '../context/AuthContext';
 
 interface InvitationAction {
   id: string;
@@ -19,6 +20,7 @@ interface InvitationAction {
 }
 
 const AdminInvitations = () => {
+  const { isAdmin, loading: authLoading } = useAuth();
   const [actions, setActions] = useState<InvitationAction[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -35,6 +37,7 @@ const AdminInvitations = () => {
   ];
 
   const fetchInvitationMetrics = async () => {
+    if (!isAdmin) return;
     setLoading(true);
     try {
       const q = query(
@@ -56,8 +59,10 @@ const AdminInvitations = () => {
   };
 
   useEffect(() => {
-    fetchInvitationMetrics();
-  }, []);
+    if (!authLoading && isAdmin) {
+      fetchInvitationMetrics();
+    }
+  }, [isAdmin, authLoading]);
 
   // Compute metrics
   const totalVisits = actions.filter(a => a.action === 'visit').length;
@@ -126,6 +131,24 @@ const AdminInvitations = () => {
         return null;
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#046a38] mx-auto mb-2"></div>
+        <p className="text-xs text-slate-400 font-bold">A verificar credenciais...</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="text-center py-12 bg-white rounded-3xl border border-slate-100 p-8">
+        <p className="text-sm font-black text-rose-500">Acesso negado</p>
+        <p className="text-xs text-slate-400 font-bold mt-1">Apenas administradores podem aceder a esta área.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8" id="admin-invitations-panel">
