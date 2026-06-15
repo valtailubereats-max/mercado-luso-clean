@@ -118,7 +118,9 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 3,
           showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false,
           searchGroupBgColor: data.searchGroupBgColor || '#ffffff',
-          searchGroupOpacity: data.searchGroupOpacity !== undefined ? data.searchGroupOpacity : 10
+          searchGroupOpacity: data.searchGroupOpacity !== undefined ? data.searchGroupOpacity : 10,
+          compactCardMode: data.compactCardMode !== undefined ? data.compactCardMode : false,
+          enableFotosFeature: data.enableFotosFeature !== undefined ? data.enableFotosFeature : false
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -133,7 +135,9 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           highlightSpeed: 3,
           showTotalUsersBadge: false,
           searchGroupBgColor: '#ffffff',
-          searchGroupOpacity: 10
+          searchGroupOpacity: 10,
+          compactCardMode: false,
+          enableFotosFeature: false
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -154,6 +158,9 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
     try {
       await updateDoc(doc(db, 'settings', 'global'), { ...settings });
       setSuccessMsg('Configurações salvas com sucesso.');
+      setTimeout(() => {
+        setSuccessMsg(null);
+      }, 4000);
       if (onClose) {
         setTimeout(() => {
           onClose();
@@ -162,6 +169,9 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
     } catch (err) {
       console.error('Error saving settings:', err);
       setErrorMsg('Não foi possível salvar as configurações. Tente novamente.');
+      setTimeout(() => {
+        setErrorMsg(null);
+      }, 4000);
       try {
         handleFirestoreError(err, OperationType.UPDATE, 'settings/global');
       } catch (logErr) {
@@ -357,13 +367,45 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
               <div className="space-y-0.5">
                 <h3 className="text-sm font-bold text-slate-900">Mostrar Total de Utilizadores (Público)</h3>
-                <p className="text-xs text-slate-500 font-medium">Torna visível o indicador com o total de utilizadores registados na página principal para visitantes comuns. (Admins/Moderadores sempre conseguem ver).</p>
+                <p className="text-xs text-slate-500 font-medium font-semibold">Torna visível o indicador com o total de utilizadores registados na página principal para visitantes comuns. (Admins/Moderadores sempre conseguem ver).</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={!!settings.showTotalUsersBadge} 
                   onChange={(e) => setSettings({ ...settings, showTotalUsersBadge: e.target.checked })} 
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-900">Modo Card Compacto</h3>
+                <p className="text-xs text-slate-500 font-medium">Ativa ou desativa a visualização de cards de forma mais compacta na página principal e nas listagens comuns da plataforma.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={!!settings.compactCardMode} 
+                  onChange={(e) => setSettings({ ...settings, compactCardMode: e.target.checked })} 
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-900">Ativar Secção de Fotos (Público)</h3>
+                <p className="text-xs text-slate-500 font-medium">Ativa ou desativa a visualização do botão e o acesso à Loja de Fotos para os utilizadores finais.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={settings.enableFotosFeature !== false} 
+                  onChange={(e) => setSettings({ ...settings, enableFotosFeature: e.target.checked })} 
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>

@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { auth, db, getDocsWithCacheFallback } from './firebase';
 import { signOut } from 'firebase/auth';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { SettingsProvider } from './context/SettingsContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { collection, query, where, orderBy, doc, updateDoc, limit, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -49,6 +49,7 @@ import { useClickOutside } from './hooks/useClickOutside';
 
 const Navbar = () => {
   const { user, isAdmin, isModerator, loading } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
   const [adminNotificationCount, setAdminNotificationCount] = React.useState(0);
@@ -416,14 +417,16 @@ const Navbar = () => {
                       >
                         🧭 Explorar
                       </Link>
-                      <Link
-                        to="/fotos"
-                        onClick={() => setShowUserDropdown(false)}
-                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
-                        id="nav-fotos-link"
-                      >
-                        📸 Fotos
-                      </Link>
+                      {(settings?.enableFotosFeature !== false || isAdmin || isModerator) && (
+                        <Link
+                          to="/fotos"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-fotos-link"
+                        >
+                          📸 Fotos
+                        </Link>
+                      )}
                       <Link
                         to="/empreendedores"
                         onClick={() => setShowUserDropdown(false)}
@@ -560,14 +563,16 @@ const Navbar = () => {
                         >
                           🧭 Explorar
                         </Link>
-                        <Link
-                          to="/fotos"
-                          onClick={() => setShowUserDropdown(false)}
-                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
-                          id="nav-fotos-link"
-                        >
-                          📸 Fotos
-                        </Link>
+                        {(settings?.enableFotosFeature !== false || isAdmin || isModerator) && (
+                          <Link
+                            to="/fotos"
+                            onClick={() => setShowUserDropdown(false)}
+                            className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                            id="nav-fotos-link"
+                          >
+                            📸 Fotos
+                          </Link>
+                        )}
                         <Link
                           to="/empreendedores"
                           onClick={() => setShowUserDropdown(false)}
@@ -629,7 +634,9 @@ const Navbar = () => {
           <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="md:hidden bg-white border-t border-slate-100 overflow-hidden shadow-inner">
             <div className="px-4 py-6 space-y-4 flex flex-col">
               <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Explorar</Link>
-              <Link to="/fotos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-705 text-slate-700">Fotos</Link>
+              {(settings?.enableFotosFeature !== false || isAdmin || isModerator) && (
+                <Link to="/fotos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-705 text-slate-700">Fotos</Link>
+              )}
               <Link to="/empreendedores" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Empreendedores</Link>
               
               {user ? <>

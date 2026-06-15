@@ -4,12 +4,18 @@ import { collection, query, where, orderBy } from 'firebase/firestore';
 import { PhotoStoreItem } from '../types';
 import { Camera, Image as ImageIcon, AlertCircle, ShoppingBag, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Fotos() {
+  const { settings } = useSettings();
+  const { isAdmin, isModerator } = useAuth();
   const [photos, setPhotos] = useState<PhotoStoreItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showMessage, setShowMessage] = useState(false);
+
+  const isFeatureDisabled = settings?.enableFotosFeature === false && !isAdmin && !isModerator;
 
   useEffect(() => {
     async function fetchActivePhotos() {
@@ -48,6 +54,22 @@ export default function Fotos() {
       setShowMessage(false);
     }, 4000);
   };
+
+  if (isFeatureDisabled) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center flex flex-col items-center justify-center" id="pagina-loja-fotos-disabled">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-amber-50/70 text-amber-500 mb-6 border border-amber-100/50">
+          <Camera size={40} className="stroke-[1.5]" />
+        </div>
+        <h1 className="text-3xl font-brand font-black text-slate-900 tracking-tight">
+          Secção de Fotos Indisponível
+        </h1>
+        <p className="text-slate-500 mt-2 font-medium max-w-md mx-auto leading-relaxed text-sm">
+          Esta secção encontra-se temporariamente desativada pela equipa de administração do Mercado Luso. Por favor, volte a visitar em breve.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" id="pagina-loja-fotos">

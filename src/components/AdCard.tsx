@@ -13,6 +13,7 @@ import ReviewModal from './ReviewModal';
 import { doc, updateDoc, increment, setDoc, deleteDoc, collection, query, where, limit, serverTimestamp } from 'firebase/firestore';
 import { db, getDocWithCacheFallback, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface AdCardProps {
   ad: Ad;
@@ -21,6 +22,7 @@ interface AdCardProps {
 
 const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const { user, profile, favorites, toggleFavoriteGlobal } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -62,6 +64,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
       ? ad.featuredUntil.toDate() > new Date() 
       : new Date(ad.featuredUntil) > new Date()
   );
+
+  const isCompactActive = settings?.compactCardMode === true;
+  const isFeaturedVariant = variant === 'featured';
+  const useCompactMode = isCompactActive && !isFeaturedVariant;
 
   const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
   const hasSourceUrl = !!(ad.sourceUrl && /^https?:\/\//i.test(ad.sourceUrl));
@@ -421,8 +427,6 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
     }
   };
 
-  const isFeaturedVariant = variant === 'featured';
-
   return (
     <>
       <motion.div
@@ -482,20 +486,34 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           />
         </div>
 
-        <div className={isFeaturedVariant ? "p-2 md:p-3 flex-1 flex flex-col" : "p-2.5 md:p-3.5 flex-1 flex flex-col"}>
+        <div className={
+          useCompactMode 
+            ? "p-2 pb-2.5 flex-1 flex flex-col justify-between" 
+            : isFeaturedVariant 
+              ? "p-2 md:p-3 flex-1 flex flex-col" 
+              : "p-2.5 md:p-3.5 flex-1 flex flex-col"
+        }>
           <div className="flex justify-between items-start mb-1 md:mb-1.5">
             <h3 className={`font-extrabold text-slate-900 line-clamp-2 leading-snug group-hover:text-pt-green transition-colors tracking-tight ${
-              isFeaturedVariant ? 'text-xs md:text-sm' : 'text-sm md:text-[15px]'
+              useCompactMode
+                ? 'text-xs'
+                : isFeaturedVariant 
+                  ? 'text-xs md:text-sm' 
+                  : 'text-sm md:text-[15px]'
             }`}>
               {ad.title}
             </h3>
           </div>
 
           <div className={`flex flex-col gap-0.5 text-slate-400 font-medium ${
-            isFeaturedVariant ? 'text-[9px] md:text-[10px] mb-1.5 md:mb-2' : 'text-[10px] md:text-[11px] mb-2 md:mb-3'
+            useCompactMode
+              ? 'text-[10px] md:text-[11px] mb-0'
+              : isFeaturedVariant 
+                ? 'text-[9px] md:text-[10px] mb-1.5 md:mb-2' 
+                : 'text-[10px] md:text-[11px] mb-2 md:mb-3'
           }`}>
             <div className="flex items-center gap-1 text-slate-600">
-              <MapPin size={isFeaturedVariant ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
+              <MapPin size={(useCompactMode || isFeaturedVariant) ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
               <span className="truncate">
                 {ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'}{' '}
                 <span
@@ -510,88 +528,94 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 </span>
               </span>
             </div>
-            <div className="flex items-center gap-1 text-slate-500">
-              <Tag size={isFeaturedVariant ? 10 : 12} className="text-teal-600 shrink-0 opacity-75" />
-              <span className="truncate">{ad.category}</span>
-            </div>
+            {!useCompactMode && (
+              <div className="flex items-center gap-1 text-slate-500">
+                <Tag size={isFeaturedVariant ? 10 : 12} className="text-teal-600 shrink-0 opacity-75" />
+                <span className="truncate">{ad.category}</span>
+              </div>
+            )}
             {/* Comentado/Removido a etiqueta de Vitrine Digital no card */}
           </div>
 
-          {/* Linha horizontal de ações */}
-          <div className={`flex items-center justify-center border-t border-b border-dashed border-slate-100 ${
-            isFeaturedVariant ? 'gap-3 py-1 mb-1.5' : 'gap-5 py-1.5 mb-2'
-          }`}>
-            {/* Favoritar */}
-            <button
-              onClick={toggleFavorite}
-              className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 ${
-                isFeaturedVariant ? 'p-1.5' : 'p-2'
-              } ${
-                isFavorite
-                  ? 'bg-rose-50 border-rose-100 text-rose-600'
-                  : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600'
-              }`}
-              title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-            >
-              <Heart size={isFeaturedVariant ? 12 : 14} fill={isFavorite ? 'currentColor' : 'none'} className={isFavorite ? "text-rose-500" : ""} />
-            </button>
+          {!useCompactMode && (
+            <>
+              {/* Linha horizontal de ações */}
+              <div className={`flex items-center justify-center border-t border-b border-dashed border-slate-100 ${
+                isFeaturedVariant ? 'gap-3 py-1 mb-1.5' : 'gap-5 py-1.5 mb-2'
+              }`}>
+                {/* Favoritar */}
+                <button
+                  onClick={toggleFavorite}
+                  className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 ${
+                    isFeaturedVariant ? 'p-1.5' : 'p-2'
+                  } ${
+                    isFavorite
+                      ? 'bg-rose-50 border-rose-100 text-rose-600'
+                      : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600'
+                  }`}
+                  title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                >
+                  <Heart size={isFeaturedVariant ? 12 : 14} fill={isFavorite ? 'currentColor' : 'none'} className={isFavorite ? "text-rose-500" : ""} />
+                </button>
 
-            {/* Partilhar */}
-            <button
-              onClick={handleShare}
-              className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600 ${
-                isFeaturedVariant ? 'p-1.5' : 'p-2'
-              }`}
-              title="Partilhar Anúncio"
-            >
-              <Share2 size={isFeaturedVariant ? 12 : 14} />
-            </button>
+                {/* Partilhar */}
+                <button
+                  onClick={handleShare}
+                  className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 text-slate-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600 ${
+                    isFeaturedVariant ? 'p-1.5' : 'p-2'
+                  }`}
+                  title="Partilhar Anúncio"
+                >
+                  <Share2 size={isFeaturedVariant ? 12 : 14} />
+                </button>
 
-            {/* WhatsApp ou Contato */}
-            {((getAdPhone() && getAdPhone().trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
-              <button
-                onClick={handleContactClick}
-                className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 ${
-                  hasSourceUrl
-                    ? 'text-indigo-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600'
-                    : 'text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600'
-                } ${isFeaturedVariant ? 'p-1.5' : 'p-2'}`}
-                title={hasSourceUrl ? "Contato" : "Contactar via WhatsApp"}
-              >
-                {hasSourceUrl ? (
-                  <ExternalLink size={isFeaturedVariant ? 12 : 14} className="text-indigo-600" />
+                {/* WhatsApp ou Contato */}
+                {((getAdPhone() && getAdPhone().trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
+                  <button
+                    onClick={handleContactClick}
+                    className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 ${
+                      hasSourceUrl
+                        ? 'text-indigo-400 hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600'
+                        : 'text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600'
+                    } ${isFeaturedVariant ? 'p-1.5' : 'p-2'}`}
+                    title={hasSourceUrl ? "Contato" : "Contactar via WhatsApp"}
+                  >
+                    {hasSourceUrl ? (
+                      <ExternalLink size={isFeaturedVariant ? 12 : 14} className="text-indigo-600" />
+                    ) : (
+                      <MessageCircle size={isFeaturedVariant ? 12 : 14} className="text-[#25D366]" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Preço (Elemento final de maior destaque) */}
+              <div className="mt-auto pt-1 flex flex-col items-center justify-center text-center">
+                {hasPrice ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <div className={`font-black text-indigo-600 tracking-tight leading-none ${
+                      isFeaturedVariant ? 'text-sm md:text-base' : 'text-base md:text-lg'
+                    }`}>
+                      {formatPrice(ad.price, ad.country)}
+                    </div>
+                    {(ad.status === 'sold' || ad.adStatus === 'sold') && ad.price !== undefined && Number(ad.price) > 0 && (
+                      <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-tight flex items-center justify-center gap-1 mt-1">
+                        <ShoppingBag size={10} /> Vendido
+                      </span>
+                    )}
+                  </div>
                 ) : (
-                  <MessageCircle size={isFeaturedVariant ? 12 : 14} className="text-[#25D366]" />
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* Preço (Elemento final de maior destaque) */}
-          <div className="mt-auto pt-1 flex flex-col items-center justify-center text-center">
-            {hasPrice ? (
-              <div className="flex flex-col items-center justify-center">
-                <div className={`font-black text-indigo-600 tracking-tight leading-none ${
-                  isFeaturedVariant ? 'text-sm md:text-base' : 'text-base md:text-lg'
-                }`}>
-                  {formatPrice(ad.price, ad.country)}
-                </div>
-                {(ad.status === 'sold' || ad.adStatus === 'sold') && ad.price !== undefined && Number(ad.price) > 0 && (
-                  <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-tight flex items-center justify-center gap-1 mt-1">
-                    <ShoppingBag size={10} /> Vendido
-                  </span>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className={`font-extrabold text-[#111111] uppercase tracking-wide leading-none ${
+                      isFeaturedVariant ? 'text-[10px] md:text-xs' : 'text-xs md:text-sm'
+                    }`}>
+                      Sob Consulta
+                    </div>
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center">
-                <div className={`font-extrabold text-emerald-600 uppercase tracking-wide leading-none ${
-                  isFeaturedVariant ? 'text-[10px] md:text-xs' : 'text-xs md:text-sm'
-                }`}>
-                  Sob Consulta
-                </div>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </motion.div>
 

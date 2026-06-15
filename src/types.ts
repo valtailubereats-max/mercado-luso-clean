@@ -47,6 +47,8 @@ export interface MarketplaceSettings {
   showTotalUsersBadge?: boolean;
   searchGroupBgColor?: string;
   searchGroupOpacity?: number;
+  compactCardMode?: boolean;
+  enableFotosFeature?: boolean;
 }
 
 export interface UserProfile {
