@@ -23,13 +23,36 @@ import {
   X,
   MapPin,
   Tag,
-  Image as ImageIcon
+  Image as ImageIcon,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { formatPrice } from '../utils';
 import { sendEmailGeneric, getSellerEmail } from '../utils/emailService';
 import { useAuth } from '../context/AuthContext';
+
+interface ColumnOption {
+  id: string;
+  label: string;
+  mandatory?: boolean;
+}
+
+const ALL_COLUMNS: ColumnOption[] = [
+  { id: 'foto', label: 'Foto' },
+  { id: 'titulo', label: 'Título', mandatory: true },
+  { id: 'preco', label: 'Preço' },
+  { id: 'status', label: 'Status' },
+  { id: 'vendedor', label: 'Vendedor' },
+  { id: 'pais', label: 'País' },
+  { id: 'cidade', label: 'Cidade' },
+  { id: 'criacao', label: 'Criação' },
+  { id: 'expiracao', label: 'Expiração' },
+  { id: 'vistas', label: 'Vistas' },
+  { id: 'cliques', label: 'Cliques' },
+  { id: 'acoes', label: 'Ações rápidas', mandatory: true },
+];
 
 const AdminAds = () => {
   const navigate = useNavigate();
@@ -39,6 +62,39 @@ const AdminAds = () => {
   const [adFilter, setAdFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+
+  // New States for ERP / Scalability TabelaMode
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
+    return (localStorage.getItem('admin_ads_view_mode') as 'cards' | 'table') || 'cards';
+  });
+  const [countryFilter, setCountryFilter] = useState<'all' | 'Portugal' | 'Reino Unido'>('all');
+  const [periodFilter, setPeriodFilter] = useState<'all' | 'today' | '7days' | '30days'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [fetchLimit, setFetchLimit] = useState(100);
+  const pageSize = 50;
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    const saved = localStorage.getItem('admin_ads_visible_columns');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Garante que os campos obrigatorios estão sempre presentes
+          return Array.from(new Set([...parsed, 'titulo', 'acoes']));
+        }
+      } catch (e) {
+        console.error('Erro ao processar as colunas visíveis salvas:', e);
+      }
+    }
+    // Por padrão exibe todas as colunas
+    return ALL_COLUMNS.map(col => col.id);
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_ads_visible_columns', JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
+
+  const isColVisible = (id: string) => visibleColumns.includes(id);
 
   const [adminImagePositionX, setAdminImagePositionX] = useState<number>(50);
   const [adminImagePositionY, setAdminImagePositionY] = useState<number>(50);
@@ -91,9 +147,11 @@ const AdminAds = () => {
 
   const [renewingId, setRenewingId] = useState<string | null>(null);
 
-  const fetchAds = async () => {
+  const fetchAds = async (customLimit?: number | null) => {
     try {
-      const q = query(collection(db, 'ads'), orderBy('createdAt', 'desc'), limit(100));
+      setLoading(true);
+      const currentLimit = customLimit !== undefined && customLimit !== null ? customLimit : fetchLimit;
+      const q = query(collection(db, 'ads'), orderBy('createdAt', 'desc'), limit(currentLimit));
       const querySnapshot = await getDocsWithCacheFallback(q, 'admin/ads');
       const adsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
       setAds(adsData);
@@ -102,6 +160,12 @@ const AdminAds = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    const newLimit = fetchLimit + 100;
+    setFetchLimit(newLimit);
+    fetchAds(newLimit);
   };
 
   const handleAdAction = async (adId: string, status: string) => {
@@ -232,11 +296,55 @@ const AdminAds = () => {
   };
 
   const filteredAds = ads.filter(ad => {
+    // 1. Status Filter
     const matchesFilter = adFilter === 'all' ? true : (ad.status === adFilter || ad.adStatus === adFilter);
-    const matchesSearch = ad.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          ad.sellerName?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+
+    // 2. Country Filter
+    const adCountry = ad.country || 'Portugal';
+    const matchesCountry = countryFilter === 'all'
+      ? true
+      : adCountry.toLowerCase() === countryFilter.toLowerCase();
+
+    // 3. Period Filter
+    let matchesPeriod = true;
+    if (periodFilter !== 'all') {
+      const createDate = ad.createdAt?.toDate ? ad.createdAt.toDate() : (ad.createdAt ? new Date(ad.createdAt) : null);
+      if (!createDate) {
+        matchesPeriod = false;
+      } else {
+        const createTime = createDate.getTime();
+        const nowTime = new Date().getTime();
+        const diffDays = (nowTime - createTime) / (1000 * 60 * 60 * 24);
+        if (periodFilter === 'today' && diffDays > 1) matchesPeriod = false;
+        else if (periodFilter === '7days' && diffDays > 7) matchesPeriod = false;
+        else if (periodFilter === '30days' && diffDays > 30) matchesPeriod = false;
+      }
+    }
+
+    // 4. Global Search Term matching: title, description, seller, city, country, or ad ID
+    let matchesSearch = true;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      const title = (ad.title || '').toLowerCase();
+      const description = (ad.description || '').toLowerCase();
+      const seller = (ad.sellerName || '').toLowerCase();
+      const city = (ad.city || '').toLowerCase();
+      const country = (ad.country || '').toLowerCase();
+      const id = (ad.id || '').toLowerCase();
+
+      matchesSearch = title.includes(term) ||
+                      description.includes(term) ||
+                      seller.includes(term) ||
+                      city.includes(term) ||
+                      country.includes(term) ||
+                      id.includes(term);
+    }
+
+    return matchesFilter && matchesCountry && matchesPeriod && matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredAds.length / pageSize) || 1;
+  const pagedAds = filteredAds.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const stats = {
     total: ads.length,
@@ -267,52 +375,194 @@ const AdminAds = () => {
         ))}
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text"
-            placeholder="Pesquisar por título ou vendedor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-          {[
-            { id: 'all', label: 'Todos' },
-            { id: 'pending', label: 'Pendentes' },
-            { id: 'approved', label: 'Ativos' },
-            { id: 'expired', label: 'Expirados' },
-            { id: 'rejected', label: 'Rejeitados' },
-            { id: 'archived', label: 'Arquivados' }
-          ].map((filter) => (
+      {/* Advanced Filters & Search Toolbar */}
+      <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 space-y-4">
+        {/* Top Controls: Search Bar & View Mode Toggle */}
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+          {/* Expanded Global Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Procurar por anúncio, descrição, vendedor, cidade ou ID..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // reset to page 1 on active search
+              }}
+              className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+            />
+          </div>
+
+          {/* View Mode Toggle Pill */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl self-start lg:self-auto gap-1">
             <button
-              key={filter.id}
-              onClick={() => setAdFilter(filter.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
-                adFilter === filter.id 
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' 
-                  : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'
+              onClick={() => {
+                setViewMode('cards');
+                localStorage.setItem('admin_ads_view_mode', 'cards');
+              }}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                viewMode === 'cards'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              {filter.label}
+              <LayoutGrid size={15} />
+              <span>Cards</span>
             </button>
-          ))}
+            <button
+              onClick={() => {
+                setViewMode('table');
+                localStorage.setItem('admin_ads_view_mode', 'table');
+              }}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <List size={15} />
+              <span>Tabela</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-2 border-t border-slate-100">
+          {/* Status Segmented Filter - 6 columns */}
+          <div className="md:col-span-6 flex flex-col gap-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Filtrar por Status</label>
+            <div className="flex gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+              {[
+                { id: 'all', label: 'Todos' },
+                { id: 'pending', label: 'Pendentes' },
+                { id: 'approved', label: 'Ativos' },
+                { id: 'expired', label: 'Expirados' },
+                { id: 'rejected', label: 'Rejeitados' },
+                { id: 'archived', label: 'Arquivados' }
+              ].map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => {
+                    setAdFilter(filter.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-all ${
+                    adFilter === filter.id 
+                      ? 'bg-indigo-600 text-white shadow-sm' 
+                      : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-100'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Country Select Filter - 3 columns */}
+          <div className="md:col-span-3 flex flex-col gap-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">País</label>
+            <select
+              value={countryFilter}
+              onChange={(e) => {
+                setCountryFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-slate-50 border border-slate-150 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-705 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all cursor-pointer"
+            >
+              <option value="all">🌍 Todos os Países</option>
+              <option value="Portugal">🇵🇹 Portugal</option>
+              <option value="Reino Unido">🇬🇧 Reino Unido</option>
+            </select>
+          </div>
+
+          {/* Period Select Filter - 3 columns */}
+          <div className="md:col-span-3 flex flex-col gap-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Data de Criação</label>
+            <select
+              value={periodFilter}
+              onChange={(e) => {
+                setPeriodFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-slate-50 border border-slate-150 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-705 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all cursor-pointer"
+            >
+              <option value="all">📅 Todo o Período</option>
+              <option value="today">Hoje (últimas 24h)</option>
+              <option value="7days">Últimos 7 dias</option>
+              <option value="30days">Últimos 30 dias</option>
+            </select>
+          </div>
+         </div>
+        
+        {/* Colunas Visíveis Selector */}
+        {viewMode === 'table' && (
+          <div className="pt-3.5 border-t border-slate-100 space-y-2">
+            <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Colunas visíveis</h4>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 bg-slate-50 p-3 rounded-xl border border-slate-150">
+              {ALL_COLUMNS.map((col) => {
+                const isMandatory = col.mandatory;
+                const isChecked = isColVisible(col.id);
+                return (
+                  <label 
+                    key={col.id} 
+                    className={`flex items-center gap-2 text-xs font-semibold select-none transition-all ${
+                      isMandatory 
+                        ? 'text-indigo-600/70 cursor-not-allowed opacity-80' 
+                        : isChecked 
+                          ? 'text-slate-800 hover:text-indigo-600 cursor-pointer' 
+                          : 'text-slate-400 hover:text-slate-600 cursor-pointer'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      disabled={isMandatory}
+                      onChange={() => {
+                        if (isMandatory) return;
+                        if (isChecked) {
+                          setVisibleColumns(prev => prev.filter(id => id !== col.id));
+                        } else {
+                          setVisibleColumns(prev => [...prev, col.id]);
+                        }
+                      }}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <span>
+                      {col.label} 
+                      {isMandatory && <span className="text-[8px] text-indigo-500 font-black tracking-wider uppercase ml-1">(Obrigatória)</span>}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Info label about scope */}
+        <div className="flex flex-wrap justify-between items-center gap-2 text-[10px] text-slate-400 font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <span>A pesquisar localmente nos {ads.length} anúncios carregados na memória.</span>
+          <button 
+            onClick={handleLoadMore}
+            disabled={loading}
+            className="text-indigo-600 hover:text-indigo-800 font-black uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
+          >
+            <span>Obter mais anúncios do servidor (+100)</span>
+          </button>
         </div>
       </div>
 
       {loading ? (
         <div className="text-center py-20 text-slate-400 font-bold animate-pulse">A carregar anúncios...</div>
       ) : filteredAds.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+        <div className="text-center py-20 bg-white rounded-3xl border border-slate-200">
           <AlertCircle className="mx-auto text-slate-300 mb-4" size={48} />
-          <p className="text-slate-500 font-bold">Nenhum anúncio encontrado.</p>
+          <p className="text-slate-500 font-bold">Nenhum anúncio encontrado com os filtros selecionados.</p>
         </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
+        /* --- VIEW MODE: CARDS --- */
         <div className="grid grid-cols-1 gap-4">
-          {filteredAds.map((ad, idx) => (
+          {pagedAds.map((ad, idx) => (
             <motion.div
               key={`${ad.id}-${idx}`}
               layout
@@ -509,6 +759,356 @@ const AdminAds = () => {
               </div>
             </motion.div>
           ))}
+        </div>
+      ) : (
+        /* --- VIEW MODE: TABELA ERP (Highly Scalable Layout) --- */
+        <div className="space-y-4">
+          {/* Desktop/Tablet Table layout */}
+          <div className="hidden md:block overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <table className="w-full text-left border-collapse transition-all" style={{ minWidth: `${Math.max(600, visibleColumns.length * 90)}px` }}>
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                  {isColVisible('foto') && <th className="py-3 px-4 w-16 text-center">Foto</th>}
+                  {isColVisible('titulo') && <th className="py-3 px-4">Anúncio</th>}
+                  {isColVisible('pais') && <th className="py-3 px-4 text-center">País</th>}
+                  {isColVisible('cidade') && <th className="py-3 px-4">Cidade / Localidade</th>}
+                  {isColVisible('preco') && <th className="py-3 px-4">Preço</th>}
+                  {isColVisible('status') && <th className="py-3 px-4 text-center">Status</th>}
+                  {isColVisible('vendedor') && <th className="py-3 px-4">Vendedor</th>}
+                  {isColVisible('criacao') && <th className="py-3 px-4">Criação</th>}
+                  {isColVisible('expiracao') && <th className="py-3 px-4">Expiração</th>}
+                  {isColVisible('vistas') && <th className="py-3 px-4 text-center">Vistas</th>}
+                  {isColVisible('cliques') && <th className="py-3 px-4 text-center">Cliques</th>}
+                  {isColVisible('acoes') && <th className="py-3 px-4 text-right pr-6">Ações Rápidas</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pagedAds.map((ad, idx) => {
+                  const adCountryIcon = ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹';
+                  return (
+                    <tr key={`${ad.id}-${idx}`} className="hover:bg-slate-50/50 transition-colors text-xs">
+                      {/* Photo column */}
+                      {isColVisible('foto') && (
+                        <td className="py-3 px-4 border-none text-center">
+                          <div 
+                            className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center cursor-pointer mx-auto relative group shadow-inner"
+                            onClick={() => setSelectedAd(ad)}
+                          >
+                            <img 
+                              src={ad.imageUrl} 
+                              alt={ad.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-all" 
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Title column */}
+                      {isColVisible('titulo') && (
+                        <td className="py-3 px-4 border-none font-medium">
+                          <div className="max-w-[200px]">
+                            <div 
+                              className="font-bold text-slate-900 truncate hover:text-indigo-600 transition-colors cursor-pointer"
+                              onClick={() => setSelectedAd(ad)}
+                              title={ad.title}
+                            >
+                              {ad.title}
+                            </div>
+                            <div className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 tracking-wider">{ad.category}</div>
+                            <div className="text-[8px] text-slate-300 font-mono mt-0.5">ID: {ad.id}</div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Country Column */}
+                      {isColVisible('pais') && (
+                        <td className="py-3 px-4 border-none text-center font-bold">
+                          <span className="text-base" title={ad.country || 'Portugal'}>{adCountryIcon}</span>
+                        </td>
+                      )}
+
+                      {/* City Column */}
+                      {isColVisible('cidade') && (
+                        <td className="py-3 px-4 border-none text-slate-700 font-semibold">
+                          {ad.city || 'N/A'}
+                        </td>
+                      )}
+
+                      {/* Price Column */}
+                      {isColVisible('preco') && (
+                        <td className="py-3 px-4 border-none text-indigo-650 font-black whitespace-nowrap">
+                          {formatPrice(ad.price, ad.country)}
+                        </td>
+                      )}
+
+                      {/* Status Column */}
+                      {isColVisible('status') && (
+                        <td className="py-3 px-4 border-none text-center">
+                          <div className="flex flex-col gap-0.5 items-center">
+                            <span className={`inline-block text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider min-w-[70px] text-center ${
+                              ad.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                              ad.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse' : 
+                              'bg-red-50 text-red-650 border border-red-100'
+                            }`}>
+                              {ad.status}
+                            </span>
+                            {ad.adStatus && ad.adStatus !== ad.status && (
+                              <span className={`inline-block text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider min-w-[70px] text-center ${
+                                ad.adStatus === 'active' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 
+                                ad.adStatus === 'expired' ? 'bg-red-50 text-red-650 border border-red-150' : 
+                                'bg-amber-50 text-amber-600 border border-amber-100'
+                              }`}>
+                                {ad.adStatus}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Seller Column */}
+                      {isColVisible('vendedor') && (
+                        <td className="py-3 px-4 border-none">
+                          <div>
+                            <div className="font-bold text-slate-800">{ad.sellerName || 'ValtailAdmin'}</div>
+                            <div className="text-[9px] text-slate-400 font-mono" title={ad.sellerId}>ID: {ad.sellerId ? `${ad.sellerId.substring(0, 6)}...` : 'N/A'}</div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Creation Date */}
+                      {isColVisible('criacao') && (
+                        <td className="py-3 px-4 border-none text-slate-500 whitespace-nowrap">
+                          {ad.createdAt?.toDate ? format(ad.createdAt.toDate(), 'dd MMM yyyy') : 'Recentemente'}
+                        </td>
+                      )}
+
+                      {/* Expiration Date */}
+                      {isColVisible('expiracao') && (
+                        <td className="py-3 px-4 border-none text-slate-500 whitespace-nowrap">
+                          {ad.expirationDate?.toDate ? format(ad.expirationDate.toDate(), 'dd MMM yyyy') : 'N/A'}
+                        </td>
+                      )}
+
+                      {/* Views Column */}
+                      {isColVisible('vistas') && (
+                        <td className="py-3 px-4 border-none text-center font-bold text-slate-700">
+                          {ad.views || 0}
+                        </td>
+                      )}
+
+                      {/* Clicks Column */}
+                      {isColVisible('cliques') && (
+                        <td className="py-3 px-4 border-none text-center font-bold text-slate-705">
+                          {ad.whatsappClicks || 0}
+                        </td>
+                      )}
+
+                      {/* Actions Column */}
+                      {isColVisible('acoes') && (
+                        <td className="py-3 px-4 border-none text-right pr-6">
+                          <div className="flex gap-1 items-center justify-end">
+                            {/* Visualizar */}
+                            <button
+                              onClick={() => setSelectedAd(ad)}
+                              className="p-1 px-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-150 border border-indigo-100 rounded-lg transition-all text-[10px] font-bold"
+                              title="Ver Detalhes"
+                            >
+                              Ver
+                            </button>
+
+                            {/* Editar */}
+                            <button
+                              onClick={() => navigate(`/edit-ad/${ad.id}`)}
+                              className="p-1 px-2 text-slate-600 bg-slate-50 hover:bg-slate-150 border border-slate-200 rounded-lg transition-all text-[10px] font-bold"
+                              title="Editar"
+                            >
+                              Editar
+                            </button>
+
+                            {/* Aprove/Reject */}
+                            {ad.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleAdAction(ad.id, 'approved')}
+                                  className="p-1 text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-all"
+                                  title="Aprovar"
+                                >
+                                  <CheckCircle size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleAdAction(ad.id, 'rejected')}
+                                  className="p-1 text-red-650 bg-red-50 hover:bg-red-200 rounded-lg transition-all"
+                                  title="Rejeitar"
+                                >
+                                  <XCircle size={14} />
+                                </button>
+                              </>
+                            )}
+
+                            {/* Reativar / Renovar */}
+                            {(ad.status === 'expired' || ad.adStatus === 'expired') && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('Deseja reativar este anúncio por mais 30 dias?')) {
+                                    handleRenewAd(ad.id);
+                                  }
+                                }}
+                                disabled={renewingId === ad.id}
+                                className="p-1 px-2 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-lg transition-all text-[10px] font-extrabold"
+                              >
+                                Reativar
+                              </button>
+                            )}
+
+                            {/* Renovar (Active approved ads) */}
+                            {ad.status === 'approved' && !ad.adStatus?.includes('expired') && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('Renovar este anúncio por mais 30 dias?')) {
+                                    handleRenewAd(ad.id);
+                                  }
+                                }}
+                                disabled={renewingId === ad.id}
+                                className="p-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all"
+                                title="Renovar (+30 dias)"
+                              >
+                                <RefreshCcw size={13} className={renewingId === ad.id ? 'animate-spin' : ''} />
+                              </button>
+                            )}
+
+                            {/* Arquivar */}
+                            {ad.status === 'approved' && !ad.adStatus?.includes('expired') && (
+                              <button
+                                onClick={() => handleAdAction(ad.id, 'archived')}
+                                className="p-1 text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all"
+                                title="Arquivar"
+                              >
+                                <Archive size={13} />
+                              </button>
+                            )}
+
+                            {/* Delete */}
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Eliminar anúncio permanentemente?')) {
+                                  handleAdAction(ad.id, 'deleted');
+                                }
+                              }}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 border border-slate-200 hover:border-red-100 rounded-lg transition-all"
+                              title="Eliminar permanentemente"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile representation under TabelaMode */}
+          <div className="block md:hidden bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100">
+            {pagedAds.map((ad, idx) => {
+              const countryIcon = ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹';
+              return (
+                <div key={`${ad.id}-${idx}`} className="py-3 flex gap-3.5 items-center">
+                  <img 
+                    src={ad.imageUrl} 
+                    alt={ad.title} 
+                    className="w-12 h-12 object-cover rounded-lg bg-slate-50 border border-slate-200 shrink-0 cursor-pointer" 
+                    onClick={() => setSelectedAd(ad)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 
+                      className="font-bold text-slate-900 text-xs truncate hover:text-indigo-600 cursor-pointer"
+                      onClick={() => setSelectedAd(ad)}
+                    >
+                      {ad.title}
+                    </h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {countryIcon} {ad.city} • <span className="font-extrabold text-indigo-600">{formatPrice(ad.price, ad.country)}</span>
+                    </p>
+                    <div className="flex gap-1 mt-1">
+                      <span className={`inline-block text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                        ad.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 
+                        ad.status === 'pending' ? 'bg-amber-50 text-amber-600 animate-pulse' : 
+                        'bg-red-50 text-red-650'
+                      }`}>
+                        {ad.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 items-center shrink-0">
+                    <button
+                      onClick={() => setSelectedAd(ad)}
+                      className="p-1 px-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 transition-colors text-[9px] font-extrabold rounded-md"
+                    >
+                      Ver
+                    </button>
+                    <button
+                      onClick={() => navigate(`/edit-ad/${ad.id}`)}
+                      className="p-1 px-1.5 bg-slate-50 text-slate-600 border border-slate-200 transition-colors text-[9px] font-bold rounded-md"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Pagination & Load More Controls Row */}
+      {filteredAds.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100 bg-none">
+          {/* Page Info */}
+          <p className="text-xs text-slate-500 font-bold">
+            Mostrando <span className="text-slate-800">{(currentPage - 1) * pageSize + 1}</span> a{' '}
+            <span className="text-slate-800">
+              {Math.min(currentPage * pageSize, filteredAds.length)}
+            </span>{' '}
+            de <span className="text-slate-800">{filteredAds.length}</span> resultados filtrados (carregados: {ads.length})
+          </p>
+
+          {/* Pagination Controls */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3.5 py-1.5 bg-white border border-slate-200 text-xs font-bold rounded-xl text-slate-600 disabled:opacity-40 disabled:pointer-events-none hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              Anterior
+            </button>
+            <span className="px-3.5 py-1.5 bg-slate-50 text-xs font-bold rounded-xl text-slate-700 border border-slate-150">
+              Pág. {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3.5 py-1.5 bg-white border border-slate-200 text-xs font-bold rounded-xl text-slate-600 disabled:opacity-40 disabled:pointer-events-none hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              Seguinte
+            </button>
+          </div>
+
+          {/* Database Load More Button */}
+          <button
+            onClick={handleLoadMore}
+            disabled={loading}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:text-indigo-700 text-slate-700 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-indigo-700 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <RefreshCcw size={14} className="text-indigo-650" />
+            )}
+            <span>Carregar mais do Banco de Dados</span>
+          </button>
         </div>
       )}
 

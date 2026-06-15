@@ -23,7 +23,8 @@ const app = initializeApp(firebaseConfig);
 const isSandboxEnv = typeof window !== 'undefined' && (
   window.location.hostname.includes('localhost') ||
   window.location.hostname.includes('127.0.0.1') ||
-  window.location.hostname.includes('run.app')
+  window.location.hostname.includes('run.app') ||
+  !window.location.hostname.endsWith('mercado-luso.com')
 );
 
 console.log('[Firebase] Initializing client-side app. Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'Server-side', '| Sandbox Env (Auto-Detect Long-Polling):', isSandboxEnv);

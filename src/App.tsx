@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Search, Menu, X, Share2, Bell, AlertTriangle, QrCode, Copy, Check } from 'lucide-react';
+import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Menu, X, Share2, Bell, AlertTriangle, QrCode, Copy, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { auth, db, getDocsWithCacheFallback } from './firebase';
 import { signOut } from 'firebase/auth';
@@ -58,7 +58,6 @@ const Navbar = () => {
   const [userNotificationCount, setUserNotificationCount] = React.useState(0);
   const [notifications, setNotifications] = React.useState<any[]>([]);
   const [showNotifications, setShowNotifications] = React.useState(false);
-  const [navSearch, setNavSearch] = React.useState('');
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
   const [showQrModal, setShowQrModal] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
@@ -91,14 +90,6 @@ const Navbar = () => {
   useClickOutside(navRef, () => {
     setIsOpen(false);
   });
-
-  const handleNavSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (navSearch.trim()) {
-      navigate(`/?search=${encodeURIComponent(navSearch.trim())}`);
-      setNavSearch('');
-    }
-  };
 
   const groupedNotifications = React.useMemo(() => {
     const groups: { [key: string]: any[] } = {};
@@ -285,20 +276,6 @@ const Navbar = () => {
               <span className="text-[10px] font-medium text-slate-600 tracking-wide leading-none mt-1">Compre, Venda e Negocie</span>
             </div>
           </Link>
-
-          {/* Search Desktop */}
-          <div className="hidden lg:flex flex-1 max-w-md mx-8">
-            <form onSubmit={handleNavSearch} className="w-full relative">
-              <input
-                type="text"
-                placeholder="✨ O que procura hoje? Digite aqui..."
-                value={navSearch}
-                onChange={(e) => setNavSearch(e.target.value)}
-                className="w-full bg-white/90 border border-[#a8dec0]/60 rounded-xl py-2 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pt-green/50 focus:bg-white transition-all shadow-sm"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            </form>
-          </div>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
