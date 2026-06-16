@@ -31,11 +31,33 @@ const VitrineComercial = () => {
     }
     setLoading(true);
     try {
+      const finalShowcaseName = profile?.name || 'A Minha Vitrine';
+      let generatedSlug = '';
+      if (finalShowcaseName) {
+        const cleanedSlug = finalShowcaseName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+          .replace(/(^-|-$)+/g, '');
+        generatedSlug = `${cleanedSlug}-${user.uid.substring(0, 5)}`;
+      }
+
+      const finalCountry = profile?.country || 'Portugal';
+      const finalCity = profile?.city || '';
+
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
         showcasePaid: true,
         showcaseActive: true,
-        showcasePlan: 'premium'
+        showcasePlan: 'premium',
+        showcaseName: finalShowcaseName,
+        showcaseSlug: generatedSlug,
+        country: finalCountry,
+        city: finalCity
       }, { merge: true });
 
       const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
@@ -43,9 +65,13 @@ const VitrineComercial = () => {
         showcasePaid: true,
         showcaseActive: true,
         showcasePlan: 'premium',
-        showcaseName: profile?.name || 'A Minha Vitrine',
+        showcaseName: finalShowcaseName,
+        showcaseSlug: generatedSlug,
         showcaseCategory: 'Outros',
-        showcaseApproved: true
+        showcaseApproved: true,
+        country: finalCountry,
+        city: finalCity,
+        displayName: profile?.name || user?.displayName || 'Empreendedor'
       }, { merge: true });
 
       if (refreshProfile) {

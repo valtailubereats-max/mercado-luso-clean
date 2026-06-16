@@ -385,8 +385,9 @@ const AdminDashboard = () => {
       }
 
       // E. Overwrite/supplement the absolute latest snapshot point with exact real-time live database values
+      const todayId = new Date().toISOString().split('T')[0];
       const currentDayMetrics: DailyMetric = {
-        id: new Date().toISOString().split('T')[0],
+        id: todayId,
         date: { toDate: () => new Date() },
         users: {
           total: usersList.length,
@@ -432,16 +433,27 @@ const AdminDashboard = () => {
         }
       };
 
-      if (finalMetrics.length > 0) {
-        // Enforce the ultimate exact real-time state as the final day node
-        finalMetrics[finalMetrics.length - 1] = currentDayMetrics;
-      } else {
-        finalMetrics = [currentDayMetrics];
-      }
+      // Filter out any stale elements representing today from the finalMetrics list
+      const historicalMetrics = finalMetrics.filter(m => m.id !== todayId);
 
-      // Ensure unique IDs in data to avoid React key issues
-      const uniqueData = Array.from(new Map(finalMetrics.map(item => [item.id, item])).values());
-      setMetrics(uniqueData.reverse()); 
+      // Combine historical items with today's real-time metrics
+      const combinedMetrics = [...historicalMetrics, currentDayMetrics];
+
+      // Sort chronologically (ascending date order) - oldest on left, newest (today) on right
+      combinedMetrics.sort((a, b) => {
+        const timeA = a.date ? (typeof a.date.toDate === 'function' ? a.date.toDate().getTime() : new Date(a.date).getTime()) : 0;
+        const timeB = b.date ? (typeof b.date.toDate === 'function' ? b.date.toDate().getTime() : new Date(b.date).getTime()) : 0;
+        return timeA - timeB;
+      });
+
+      // Ensure unique IDs in data to avoid React key/mapping issues, keeping latest (which is today)
+      const uniqueMap = new Map();
+      combinedMetrics.forEach(m => {
+        uniqueMap.set(m.id, m);
+      });
+      const uniqueData = Array.from(uniqueMap.values());
+      
+      setMetrics(uniqueData);
     } catch (err) {
       console.error('Metrics fetch aggregate error:', err);
     } finally {

@@ -561,15 +561,93 @@ const Profile = () => {
     }
   }, [currentTab]);
 
+  useEffect(() => {
+    const healShowcaseData = async () => {
+      if (user && profile && (profile.showcaseActive || profile.showcasePaid)) {
+        const needsSlug = !profile.showcaseSlug;
+        const needsCountry = !profile.country;
+        
+        if (needsSlug || needsCountry) {
+          console.log('[Heal] Healing showcase fields for active showcase');
+          const finalShowcaseName = profile.showcaseName || profile.name || 'A Minha Vitrine';
+          let generatedSlug = profile.showcaseSlug || '';
+          if (!generatedSlug && finalShowcaseName) {
+            const cleanedSlug = finalShowcaseName
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .trim()
+              .replace(/(^-|-$)+/g, '');
+            generatedSlug = `${cleanedSlug}-${user.uid.substring(0, 5)}`;
+          }
+          
+          const finalCountry = profile.country || country || 'Portugal';
+          const finalCity = profile.city || city || '';
+          
+          try {
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+              showcaseSlug: generatedSlug,
+              country: finalCountry,
+              city: finalCity
+            }, { merge: true });
+            
+            const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
+            await setDoc(profileRef, {
+              showcaseSlug: generatedSlug,
+              country: finalCountry,
+              city: finalCity,
+              showcaseActive: true,
+              showcaseApproved: profile.showcaseApproved !== undefined ? profile.showcaseApproved : true,
+              displayName: profile.name || user.displayName || 'Empreendedor'
+            }, { merge: true });
+            
+            if (refreshProfile) {
+              await refreshProfile();
+            }
+          } catch (err) {
+            console.error('[Heal] Failed to automatically heal showcase data:', err);
+          }
+        }
+      }
+    };
+    healShowcaseData();
+  }, [profile, user, country, city]);
+
   const handleMockShowcasePaymentSuccess = async () => {
     if (!user) return;
     setShowcasePaymentLoading(true);
     try {
+      const finalShowcaseName = showcaseName || profile?.name || 'A Minha Vitrine';
+      let generatedSlug = '';
+      if (finalShowcaseName) {
+        const cleanedSlug = finalShowcaseName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+          .replace(/(^-|-$)+/g, '');
+        generatedSlug = `${cleanedSlug}-${user.uid.substring(0, 5)}`;
+      }
+
+      const finalCountry = country || profile?.country || 'Portugal';
+      const finalCity = city || profile?.city || '';
+
       const userRef = doc(db, 'users', user.uid);
       const updatePayload = {
         showcasePaid: true,
         showcasePlan: 'premium',
-        showcaseActive: true
+        showcaseActive: true,
+        showcaseName: finalShowcaseName,
+        showcaseSlug: generatedSlug,
+        country: finalCountry,
+        city: finalCity
       };
       
       await setDoc(userRef, updatePayload, { merge: true });
@@ -578,13 +656,14 @@ const Profile = () => {
       }
       
       const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
-      const isPortugal = country === 'Portugal';
+      const isPortugal = finalCountry === 'Portugal';
       
       await setDoc(profileRef, {
         showcasePaid: true,
         showcasePlan: 'premium',
         showcaseActive: true,
-        showcaseName: showcaseName || profile?.name || 'A Minha Vitrine',
+        showcaseName: finalShowcaseName,
+        showcaseSlug: generatedSlug,
         showcaseCategory: showcaseCategory || 'Outros',
         showcaseLogo: showcaseLogo || '',
         showcaseCover: showcaseCover || '',
@@ -592,7 +671,10 @@ const Profile = () => {
         showcaseWhatsapp: showcaseWhatsapp || profile?.phone || '',
         showcaseFacebook: showcaseFacebook || '',
         showcaseInstagram: showcaseInstagram || '',
-        showcaseApproved: true // Auto approved for test or simulation ease
+        showcaseApproved: true, // Auto approved for test or simulation ease
+        country: finalCountry,
+        city: finalCity,
+        displayName: profile?.name || user?.displayName || 'Empreendedor'
       }, { merge: true });
 
       setShowcasePaid(true);
