@@ -124,10 +124,17 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
             national: 7.99,
             showcase: 8.99
           },
-          maxImages: data.maxImages || {
+          maxImages: data.maxImages ? {
+            free: data.maxImages.free || 2,
+            local: data.maxImages.local || 4,
+            national: data.maxImages.national === 4 ? 6 : (data.maxImages.national || 6),
+            showcase: data.maxImages.showcase || 6,
+            intermediate: data.maxImages.intermediate || 3,
+            premium: data.maxImages.premium || 5
+          } : {
             free: 2,
             local: 4,
-            national: 4,
+            national: 6,
             showcase: 6,
             intermediate: 3,
             premium: 5
@@ -148,7 +155,7 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           id: 'global',
           planDurations: { free: 30, local: 30, national: 30, showcase: 30, intermediate: 180, premium: 365 },
           planPrices: { local: 4.99, national: 7.99, showcase: 8.99 },
-          maxImages: { free: 2, local: 4, national: 4, showcase: 6, intermediate: 3, premium: 5 },
+          maxImages: { free: 2, local: 4, national: 6, showcase: 6, intermediate: 3, premium: 5 },
           maxShowcaseProducts: 6,
           expirationAction: 'archive',
           warningDays: 3,

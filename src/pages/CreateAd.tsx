@@ -420,9 +420,9 @@ const CreateAd = () => {
   const maxAllowed = React.useMemo(() => {
     if (formData.category === 'Imigração') return 2;
     if (settings?.maxImages) {
-      return settings.maxImages[formData.plan as keyof typeof settings.maxImages] || 4;
+      return settings.maxImages[formData.plan as keyof typeof settings.maxImages] || (formData.plan === 'national' ? 6 : 4);
     }
-    return formData.plan === 'free' ? 2 : 4;
+    return formData.plan === 'free' ? 2 : (formData.plan === 'national' ? 6 : 4);
   }, [formData.plan, formData.category, settings]);
 
   // Se o utilizador selecionar 'Imigração' mas tiver mais do que 2 imagens do produto, corta para 2.
@@ -587,8 +587,10 @@ const CreateAd = () => {
         return;
       }
 
-      // Proteger limites comerciais de fotos no frontend
-      const maxImgs = settings?.maxImages ? (settings.maxImages[formData.plan as keyof typeof settings.maxImages] || 4) : (formData.plan === 'free' ? 2 : 4);
+       // Proteger limites comerciais de fotos no frontend
+      const maxImgs = settings?.maxImages 
+        ? (settings.maxImages[formData.plan as keyof typeof settings.maxImages] || (formData.plan === 'national' ? 6 : 4)) 
+        : (formData.plan === 'free' ? 2 : (formData.plan === 'national' ? 6 : 4));
       const commercialLimit = formData.category === 'Imigração' ? 2 : maxImgs;
       if (formData.images.length > commercialLimit) {
         alert(`O plano selecionado permite no máximo ${commercialLimit} imagens. Por favor, remova as imagens excedentes antes de guardar.`);
@@ -1689,7 +1691,7 @@ const CreateAd = () => {
                   
                   <ul className="text-[11px] text-slate-600 space-y-1 my-3">
                     <li className="flex items-center gap-1 font-semibold text-indigo-900">🚀 Prioridade Máxima</li>
-                    <li className="flex items-center gap-1">🌟 <strong>Até 4 fotos</strong></li>
+                    <li className="flex items-center gap-1">🌟 <strong>Até 6 fotos</strong></li>
                     <li className="flex items-center gap-1">🌟 Todas as cidades</li>
                     <li className="flex items-center gap-1">🌟 Etiqueta ⭐⭐⭐</li>
                   </ul>
