@@ -673,6 +673,28 @@ const Home = () => {
     }).slice(0, 20);
   }, [featuredAds, searchTerm, category, city, country]);
 
+  const marqueeData = useMemo(() => {
+    if (filteredFeaturedAds.length === 0) return { items: [], duration: '35s' };
+    // Para um loop contínuo elegante e 100% livre de espaços vazios ou saltos,
+    // o conjunto base de itens (sem duplicação) precisa estender-se além do limite
+    // visual das maiores telas. Usamos no mínimo 12 itens no conjunto base.
+    const targetCount = 12;
+    const repetitions = Math.ceil(targetCount / filteredFeaturedAds.length);
+    const baseArray = [];
+    for (let i = 0; i < repetitions; i++) {
+      baseArray.push(...filteredFeaturedAds);
+    }
+    const items = [...baseArray, ...baseArray];
+    const speedMultiplier = settings?.highlightSpeed ?? 1;
+    let duration = '35s';
+    if (speedMultiplier > 0) {
+      // Cada item no conjunto base demora ~2.8 segundos para deslocar em velocidade padrão
+      const seconds = (baseArray.length * 2.8) / speedMultiplier;
+      duration = `${seconds}s`;
+    }
+    return { items, duration };
+  }, [filteredFeaturedAds, settings?.highlightSpeed]);
+
 
 
   const filteredAds = useMemo(() => {
@@ -1045,13 +1067,13 @@ const Home = () => {
               className="carouselTrack flex gap-4 md:gap-6"
               style={{
                 animationName: (settings?.highlightSpeed !== 0) ? 'scrollCarousel' : 'none',
-                animationDuration: settings?.highlightSpeed ? `${105 / settings.highlightSpeed}s` : '35s',
+                animationDuration: marqueeData.duration,
                 animationTimingFunction: 'linear',
                 animationIterationCount: 'infinite',
                 animationPlayState: (isHovered || settings?.highlightSpeed === 0) ? 'paused' : 'running',
               }}
             >
-              {[...filteredFeaturedAds, ...filteredFeaturedAds].map((ad, idx) => (
+              {marqueeData.items.map((ad, idx) => (
                 <div key={`${ad.id}-${idx}`} className="w-[140px] sm:w-[165px] md:w-[195px] shrink-0">
                   <AdCard ad={ad} variant="featured" />
                 </div>
