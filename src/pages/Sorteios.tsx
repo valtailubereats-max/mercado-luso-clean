@@ -12,19 +12,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trophy, 
   Gift, 
-  Calendar, 
   Globe, 
-  CheckCircle2, 
   Clock, 
   AlertCircle, 
-  User, 
-  Heart, 
-  ChevronRight, 
   BookOpen, 
   LogIn, 
   Check, 
-  HelpCircle,
-  Share2
+  Share2,
+  Copy,
+  PlusCircle,
+  HelpCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
@@ -36,12 +33,12 @@ export default function Sorteios() {
   const navigate = useNavigate();
 
   const [giveaways, setGiveaways] = useState<Giveaway[]>([]);
-  const [participatedMap, setParticipatedMap] = useState<Record<string, boolean>>({});
+  const [participationsMap, setParticipationsMap] = useState<Record<string, GiveawayParticipation>>({});
   const [loading, setLoading] = useState(true);
   const [participatingId, setParticipatingId] = useState<string | null>(null);
 
-  // Stats Counters
-  const [totalPrizesVal, setTotalPrizesVal] = useState(0);
+  // Tracks which giveaway is currently showing its sharing options tray
+  const [activeShareId, setActiveShareId] = useState<string | null>(null);
 
   // Selected giveaway rules modal
   const [rulesGiveaway, setRulesGiveaway] = useState<Giveaway | null>(null);
@@ -67,16 +64,16 @@ export default function Sorteios() {
       });
       setGiveaways(sorted);
 
-      // If user is authenticated, check which giveaways they are already participating in
+      // If user is authenticated, check their participations including ticket counts
       if (user) {
         const partsQuery = query(collection(db, 'participations'), where('userId', '==', user.uid));
         const partsSnap = await getDocs(partsQuery);
-        const map: Record<string, boolean> = {};
+        const pMap: Record<string, GiveawayParticipation> = {};
         partsSnap.forEach(docSnap => {
           const partData = docSnap.data() as GiveawayParticipation;
-          map[partData.giveawayId] = true;
+          pMap[partData.giveawayId] = partData;
         });
-        setParticipatedMap(map);
+        setParticipationsMap(pMap);
       }
     } catch (err) {
       console.error('Error loading public giveaways:', err);
@@ -85,9 +82,8 @@ export default function Sorteios() {
     }
   };
 
-  const handleParticipate = async (g: Giveaway) => {
+  const handleShareAndRegister = async (g: Giveaway, channel: string) => {
     if (!user) {
-      // Direct user to login with context saved or simple alert + navigate
       if (window.confirm('Necessita de iniciar sessão para poder entrar nos sorteios. Deseja iniciar sessão agora?')) {
         navigate('/login');
       }
@@ -103,25 +99,75 @@ export default function Sorteios() {
 
     setParticipatingId(g.id);
     try {
+      // 1. Prepare share window link and text
+      const shareUrl = `${window.location.origin}/sorteios`;
+      const text = `Habilita-te a ganhar este prémio fantástico ("${g.title}") no Mercado Luso! Sorteio gratuito. Participa aqui: `;
+      let finalUrl = '';
+
+      if (channel === 'whatsapp') {
+        finalUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + shareUrl)}`;
+      } else if (channel === 'facebook') {
+        finalUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+      } else if (channel === 'twitter') {
+        finalUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+      }
+
+      if (finalUrl) {
+        window.open(finalUrl, '_blank', 'noopener,noreferrer');
+      } else if (channel === 'copylink') {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          alert('Link do sorteio copiado com sucesso! Partilhe-o com os seus familiares e amigos. 📋');
+        } catch (copyErr) {
+          // Fallback if blocked
+          alert(`Copie este link para partilhar: ${shareUrl}`);
+        }
+      }
+
+      // 2. Add raw share tracking object to Firestore /shares collection
+      const shareDocId = `${g.id}_${user.uid}_${Date.now()}`;
+      await setDoc(doc(db, 'shares', shareDocId), {
+        giveawayId: g.id,
+        userId: user.uid,
+        channel: channel,
+        createdAt: Timestamp.now()
+      });
+
+      // 3. Register or increment participation
       const partId = `${g.id}_${user.uid}`;
+      const currentParticipation = participationsMap[g.id];
+      const previousShares = currentParticipation?.sharesCount ?? 0;
+      const previousTickets = currentParticipation?.ticketsCount ?? 0;
+
+      const newSharesCount = previousShares + 1;
+      const newTicketsCount = previousTickets + 1;
+
       const participationData: GiveawayParticipation = {
         id: partId,
         giveawayId: g.id,
         userId: user.uid,
-        name: user.displayName || 'Utilizador',
-        email: user.email || '',
-        participationDate: Timestamp.now()
+        userName: user.displayName || 'Utilizador',
+        userEmail: user.email || '',
+        sharesCount: newSharesCount,
+        ticketsCount: newTicketsCount,
+        createdAt: currentParticipation?.createdAt || Timestamp.now(),
+        updatedAt: Timestamp.now()
       };
 
-      // Add to Firestore using unique deterministic document ID to prevent double entries!
       await setDoc(doc(db, 'participations', partId), participationData);
-      
-      // Update local state
-      setParticipatedMap(prev => ({ ...prev, [g.id]: true }));
-      alert('Inscrito com sucesso! Desejamos-lhe muita sorte! 🍀');
+
+      // 4. Update the reactive local state
+      setParticipationsMap(prev => ({
+        ...prev,
+        [g.id]: participationData
+      }));
+
+      // Close share dropdown
+      setActiveShareId(null);
+      alert('A sua intenção de partilha foi registada com sucesso! Recebeu +1 Bilhete de Sorteio! 🍀🎟️');
     } catch (err) {
-      console.error('Error participating:', err);
-      alert('Não foi possível registar a sua participação. Por favor, tente novamente.');
+      console.error('Error in handleShareAndRegister:', err);
+      alert('Não foi possível registar o seu bilhete. Por favor, tente novamente.');
     } finally {
       setParticipatingId(null);
     }
@@ -131,10 +177,9 @@ export default function Sorteios() {
   const pastGiveaways = giveaways.filter(g => g.status !== 'Ativo');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 animate-fade-in">
       {/* Visual Header */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-indigo-900 to-slate-900 p-8 md:p-12 text-white overflow-hidden shadow-xl ring-1 ring-white/10">
-        {/* Abstract background decorative shapes */}
+      <div className="relative rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 p-8 md:p-12 text-white overflow-hidden shadow-xl ring-1 ring-white/10">
         <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl"></div>
         <div className="absolute bottom-0 left-1/3 -mb-20 -ml-20 w-80 h-80 rounded-full bg-amber-500/10 blur-3xl"></div>
 
@@ -144,11 +189,37 @@ export default function Sorteios() {
             Campanhas Activas
           </span>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
-            Campanhas e Sorteios <span className="text-amber-400">Gratuitos</span>
+            Campanhas e Sorteios <span className="text-amber-400 font-extrabold">Gratuitos</span>
           </h1>
           <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-            Participe nos sorteios promocionais do Mercado Luso e habilite-se a ganhar prémios fantásticos. Totalmente grátis para toda a comunidade!
+            Participe de forma simples e transparente. Basta partilhar para ganhar um bilhete garantido, e pode continuar a partilhar para acumular mais bilhetes e multiplicar as suas chances!
           </p>
+        </div>
+      </div>
+
+      {/* Rules Explanatory Board */}
+      <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-5">
+        <div className="flex items-center gap-2.5">
+          <HelpCircle className="text-indigo-600 shrink-0" size={24} />
+          <h2 className="text-lg md:text-xl font-extrabold text-slate-900 tracking-tight">Como Funcionam os Nossos Sorteios?</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/80 space-y-2">
+            <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">1</span>
+            <h3 className="font-bold text-slate-900 text-sm">Entre na sua conta</h3>
+            <p className="text-slate-500 text-xs leading-relaxed">Inicie sessão com o seu perfil de utilizador do Mercado Luso de forma a podermos associar os seus bilhetes.</p>
+          </div>
+          <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/80 space-y-2">
+            <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">2</span>
+            <h3 className="font-bold text-slate-900 text-sm">Partilhe o Mercado Luso</h3>
+            <p className="text-slate-500 text-xs leading-relaxed">Clique no botão oficial de partilha. <strong>1 partilha mínima obrigatória</strong> garante imediatamente a sua participação.</p>
+          </div>
+          <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/80 space-y-2">
+            <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">3</span>
+            <h3 className="font-bold text-slate-900 text-sm">Acumule Bilhetes</h3>
+            <p className="text-slate-500 text-xs leading-relaxed"><strong>Cada partilha vale 1 bilhete</strong>. Quanto mais partilhar, mais chances terá de ganhar (sem limite!).</p>
+          </div>
         </div>
       </div>
 
@@ -161,7 +232,7 @@ export default function Sorteios() {
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-indigo-150 border-t-indigo-600 rounded-full animate-spin"></div>
             <p className="text-slate-400 text-xs font-bold">A procurar sorteios ativos...</p>
           </div>
         ) : activeGiveaways.length === 0 ? (
@@ -173,7 +244,12 @@ export default function Sorteios() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {activeGiveaways.map((g) => {
-              const isRegistered = participatedMap[g.id];
+              const userParticipation = participationsMap[g.id];
+              const isRegistered = !!userParticipation;
+              const sharesCount = userParticipation?.sharesCount ?? 0;
+              const ticketsCount = userParticipation?.ticketsCount ?? 0;
+              const isShareTrayOpen = activeShareId === g.id;
+
               return (
                 <div 
                   id={`public-giveaway-${g.id}`}
@@ -189,7 +265,7 @@ export default function Sorteios() {
                     />
 
                     {/* Eligible Country Badge */}
-                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 shadow-sm text-slate-800">
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 shadow-sm text-slate-800 animate-fade-inDown">
                       <Globe size={11} className="text-slate-400" />
                       <span>{g.country === 'Ambos' ? 'PT + UK 🌍' : g.country}</span>
                     </div>
@@ -202,50 +278,127 @@ export default function Sorteios() {
                   </div>
 
                   {/* Body Info */}
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Prémio</span>
                         <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md">
                           {g.winnersCount} {g.winnersCount === 1 ? 'Vencedor' : 'Vencedores'}
                         </span>
+                        {isRegistered && (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                            🎟️ {ticketsCount} {ticketsCount === 1 ? 'Bilhete' : 'Bilhetes'}
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-xl font-black text-slate-900 tracking-tight leading-snug group-hover:text-indigo-600 transition-all">{g.title}</h3>
                       <p className="text-slate-500 text-xs leading-relaxed line-clamp-3">{g.description}</p>
                     </div>
 
-                    {/* Bottom Actions */}
-                    <div className="space-y-3">
+                    {/* Bottom Actions and Workflow */}
+                    <div className="space-y-4">
                       {/* Rules button */}
                       <button 
                         onClick={() => setRulesGiveaway(g)}
-                        className="w-full text-center text-xs font-bold text-slate-600 hover:text-indigo-600 flex items-center justify-center gap-1 py-2 border border-slate-150 rounded-xl hover:bg-slate-50 transition-all"
+                        className="w-full text-center text-xs font-bold text-slate-600 hover:text-indigo-600 flex items-center justify-center gap-1 py-1.5 border border-slate-150 rounded-xl hover:bg-slate-50 transition-all text-[11px]"
                       >
-                        <BookOpen size={13} />
+                        <BookOpen size={12} />
                         <span>Ver Regras do Passatempo</span>
                       </button>
 
-                      {/* Main Entry CTA */}
-                      {isRegistered ? (
-                        <div className="w-full h-11 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center gap-1.5 text-xs font-black border border-emerald-200">
-                          <Check size={16} />
-                          <span>Já estás a participar! Boa sorte!</span>
+                      {/* WORKFLOW CONDITIONAL */}
+                      {!user ? (
+                        /* Case 1: NOT AUTHENTICATED */
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => navigate('/login')}
+                            className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-1.5 text-xs font-black transition-all shadow-md shadow-indigo-100"
+                          >
+                            <LogIn size={15} />
+                            <span>Entrar para Participar</span>
+                          </button>
+                          <p className="text-[10px] text-slate-400 text-center font-medium">É necessário iniciar sessão para associar os bilhetes de sorteio.</p>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => handleParticipate(g)}
-                          disabled={participatingId === g.id}
-                          className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-1.5 text-xs font-black transition-all shadow-md shadow-indigo-100 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-75"
-                        >
-                          {participatingId === g.id ? (
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                          ) : (
-                            <>
-                              <LogIn size={15} />
-                              <span>Participar no Sorteio</span>
-                            </>
+                        /* Case 2: AUTHENTICATED */
+                        <div className="space-y-3 pt-1">
+                          {isRegistered && (
+                            <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-3.5 space-y-1.5 text-emerald-800 animate-fade-in whitespace-pre-line">
+                              <p className="text-sm font-extrabold flex items-center gap-1">
+                                <Check size={16} className="text-emerald-600" />
+                                Participação confirmada!
+                              </p>
+                              <p className="text-xs font-semibold text-emerald-700 leading-snug">
+                                Você já tem <strong className="text-emerald-950 font-black text-sm">{ticketsCount}</strong> {ticketsCount === 1 ? 'bilhete' : 'bilhetes'} neste sorteio.
+                              </p>
+                            </div>
                           )}
-                        </button>
+
+                          {/* Sharing container action buttons */}
+                          {!isShareTrayOpen ? (
+                            <button
+                              onClick={() => setActiveShareId(g.id)}
+                              disabled={participatingId === g.id}
+                              className={`w-full h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-all shadow-md ${
+                                isRegistered 
+                                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 hover:scale-[1.01]' 
+                                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:scale-[1.01] animate-pulseHover'
+                              }`}
+                            >
+                              <Share2 size={15} />
+                              {isRegistered ? (
+                                <span>Partilhar novamente</span>
+                              ) : (
+                                <span>Partilhar Mercado Luso</span>
+                              )}
+                            </button>
+                          ) : (
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2 animate-slideDown">
+                              <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider text-center">Partilhe em qualquer canal para ganhar +1 Bilhete</p>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => handleShareAndRegister(g, 'whatsapp')}
+                                  className="py-2.5 px-3 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-1.5"
+                                >
+                                  <span>💬 WhatsApp</span>
+                                </button>
+                                <button
+                                  onClick={() => handleShareAndRegister(g, 'facebook')}
+                                  className="py-2.5 px-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
+                                >
+                                  <span>👥 Facebook</span>
+                                </button>
+                                <button
+                                  onClick={() => handleShareAndRegister(g, 'twitter')}
+                                  className="py-2.5 px-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition flex items-center justify-center gap-1.5"
+                                >
+                                  <span>🐦 Twitter / X</span>
+                                </button>
+                                <button
+                                  onClick={() => handleShareAndRegister(g, 'copylink')}
+                                  className="py-2.5 px-3 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-100 transition flex items-center justify-center gap-1.5"
+                                >
+                                  <Copy size={12} />
+                                  <span>Copiar Link</span>
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => setActiveShareId(null)}
+                                className="w-full text-center text-[10px] text-slate-400 font-bold hover:text-slate-600 py-1"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          )}
+
+                          {isRegistered && (
+                            <p className="text-[10px] text-slate-500 font-semibold leading-relaxed text-center flex items-center justify-center gap-1">
+                              <span>🎟️ Cada partilha adicional gera mais uma chance de ganhar.</span>
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -324,7 +477,6 @@ export default function Sorteios() {
       <AnimatePresence>
         {rulesGiveaway && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
@@ -333,7 +485,6 @@ export default function Sorteios() {
               className="absolute inset-0 bg-black"
             />
 
-            {/* Modal Box */}
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -347,23 +498,22 @@ export default function Sorteios() {
                 </div>
                 <button 
                   onClick={() => setRulesGiveaway(null)}
-                  className="p-1 hover:bg-slate-100 rounded-xl"
+                  className="p-1 hover:bg-slate-100 rounded-xl font-bold text-lg text-slate-400 hover:text-slate-700"
                 >
                   &times;
                 </button>
               </div>
 
-              <div className="space-y-4 text-xs leading-relaxed text-slate-600">
+              <div className="space-y-4 text-xs leading-relaxed text-slate-600 font-medium">
                 <h4 className="font-black text-slate-900 text-sm">{rulesGiveaway.title}</h4>
                 
-                {/* Process rule breaks */}
-                <div className="whitespace-pre-line bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-500 font-medium">
+                <div className="whitespace-pre-line bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-500 font-semibold leading-relaxed">
                   {rulesGiveaway.rules}
                 </div>
 
                 <div className="bg-indigo-50/50 p-3 rounded-2xl flex items-center gap-2.5 text-indigo-800 font-semibold">
                   <AlertCircle size={16} className="text-indigo-600 shrink-0" />
-                  <span>A participação é completamente livre de encargos financeiros!</span>
+                  <span>A participação é totalmente livre de encargos financeiros! 🏆</span>
                 </div>
               </div>
             </motion.div>

@@ -256,8 +256,8 @@ export default function AdminSorteios() {
       });
       // Sort participations by date desc
       list.sort((a,b) => {
-        const tA = a.participationDate?.seconds || 0;
-        const tB = b.participationDate?.seconds || 0;
+        const tA = a.createdAt?.seconds || 0;
+        const tB = b.createdAt?.seconds || 0;
         return tB - tA;
       });
       setCurrentParticipants(list);
@@ -291,14 +291,52 @@ export default function AdminSorteios() {
         return;
       }
 
+      // Draw proportionally using ticketsCount as weights with no duplicates!
       const countToDraw = Math.min(g.winnersCount, list.length);
-      const shuffled = [...list].sort(() => 0.5 - Math.random());
-      const selected = shuffled.slice(0, countToDraw);
+      const winnersList: GiveawayParticipation[] = [];
+      let remainingCandidates = [...list];
 
-      const computedWinners: GiveawayWinner[] = selected.map(p => ({
+      for (let round = 0; round < countToDraw; round++) {
+        if (remainingCandidates.length === 0) break;
+
+        let totalWeight = 0;
+        remainingCandidates.forEach(p => {
+          const tickets = p.ticketsCount && p.ticketsCount > 0 ? p.ticketsCount : 1;
+          totalWeight += tickets;
+        });
+
+        if (totalWeight === 0) break;
+
+        let r = Math.random() * totalWeight;
+        let selectedIdx = -1;
+        let runningSum = 0;
+
+        for (let i = 0; i < remainingCandidates.length; i++) {
+          const tickets = remainingCandidates[i].ticketsCount && remainingCandidates[i].ticketsCount > 0 
+            ? remainingCandidates[i].ticketsCount 
+            : 1;
+          runningSum += tickets;
+          if (r <= runningSum) {
+            selectedIdx = i;
+            break;
+          }
+        }
+
+        if (selectedIdx === -1) {
+          selectedIdx = remainingCandidates.length - 1;
+        }
+
+        const winner = remainingCandidates[selectedIdx];
+        winnersList.push(winner);
+
+        // Remove this user ID to prevent duplicate winners
+        remainingCandidates = remainingCandidates.filter(p => p.userId !== winner.userId);
+      }
+
+      const computedWinners: GiveawayWinner[] = winnersList.map(p => ({
         userId: p.userId,
-        name: p.name,
-        email: p.email,
+        name: p.userName || p.name || 'Utilizador',
+        email: p.userEmail || p.email || '',
         drawDate: Timestamp.now(),
         status: 'Aguardando Contacto',
         prizeTitle: g.title,
@@ -319,7 +357,7 @@ export default function AdminSorteios() {
           setDrawnWinners(computedWinners);
           setDrawing(false);
           fetchGiveaways();
-          alert(`Sorteio concluído! Foram selecionados ${computedWinners.length} vencedores.`);
+          alert(`Sorteio concluído com sucesso aplicando o sistema de bilhetes! Foram selecionados ${computedWinners.length} vencedores.`);
         } catch (dbErr) {
           console.error(dbErr);
           alert('Erro ao atualizar vencedores.');
@@ -867,38 +905,85 @@ export default function AdminSorteios() {
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              <div className="p-6 overflow-y-auto flex-1 space-y-5">
                 {loadingParticipants ? (
-                  <div className="py-12 flex flex-col items-center gap-2 text-slate-400 text-xs font-bold">
+                  <div className="py-12 flex flex-col items-center gap-2 text-slate-400 text-xs font-bold font-sans">
                     <div className="w-6 h-6 border-2 border-indigo-150 border-t-indigo-600 rounded-full animate-spin"></div>
-                    <span>A pesquisar participante...</span>
+                    <span>A pesquisar participantes...</span>
                   </div>
                 ) : currentParticipants.length === 0 ? (
                   <div className="py-12 text-center text-slate-400">
                     <Users className="mx-auto text-slate-300 mb-2" size={32} />
                     <p className="text-xs font-bold text-slate-600">Sem participações ainda nesta campanha</p>
                   </div>
-                ) : (
-                  <div className="divide-y divide-slate-100">
-                    {currentParticipants.map((p, idx) => (
-                      <div key={idx} className="py-3 flex items-center justify-between text-xs hover:bg-slate-50/50 px-2 rounded-xl transition-all">
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate flex items-center gap-1">
-                            <User size={12} className="text-slate-400 shrink-0" />
-                            {p.name}
-                          </p>
-                          <p className="text-slate-500 truncate flex items-center gap-1 my-0.5">
-                            <Mail size={12} className="text-slate-400 shrink-0" />
-                            {p.email}
-                          </p>
+                ) : (() => {
+                  const totalShares = currentParticipants.reduce((sum, p) => sum + (p.sharesCount ?? 1), 0);
+                  const totalTickets = currentParticipants.reduce((sum, p) => sum + (p.ticketsCount ?? 1), 0);
+                  const averageTickets = currentParticipants.length > 0 
+                    ? (totalTickets / currentParticipants.length).toFixed(2) 
+                    : '0.00';
+
+                  return (
+                    <div className="space-y-5">
+                      {/* STATS BANNER */}
+                      <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-150 p-4 rounded-2xl">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Participantes</span>
+                          <p className="text-lg font-black text-slate-900">{currentParticipants.length}</p>
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400 shrink-0">
-                          {p.participationDate?.toDate ? formatDate(p.participationDate.toDate()) : '—'}
-                        </span>
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Total Partilhas</span>
+                          <p className="text-lg font-black text-slate-900">{totalShares}</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Total Bilhetes</span>
+                          <p className="text-lg font-black text-indigo-600">{totalTickets}</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Média Bilhetes / Part.</span>
+                          <p className="text-lg font-black text-amber-600">{averageTickets}</p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      {/* PARTICIPANTS TABLE LIST CONTAINER */}
+                      <div className="space-y-2.5">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-1">Registos Ordenados por Data</p>
+                        
+                        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-100 max-h-[350px] overflow-y-auto">
+                          {currentParticipants.map((p, idx) => {
+                            const shares = p.sharesCount ?? 1;
+                            const tickets = p.ticketsCount ?? 1;
+                            return (
+                              <div key={idx} className="p-3 hover:bg-slate-50/55 transition flex items-center justify-between text-xs gap-4">
+                                <div className="min-w-0 flex-1 space-y-0.5">
+                                  <p className="font-extrabold text-slate-900 truncate flex items-center gap-1.5">
+                                    <User size={12} className="text-slate-400" />
+                                    {p.userName || p.name || 'Utilizador'}
+                                  </p>
+                                  <p className="text-slate-500 font-medium truncate flex items-center gap-1.5">
+                                    <Mail size={12} className="text-slate-400" />
+                                    {p.userEmail || p.email}
+                                  </p>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 shrink-0 text-right">
+                                  <div className="space-y-1">
+                                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-slate-100 text-[10px] font-bold text-slate-700 rounded-md">
+                                      🔗 {shares} {shares === 1 ? 'partilha' : 'partilhas'}
+                                    </span>
+                                    <span className="block text-[11px] font-black text-indigo-600">
+                                      🎟️ {tickets} {tickets === 1 ? 'Bilhete' : 'Bilhetes'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </motion.div>
           </div>

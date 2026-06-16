@@ -317,11 +317,27 @@
         "id": { "type": "string" },
         "giveawayId": { "type": "string" },
         "userId": { "type": "string" },
-        "name": { "type": "string" },
-        "email": { "type": "string" },
-        "participationDate": { "type": "string", "format": "date-time" }
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "sharesCount": { "type": "number" },
+        "ticketsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "giveawayId", "userId", "name", "email", "participationDate"]
+      "required": ["id", "giveawayId", "userId", "userName", "userEmail", "sharesCount", "ticketsCount", "createdAt", "updatedAt"]
+    },
+    "GiveawayShare": {
+      "title": "GiveawayShare",
+      "description": "User share entry for a giveaway",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "giveawayId": { "type": "string" },
+        "userId": { "type": "string" },
+        "channel": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["giveawayId", "userId", "channel", "createdAt"]
     }
   },
   "firestore": {
@@ -400,6 +416,10 @@
     "/participations/{participationId}": {
       "schema": "GiveawayParticipation",
       "description": "User participation in a giveaway"
+    },
+    "/shares/{shareId}": {
+      "schema": "GiveawayShare",
+      "description": "User share tracks"
     }
   }
 }

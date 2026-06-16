@@ -385,8 +385,21 @@ export interface GiveawayParticipation {
   id: string; // `${giveawayId}_${userId}`
   giveawayId: string;
   userId: string;
-  name: string;
-  email: string;
-  participationDate: any; // Firestore Timestamp
+  userName: string;
+  userEmail: string;
+  name?: string;
+  email?: string;
+  sharesCount: number;
+  ticketsCount: number;
+  createdAt: any; // Firestore Timestamp
+  updatedAt: any; // Firestore Timestamp
+}
+
+export interface GiveawayShare {
+  id?: string;
+  giveawayId: string;
+  userId: string;
+  channel: string;
+  createdAt: any; // Firestore Timestamp
 }
 
