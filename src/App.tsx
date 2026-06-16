@@ -280,9 +280,11 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <button onClick={handlePublishClick} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 cursor-pointer transition-colors">
-              <Plus size={20} /> <span>Publicar</span>
-            </button>
+            {!user && (
+              <button onClick={handlePublishClick} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 cursor-pointer transition-colors">
+                <Plus size={20} /> <span>Publicar</span>
+              </button>
+            )}
             <button onClick={handleShare} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1">
               <Share2 size={20} /> <span>Partilhar</span>
             </button>

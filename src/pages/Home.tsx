@@ -732,311 +732,287 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 hidden lg:block" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-2 md:py-6 lg:py-8">
+        <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-4 md:py-8 lg:py-10">
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-7xl"
+            className="mx-auto max-w-5xl"
           >
-            <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
+            <div className="flex flex-col items-center justify-center text-center gap-5 md:gap-6 w-full">
 
-              {/* Área principal: comunidade ativa */}
-              <div className="flex-1 lg:basis-[70%] text-center lg:text-left flex flex-col justify-center min-h-[140px] md:min-h-[250px] lg:min-h-[300px] px-1 sm:px-5 lg:px-10 py-1.5 sm:py-3 lg:py-4">
+              {/* Painel Lusófono elegante integrado diretamente sobre a imagem sem quadro translúcido (Proposta A Melhorada e Purificada) */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="w-full max-w-4xl flex flex-col items-center justify-center gap-5 md:gap-6 select-none tracking-tight relative overflow-hidden px-2 py-4"
+              >
+                <div className="text-center space-y-2.5 md:space-y-4">
+                  {/* Badge da comunidade com as cores clássicas (verde e amarelo) integradas de forma luxuosa */}
+                  <div className="inline-flex items-center gap-2 bg-[#046a38]/90 text-amber-300 px-5 py-2 rounded-full border border-amber-400/30 text-[10px] md:text-xs font-black uppercase tracking-[0.25em] shadow-lg hover:scale-105 transition-transform duration-300 select-none drop-shadow-md">
+                    <span>🌍</span> Comunidade Lusófona
+                  </div>
 
-                {/* Painel Lusófono compacto no mobile */}
-                <div className="lg:hidden mb-4 mx-auto w-full max-w-md rounded-[1.5rem] bg-[#046a38]/85 border border-amber-300/25 backdrop-blur-2xl p-3 shadow-2xl">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 mb-2">
-                    🌍 Comunidade Lusófona
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-none drop-shadow-2xl">
+                    Mais de <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent drop-shadow-sm font-black">300 Milhões</span>
+                  </h1>
+                  
+                  <p className="text-sm sm:text-base md:text-xl font-bold text-white/95 tracking-wide drop-shadow-md max-w-2xl mx-auto leading-relaxed">
+                    de falantes de português unidos no mundo.
                   </p>
-                  <div className="grid grid-cols-9 gap-1.5 text-lg leading-none mb-2">
-                    {[
-                      { code: 'pt', flag: '🇵🇹' },
-                      { code: 'br', flag: '🇧🇷' },
-                      { code: 'ao', flag: '🇦🇴' },
-                      { code: 'mz', flag: '🇲🇿' },
-                      { code: 'cv', flag: '🇨🇻' },
-                      { code: 'gw', flag: '🇬🇼' },
-                      { code: 'st', flag: '🇸🇹' },
-                      { code: 'tl', flag: '🇹🇱' },
-                      { code: 'gq', flag: '🇬🇶' },
-                    ].map((item, idx) => (
-                      <span key={idx} className="flex items-center justify-center rounded-lg bg-white/10 py-1 px-0.5 shadow-inner">
+                </div>
+
+                {/* Bandeiras dos países integradas com hover interativo e rebordo personalizado para cada nação (sem painel translúcido atrás) */}
+                <div className="grid grid-cols-3 md:flex md:flex-wrap items-center justify-center gap-2 md:gap-3.5 w-full max-w-4xl mx-auto px-1">
+                  {[
+                    { flag: '🇵🇹', name: 'Portugal', code: 'pt', border: 'border-green-400/80' },
+                    { flag: '🇧🇷', name: 'Brasil', code: 'br', border: 'border-yellow-400/80' },
+                    { flag: '🇦🇴', name: 'Angola', code: 'ao', border: 'border-red-400/80' },
+                    { flag: '🇲🇿', name: 'Moçambique', code: 'mz', border: 'border-amber-400/80' },
+                    { flag: '🇨🇻', name: 'Cabo Verde', code: 'cv', border: 'border-blue-400/80' },
+                    { flag: '🇬🇼', name: 'Guiné-Bissau', code: 'gw', border: 'border-red-400/80' },
+                    { flag: '🇸🇹', name: 'São Tomé', code: 'st', border: 'border-yellow-400/80' },
+                    { flag: '🇹🇱', name: 'Timor-Leste', code: 'tl', border: 'border-red-400/80' },
+                    { flag: '🇬🇶', name: 'Guiné Eq.', code: 'gq', border: 'border-green-400/80' },
+                  ].map((item, idx) => (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.04 }}
+                      key={item.name} 
+                      className={`group/flag flex items-center justify-center gap-1.5 md:gap-2.5 bg-slate-950/50 hover:bg-slate-950/75 active:scale-95 border-2 ${item.border} rounded-full py-1.5 px-2 md:py-2 md:px-4.5 transition-all duration-300 cursor-default shadow-lg hover:shadow-2xl hover:scale-[1.05]`}
+                      title={item.name}
+                    >
+                      <div className="w-6.5 h-6.5 md:w-8 md:h-8 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/30 shadow-inner shrink-0 relative">
                         <img 
                           src={`https://flagcdn.com/w40/${item.code}.png`} 
                           alt={item.flag} 
-                          title={item.flag}
-                          className="h-4.5 w-auto object-contain rounded-sm"
+                          className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
                           referrerPolicy="no-referrer"
                         />
+                      </div>
+                      <span className="text-[9px] xs:text-[10px] md:text-sm font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wide truncate max-w-[65px] xs:max-w-none">
+                        {item.name}
                       </span>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-white/80 font-semibold">
-                    Mais de 300 milhões de falantes de português no mundo.
-                  </p>
+                    </motion.div>
+                  ))}
                 </div>
+              </motion.div>
 
-                {/* Barra de Pesquisa Minimalista */}
-                <div className="relative w-full max-w-lg mx-auto lg:mx-0 mb-3 md:mb-4 group">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={handleSearchFocus}
-                    placeholder="✨ O que procura hoje? Digite aqui..."
-                    className={`w-full ${blurClass} rounded-full py-3 sm:py-3.5 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-sm sm:text-base focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
-                    style={{
-                      backgroundColor: customBg || 'rgba(15,23,42,0.3)',
-                      borderColor: customBorder || 'rgba(255,255,255,0.2)',
-                    }}
-                  />
-                  <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
-                    <Search size={20} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors group-focus-within:scale-110 duration-300`} />
-                  </div>
-                </div>
-
-                {/* Ícones de Filtro e Contador */}
-                <div className="flex items-center justify-center lg:justify-start gap-3 md:gap-4 flex-wrap">
-
-                  {/* Botão Categoria - Ícone com Texto Abaixo */}
-                  <div className="relative group flex flex-col items-center">
-                    <div 
-                      style={{
-                        backgroundColor: customBg || 'rgba(255,255,255,0.1)',
-                        borderColor: customBorder || 'rgba(255,255,255,0.2)',
-                      }}
-                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
-                      title="Categoria"
-                    >
-                      <Tag size={18} />
-                      <select 
-                        value={category} 
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === 'Trabalho/Empregos') {
-                            navigate('/trabalhos');
-                          } else {
-                            setCategory(val);
-                          }
-                        }} 
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      >
-                        <option value="Todas">Categorias</option>
-                        {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
-                      </select>
-                    </div>
-                    <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
-                      {category === 'Todas' ? 'Categoria' : category}
-                    </span>
-                  </div>
-
-                  {/* Botão País com Bandeira e Nome da Comunidade */}
-                  <div className="relative" ref={dropdownRef}>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setCountryDropdownOpen(prev => !prev);
-                        setShowTooltip(false);
-                      }}
-                      style={{
-                        borderColor: customBorder || 'rgba(255,255,255,0.4)',
-                        ...getFlagBgStyle(country)
-                      }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none animate-country-pulse`}
-                      title="Mudar de Comunidade"
-                      id="community-toggle-button"
-                    >
-                      <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
-                      <span className="text-[10px] opacity-60 ml-0.5">▼</span>
-                    </button>
-
-                    {/* Dropdown de Países Personalizado */}
-                    <AnimatePresence>
-                      {countryDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          transition={{ duration: 0.15 }}
-                          style={getDropdownBgStyle(country)}
-                          className="absolute right-0 md:left-0 md:right-auto top-12 md:top-14 z-[9999] w-48 border border-white/10 text-white rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleCountryChange('Portugal');
-                              setCountryDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
-                              country === 'Portugal' 
-                                ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
-                                : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
-                            }`}
-                          >
-                            <span className="text-lg">🇵🇹</span>
-                            <span>Portugal</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleCountryChange('Reino Unido');
-                              setCountryDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
-                              country === 'Reino Unido' 
-                                ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
-                                : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
-                            }`}
-                          >
-                            <span className="text-lg">🇬🇧</span>
-                            <span>Reino Unido</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Tooltip de Onboarding no 1º acesso */}
-                    {showTooltip && (
-                      <AnimatePresence>
-                        <motion.div
-                          initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                          className="absolute top-14 left-1/2 -translate-x-1/2 z-[9998] w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
-                        >
-                          {/* Seta do Balão */}
-                          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
-                          <p className="text-xs font-semibold leading-relaxed text-slate-200">
-                            Escolha a sua comunidade para ver anúncios perto de si.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={handleOnboardingButtonClick}
-                            className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
-                            id="onboarding-community-select"
-                          >
-                            Escolher Comunidade
-                          </button>
-                        </motion.div>
-                      </AnimatePresence>
-                    )}
-                  </div>
-
-                  {/* Botão Localização - Ícone com Texto Abaixo */}
-                  <div className="relative group flex flex-col items-center">
-                    <div 
-                      style={{
-                        backgroundColor: customBg || 'rgba(255,255,255,0.1)',
-                        borderColor: customBorder || 'rgba(255,255,255,0.2)',
-                      }}
-                      className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
-                      title="Cidade"
-                    >
-                      <MapPin size={18} />
-                      <select 
-                        value={city} 
-                        onChange={(e) => setCity(e.target.value)} 
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      >
-                        <option value="Todas">Cidade / Região</option>
-                        {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
-                      </select>
-                    </div>
-                    <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
-                      {city === 'Todas' ? 'Cidade' : city}
-                    </span>
-                  </div>
-
-                  {/* Contador de Anúncios Slim */}
-                  {(settings?.showTotalAdsBadge === true || isModeratorOrAdmin) && (
-                    <div 
-                      style={{
-                        backgroundColor: customBg || 'rgba(0,0,0,0.3)',
-                        borderColor: customBorder || 'rgba(255,255,255,0.1)',
-                      }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
-                    >
-                      <span className={`${txtColorClass} font-black text-sm md:text-lg mr-2`}>
-                        {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
-                      </span>
-                      <span className={`${txtMutedClass} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Anúncios</span>
-
-                      {!settings?.showTotalAdsBadge && isModeratorOrAdmin && (
-                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
-                          🔒 Oculto para o público (Visto por Staff)
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Contador de Utilizadores Slim */}
-                  {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
-                    <div 
-                      style={{
-                        backgroundColor: customBg || 'rgba(15,23,42,0.4)',
-                        borderColor: customBorder || 'rgba(99,102,241,0.3)',
-                      }}
-                      className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
-                    >
-                      <span className={`${isLightText ? 'text-indigo-300' : 'text-indigo-950'} font-black text-sm md:text-lg mr-2`}>
-                        {totalUsersCount}
-                      </span>
-                      <span className={`${isLightText ? 'text-indigo-400/80' : 'text-indigo-800/80'} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Membros</span>
-
-                      {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
-                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
-                          🔒 Oculto para o público (Visto por Staff)
-                        </span>
-                      )}
-                    </div>
-                  )}
+              {/* Barra de Pesquisa Minimalista - Destaque Central */}
+              <div className="relative w-full max-w-xl md:max-w-2xl mx-auto group px-1">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={handleSearchFocus}
+                  placeholder="✨ O que procura hoje? Digite aqui..."
+                  className={`w-full ${blurClass} rounded-full py-3.5 sm:py-4 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-sm sm:text-base focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
+                  style={{
+                    backgroundColor: customBg || 'rgba(15,23,42,0.3)',
+                    borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                  }}
+                />
+                <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
+                  <Search size={20} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors group-focus-within:scale-110 duration-300`} />
                 </div>
               </div>
 
-              {/* Painel lateral: Comunidade Lusófona */}
-              <aside className="hidden lg:flex lg:basis-[30%] min-h-[300px] rounded-[2rem] overflow-hidden border border-amber-200/20 bg-gradient-to-br from-[#046a38]/95 via-[#03552d]/95 to-[#024022]/95 shadow-2xl backdrop-blur-2xl">
-                <div className="relative w-full p-4 xl:p-6 flex flex-col justify-center text-center text-white">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.20),transparent_38%)] pointer-events-none" />
-                  <div className="relative z-10">
-                    <p className="text-amber-300 text-[10px] font-black uppercase tracking-[0.22em] mb-2">
-                      🌍 Comunidade Lusófona
-                    </p>
-                    <h2 className="text-xl xl:text-2xl font-black leading-tight mb-1">
-                      Mais de 300 milhões
-                    </h2>
-                    <p className="text-xs xl:text-sm font-semibold text-white/85 mb-3">
-                      de falantes de português no mundo.
-                    </p>
+              {/* Ícones de Filtro e Contador - Centralizados com Elegância */}
+              <div className="flex items-center justify-center gap-3 md:gap-4 flex-wrap w-full">
 
-                    <div className="h-px w-20 mx-auto bg-amber-300/50 mb-3" />
-
-                    <div className="grid grid-cols-3 gap-2 xl:gap-2.5">
-                      {[
-                        { flag: '🇵🇹', name: 'Portugal', code: 'pt' },
-                        { flag: '🇧🇷', name: 'Brasil', code: 'br' },
-                        { flag: '🇦🇴', name: 'Angola', code: 'ao' },
-                        { flag: '🇲🇿', name: 'Moçambique', code: 'mz' },
-                        { flag: '🇨🇻', name: 'Cabo Verde', code: 'cv' },
-                        { flag: '🇬🇼', name: 'Guiné-Bissau', code: 'gw' },
-                        { flag: '🇸🇹', name: 'São Tomé', code: 'st' },
-                        { flag: '🇹🇱', name: 'Timor-Leste', code: 'tl' },
-                        { flag: '🇬🇶', name: 'Guiné Eq.', code: 'gq' },
-                      ].map((item) => (
-                        <div key={item.name} className="rounded-2xl bg-white/8 border border-white/10 p-1.5 xl:p-2 shadow-inner hover:bg-white/12 transition-colors flex flex-col items-center justify-center">
-                          <img 
-                            src={`https://flagcdn.com/w80/${item.code}.png`} 
-                            alt={item.flag} 
-                            title={item.name}
-                            className="h-5 xl:h-6 w-auto object-contain rounded shadow-sm mb-0.5"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="text-[10px] font-bold text-white/85 leading-tight">{item.name}</div>
-                        </div>
-                      ))}
-                    </div>
+                {/* Botão Categoria - Ícone com Texto Abaixo */}
+                <div className="relative group flex flex-col items-center">
+                  <div 
+                    style={{
+                      backgroundColor: customBg || 'rgba(255,255,255,0.1)',
+                      borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                    }}
+                    className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
+                    title="Categoria"
+                  >
+                    <Tag size={18} />
+                    <select 
+                      value={category} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Trabalho/Empregos') {
+                          navigate('/trabalhos');
+                        } else {
+                          setCategory(val);
+                        }
+                      }} 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    >
+                      <option value="Todas">Categorias</option>
+                      {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
+                    </select>
                   </div>
+                  <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
+                    {category === 'Todas' ? 'Categoria' : category}
+                  </span>
                 </div>
-              </aside>
+
+                {/* Botão País com Bandeira e Nome da Comunidade */}
+                <div className="relative" ref={dropdownRef}>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setCountryDropdownOpen(prev => !prev);
+                      setShowTooltip(false);
+                    }}
+                    style={{
+                      borderColor: customBorder || 'rgba(255,255,255,0.4)',
+                      ...getFlagBgStyle(country)
+                    }}
+                    className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none animate-country-pulse`}
+                    title="Mudar de Comunidade"
+                    id="community-toggle-button"
+                  >
+                    <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
+                    <span className="text-[10px] opacity-60 ml-0.5">▼</span>
+                  </button>
+
+                  {/* Dropdown de Países Personalizado */}
+                  <AnimatePresence>
+                    {countryDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        style={getDropdownBgStyle(country)}
+                        className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-12 md:top-14 z-[9999] w-48 border border-white/10 text-white rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCountryChange('Portugal');
+                            setCountryDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
+                            country === 'Portugal' 
+                              ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
+                              : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
+                          }`}
+                        >
+                          <span className="text-lg">🇵🇹</span>
+                          <span>Portugal</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCountryChange('Reino Unido');
+                            setCountryDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
+                            country === 'Reino Unido' 
+                              ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
+                              : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
+                          }`}
+                        >
+                          <span className="text-lg">🇬🇧</span>
+                          <span>Reino Unido</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Tooltip de Onboarding no 1º acesso */}
+                  {showTooltip && (
+                    <AnimatePresence>
+                      <motion.div
+                        initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                        className="absolute top-14 left-1/2 -translate-x-1/2 z-[9998] w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
+                      >
+                        {/* Seta do Balão */}
+                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
+                        <p className="text-xs font-semibold leading-relaxed text-slate-200">
+                          Escolha a sua comunidade para ver anúncios perto de si.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOnboardingButtonClick}
+                          className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
+                          id="onboarding-community-select"
+                        >
+                          Escolher Comunidade
+                        </button>
+                      </motion.div>
+                    </AnimatePresence>
+                  )}
+                </div>
+
+                {/* Botão Localização - Ícone com Texto Abaixo */}
+                <div className="relative group flex flex-col items-center">
+                  <div 
+                    style={{
+                      backgroundColor: customBg || 'rgba(255,255,255,0.1)',
+                      borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                    }}
+                    className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
+                    title="Cidade"
+                  >
+                    <MapPin size={18} />
+                    <select 
+                      value={city} 
+                      onChange={(e) => setCity(e.target.value)} 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    >
+                      <option value="Todas">Cidade / Região</option>
+                      {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
+                    </select>
+                  </div>
+                  <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
+                    {city === 'Todas' ? 'Cidade' : city}
+                  </span>
+                </div>
+
+                {/* Contador de Anúncios Slim */}
+                {(settings?.showTotalAdsBadge === true || isModeratorOrAdmin) && (
+                  <div 
+                    style={{
+                      backgroundColor: customBg || 'rgba(0,0,0,0.3)',
+                      borderColor: customBorder || 'rgba(255,255,255,0.1)',
+                    }}
+                    className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
+                  >
+                    <span className={`${txtColorClass} font-black text-sm md:text-lg mr-2`}>
+                      {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
+                    </span>
+                    <span className={`${txtMutedClass} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Anúncios</span>
+
+                    {!settings?.showTotalAdsBadge && isModeratorOrAdmin && (
+                      <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                        🔒 Oculto para o público (Visto por Staff)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Contador de Utilizadores Slim */}
+                {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
+                  <div 
+                    style={{
+                      backgroundColor: customBg || 'rgba(15,23,42,0.4)',
+                      borderColor: customBorder || 'rgba(99,102,241,0.3)',
+                    }}
+                    className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
+                  >
+                    <span className={`${isLightText ? 'text-indigo-300' : 'text-indigo-950'} font-black text-sm md:text-lg mr-2`}>
+                      {totalUsersCount}
+                    </span>
+                    <span className={`${isLightText ? 'text-indigo-400/80' : 'text-indigo-800/80'} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Membros</span>
+
+                    {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
+                      <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                        🔒 Oculto para o público (Visto por Staff)
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
