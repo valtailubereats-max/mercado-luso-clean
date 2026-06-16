@@ -71,7 +71,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
   const isFeaturedVariant = variant === 'featured';
   const useCompactMode = isCompactActive && !isFeaturedVariant;
 
-  const images = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
+  const rawImages = ad.images && ad.images.length > 0 ? ad.images : [ad.imageUrl];
+  const images = rawImages.filter((img): img is string => typeof img === 'string' && img.trim() !== '');
+  if (images.length === 0) {
+    images.push('https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80');
+  }
   const hasSourceUrl = !!(ad.sourceUrl && /^https?:\/\//i.test(ad.sourceUrl));
 
   const hasPrice =

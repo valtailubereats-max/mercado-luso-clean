@@ -17,7 +17,8 @@ import {
   MessageSquare,
   Camera,
   Store,
-  QrCode
+  QrCode,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -57,6 +58,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
     { icon: Camera, label: 'Loja de Fotos', path: '/admin/fotos' },
     { icon: Settings, label: 'Definições', path: '/admin/settings' },
+    { icon: BookOpen, label: 'Manual Técnico', path: '/admin/manual-tecnico' },
   ];
 
   if (loading || !user) {

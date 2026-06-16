@@ -37,6 +37,7 @@ import AdminShowcases from './pages/AdminShowcases';
 import VitrineComercial from './pages/VitrineComercial';
 import Convite from './pages/Convite';
 import AdminInvitations from './pages/AdminInvitations';
+import AdminManualTecnico from './pages/AdminManualTecnico';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
@@ -50,7 +51,27 @@ import { pt } from 'date-fns/locale';
 import { useClickOutside } from './hooks/useClickOutside';
 
 const Navbar = () => {
-  const { user, isAdmin, isModerator, loading } = useAuth();
+  const { user, profile, isAdmin, isModerator, loading } = useAuth();
+  
+  const getUserSignature = () => {
+    if (profile?.name) {
+      const raw = profile.name.trim();
+      if (raw.length >= 4) {
+        return raw.substring(0, 4).toUpperCase();
+      }
+      if (user?.email) {
+        const emailPrefix = user.email.split('@')[0].toUpperCase();
+        if (emailPrefix.startsWith(raw.toUpperCase()) && emailPrefix.length >= 4) {
+          return emailPrefix.substring(0, 4);
+        }
+      }
+      return raw.toUpperCase().padEnd(4, 'T');
+    }
+    if (user?.email) {
+      return user.email.split('@')[0].substring(0, 4).toUpperCase();
+    }
+    return 'VALT';
+  };
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -307,40 +328,10 @@ const Navbar = () => {
                 <PlusCircle size={20} /> <span>Anunciar</span>
               </Link>
 
-              {isAdmin && <div className="relative" ref={adminNotificationsRef}>
-                <button onClick={() => setShowAdminNotifications(!showAdminNotifications)} className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
-                  <ShieldCheck size={20} /> <span>Admin</span>
-                  {adminNotificationCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-pulse">{adminNotificationCount}</span>}
-                </button>
-
-                <AnimatePresence>
-                  {showAdminNotifications && (
-                    <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                      <div className="p-4 border-b border-slate-50 bg-amber-50/50 flex justify-between items-center">
-                        <h3 className="font-bold text-slate-900 flex items-center gap-2"><Bell size={16} className="text-amber-600" />Anúncios Pendentes</h3>
-                        <div className="flex flex-col gap-2">
-                          <Link to="/admin/import" onClick={() => setShowAdminNotifications(false)} className="w-full bg-emerald-500 text-white text-center py-2 rounded-xl text-[10px] font-bold hover:bg-emerald-600 transition-all uppercase tracking-wider">🚀 Importar Anúncio com IA</Link>
-                          <Link to="/admin/marketing" onClick={() => setShowAdminNotifications(false)} className="w-full bg-indigo-600 text-white text-center py-2 rounded-xl text-[10px] font-bold hover:bg-indigo-700 transition-all uppercase tracking-wider">📢 Kit de Marketing</Link>
-                          <Link to="/admin" onClick={() => setShowAdminNotifications(false)} className="w-full bg-indigo-50 text-indigo-600 text-center py-2 rounded-xl text-[10px] font-bold hover:bg-indigo-100 transition-all uppercase tracking-wider">Ver Painel Completo</Link>
-                        </div>
-                      </div>
-                      <div className="max-h-96 overflow-y-auto">
-                        {adminPendingAds.length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Não há anúncios pendentes.</div> :
-                        adminPendingAds.map((ad, idx) => (
-                          <Link key={`nav-ad-${ad.id || idx}-${idx}`} to="/admin" onClick={() => setShowAdminNotifications(false)} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3">
-                            <img src={ad.imageUrl || null} alt={ad.title} className="w-12 h-12 object-cover rounded-lg bg-slate-100 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-slate-900 truncate">{ad.title}</p>
-                              <p className="text-xs text-slate-500 mt-0.5">Vendedor: {ad.sellerName}</p>
-                              <p className="text-[10px] text-amber-600 font-bold mt-2">{ad.createdAt?.toDate ? formatDistanceToNow(ad.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>}
+              <Link to="/profile" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/70 hover:bg-white border border-indigo-200/50 hover:border-indigo-300 text-indigo-700 font-bold text-xs tracking-wider rounded-xl shadow-xs transition-all uppercase select-none cursor-pointer">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span className="text-slate-700 font-extrabold">{getUserSignature()}</span>
+              </Link>
 
               <div className="relative" ref={notificationsRef}>
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 p-2">
@@ -467,6 +458,17 @@ const Navbar = () => {
                           id="menu-gerir-anuncios"
                         >
                           Gerir Anúncios
+                        </Link>
+                      )}
+
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                          id="menu-admin-painel-direct"
+                        >
+                          Painel Admin
                         </Link>
                       )}
 
@@ -916,6 +918,7 @@ export default function App() {
                 <Route path="/convite" element={<Convite />} />
                 <Route path="/admin/invitations" element={<AdminLayout><AdminInvitations /></AdminLayout>} />
                 <Route path="/admin/suggestions" element={<AdminLayout><AdminSuggestions /></AdminLayout>} />
+                <Route path="/admin/manual-tecnico" element={<AdminLayout><AdminManualTecnico /></AdminLayout>} />
               </Routes>
             </main>
             <footer className="bg-white border-t border-slate-200 py-12 mt-20">

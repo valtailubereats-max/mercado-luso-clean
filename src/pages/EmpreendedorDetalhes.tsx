@@ -266,20 +266,14 @@ const EmpreendedorDetalhes = () => {
       {/* Visual Header Block */}
       <div className="relative rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-md">
         {/* Capa */}
-        <div className="h-48 sm:h-64 w-full bg-slate-100 overflow-hidden relative flex items-center justify-center">
-          <img 
-            src={profile.showcaseCover || fallbackCover} 
-            alt="" 
-            className="absolute inset-0 w-full h-full object-cover blur-xl opacity-25 scale-110 pointer-events-none" 
-            referrerPolicy="no-referrer"
-          />
+        <div className="h-56 sm:h-72 md:h-80 w-full bg-slate-900 overflow-hidden relative">
           <img 
             src={profile.showcaseCover || fallbackCover} 
             alt="Capa do negócio" 
-            className="relative max-w-full max-h-full object-contain z-10 p-2 sm:p-4" 
+            className="w-full h-full object-cover" 
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none z-10" />
         </div>
 
         {/* Floating Logo overlay */}

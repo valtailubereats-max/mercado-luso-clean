@@ -1,0 +1,734 @@
+export type ManualItemType = 
+  | 'Página' 
+  | 'Botão' 
+  | 'Formulário' 
+  | 'Fluxo' 
+  | 'Admin' 
+  | 'Firestore' 
+  | 'Monetização' 
+  | 'Vitrine' 
+  | 'Anúncios';
+
+export interface ManualItem {
+  id: string;
+  title: string;
+  type: ManualItemType;
+  description: string;
+  route: string;
+  mainFile: string;
+  relatedComponents: string[];
+  relatedFunctions: string[];
+  firestoreCollections: string[];
+  access: string;
+  buttons: string[];
+  actions: string[];
+  technicalNotes: string;
+  failurePoints: string[];
+  tags: string[];
+}
+
+export interface TechnicalFlow {
+  id: string;
+  title: string;
+  description: string;
+  startPoint: string;
+  buttonsInvolved: string[];
+  pagesInvolved: string[];
+  mainFiles: string[];
+  firestoreCollections: string[];
+  expectedResult: string;
+}
+
+export const manualItems: ManualItem[] = [
+  {
+    id: 'home',
+    title: 'Home (Página Inicial)',
+    type: 'Página',
+    description: 'Página principal e de entrada do Mercado Luso. Apresenta o banner dinâmico do país, seleção de país (Portugal/Reino Unido) com bandeiras flagcdn, canais de destaque, anúncios em destaque locais/nacionais e grid ou carrossel de vitrines (empreendedores).',
+    route: '/',
+    mainFile: 'src/pages/Home.tsx',
+    relatedComponents: ['src/components/AdCard.tsx', 'src/components/ShowcaseStats.tsx'],
+    relatedFunctions: ['fetchAds', 'fetchShowcases', 'setCountry', 'handleSearch'],
+    firestoreCollections: ['ads', 'showcases', 'settings'],
+    access: 'Público (Qualquer visitante)',
+    buttons: ['Alternar País (Bandeiras)', 'Campo de Pesquisa', 'Botão Anunciar', 'Ver Todas as Vitrines', 'Ver Mais Anúncios'],
+    actions: ['Redirecionar para criação de anúncios', 'Filtrar anúncios por país selecionado (PT/UK)', 'Realizar pesquisa textual por título ou tags'],
+    technicalNotes: 'A home carrega os dados com base no país selecionado no AuthContext ou localStorage. Se as vitrines estiverem aprovadas, elas são listadas no carrossel de empreendedores.',
+    failurePoints: [
+      'Falha na API flagcdn.com ao renderizar bandeiras.',
+      'Excesso de leituras no Firestore se não houver paginação/limite na listagem de anúncios.',
+      'Imagens pesadas de capa afetando o First Contentful Paint.'
+    ],
+    tags: ['home', 'página inicial', 'vitrines', 'anúncios', 'lisboa', 'londres', 'busca']
+  },
+  {
+    id: 'navbar-menu',
+    title: 'Navbar & Menu de Utilizador',
+    type: 'Botão',
+    description: 'Barra de navegação persistente presente em todas as páginas. Permite ir para Home, Trabalhos, Preços, Criar Anúncio, Notificações e aceder ao Menu do Utilizador com o avatar exibindo o nome/sigla de 4 letras do usuário.',
+    route: 'Todas as rotas (Global)',
+    mainFile: 'src/App.tsx',
+    relatedComponents: ['src/hooks/useClickOutside.ts'],
+    relatedFunctions: ['getUserSignature', 'logout', 'toggleNotifications'],
+    firestoreCollections: ['users', 'notifications', 'ads'],
+    access: 'Botões públicos; painéis de perfil e admin restritos',
+    buttons: ['Anunciar (+)', 'Sino de Notificações', 'Sigla de Utilizador (ex: VALT)', 'Sair/Logout', 'Painel Admin'],
+    actions: ['Navegar para /create-ad', 'Navegar para /admin (se admin)', 'Terminar sessão', 'Ver notificações não lidas'],
+    technicalNotes: 'A sigla do usuário no menu exibe as 4 primeiras letras do nome do perfil ou iniciais derivadas do email da pessoa logged in (ex: VALT). Substitui o antigo botão Admin na barra principal.',
+    failurePoints: [
+      'Dropdown do menu cortado em telas de telemóvel muito pequenas.',
+      'Sino de notificações não atualizar em tempo real se a query snapshot falhar.',
+      'Desalinhamento da sigla circular.'
+    ],
+    tags: ['navbar', 'menu', 'cabeçalho', 'navegação', 'assinar', 'anunciar', 'admin']
+  },
+  {
+    id: 'criar-anuncio',
+    title: 'Criar / Editar Anúncio',
+    type: 'Formulário',
+    description: 'Interface de formulário multi-etapas para criação de anúncios de produtos, serviços ou empregos. Permite seleção de categoria, upload de múltiplas imagens, definição de preço, localização e escolha de plano de destaque.',
+    route: '/create-ad, /edit-ad/:id',
+    mainFile: 'src/pages/CreateAd.tsx',
+    relatedComponents: ['src/components/SearchableCitySelect.tsx'],
+    relatedFunctions: ['handleSubmitAd', 'uploadImagesToStorage', 'handlePlanSelection'],
+    firestoreCollections: ['ads', 'users', 'settings'],
+    access: 'Utilizador Autenticado',
+    buttons: ['Submeter Imagens', 'Escolher Plano (Grátis, Local, Nacional)', 'Publicar Anúncio', 'Guardar Alterações'],
+    actions: ['Upload de ficheiros para o Firebase Storage', 'Escrever documento na coleção "ads"', 'Enviar notificação ao Admin para aprovação'],
+    technicalNotes: 'Para planos pagos, o status do anúncio inicia como "pending" e necessita de moderação por um Admin. Imagens são compactadas ou validadas conforme o limite do plano associado nas Definições globais.',
+    failurePoints: [
+      'Upload de arquivos muito grandes excedendo cotas do Storage.',
+      'Formulário quebrar se o utilizador não tiver preenchido telefone ou cidade do Perfil.',
+      'Erros ao carregar cidades remotamente.'
+    ],
+    tags: ['criar', 'anunciar', 'anúncio', 'formulário', 'imagens', 'plano', 'upload']
+  },
+  {
+    id: 'detalhes-anuncio',
+    title: 'Detalhes do Anúncio',
+    type: 'Página',
+    description: 'Página detalhada de visualização de um anúncio específico. Mostra carrossel de imagens, preço, localização com mapa embutido do Google Maps, descrição formatada, botão de contato via WhatsApp direto e ficha técnica do anunciante.',
+    route: '/anuncio/:id',
+    mainFile: 'src/pages/AdDetails.tsx',
+    relatedComponents: ['src/components/ReviewModal.tsx'],
+    relatedFunctions: ['toggleFavoriteGlobal', 'incrementViewCount', 'sendWhatsAppMessage'],
+    firestoreCollections: ['ads', 'users', 'reviews'],
+    access: 'Público',
+    buttons: ['Contactar via WhatsApp', 'Favoritar (Coração)', 'Ver Detalhes do Vendedor', 'Denunciar Anúncio', 'Escrever Avaliação'],
+    actions: ['Incrementar visualizações no Firestore', 'Adicionar/Remover ID do anúncio dos favoritos do utilizador', 'Carregar avaliações do vendedor'],
+    technicalNotes: 'O mapa do Google é embutido dinamicamente com um iframe seguro baseado na cidade e país do anúncio. Caso as imagens estejam corrompidas ou limpas, fallbacks do Unsplash são carregados.',
+    failurePoints: [
+      'Iframe do Google Maps bloquear devido a caracteres especiais na query.',
+      'Botão do WhatsApp formatado sem o código internacional do país (ex: +351 ou +44).'
+    ],
+    tags: ['anúncio', 'detalhes', 'visualização', 'mapa', 'vendedor', 'whatsapp']
+  },
+  {
+    id: 'perfil',
+    title: 'Perfil / Meu Painel',
+    type: 'Página',
+    description: 'Área pessoal do utilizador autenticado onde ele pode gerir os seus dados pessoais (Nome, Telefone, Região), ver os seus anúncios ativos e pendentes, gerir a sua Vitrine Digital, ver avaliações recebidas e configurar dados de faturação.',
+    route: '/profile',
+    mainFile: 'src/pages/Profile.tsx',
+    relatedComponents: ['src/components/ShowcaseInterests.tsx', 'src/components/ShowcaseStats.tsx'],
+    relatedFunctions: ['updateProfile', 'saveShowcaseSettings', 'handleUserDeletion'],
+    firestoreCollections: ['users', 'ads', 'showcaseProducts', 'purchases'],
+    access: 'Utilizador Autenticado (Dono da conta)',
+    buttons: ['Guardar Alterações', 'Configurar Minha Vitrine', 'Histórico de Faturação', 'Eliminar Conta', 'Adicionar Produto à Vitrine'],
+    actions: ['Atualizar documento "users" correspondente ao uid', 'Submeter dados da vitrine comercial (logo, capa, WhatsApp)'],
+    technicalNotes: 'Utiliza abas na URL para manter o estado da navegação (ex: ?tab=profile, ?tab=ads, ?tab=showcase). Se o utilizador ativar a Vitrine Digital, a coleção "users" ativa as flags "showcaseActive" e "showcasePlan".',
+    failurePoints: [
+      'Campos obrigatórios vazios impedindo a submissão de alterações no Perfil.',
+      'Logo ou capa da Vitrine com links quebrados.',
+      'Sincronização de plano de destaque expirado.'
+    ],
+    tags: ['perfil', 'dados', 'editar', 'utilizador', 'conta', 'vitrine']
+  },
+  {
+    id: 'meus-anuncios',
+    title: 'Meus Anúncios',
+    type: 'Anúncios',
+    description: 'Secção secundária dentro do Perfil do utilizador contendo todos os anúncios criados por ele. Permite visualizar o status (Aprovado, Pendente, Rejeitado, Expirado), renovar planos e enviar avisos de venda.',
+    route: '/profile?tab=ads',
+    mainFile: 'src/pages/Profile.tsx',
+    relatedComponents: ['src/components/AdCard.tsx'],
+    relatedFunctions: ['deleteAd', 'renewAdPlan', 'markAsSold'],
+    firestoreCollections: ['ads'],
+    access: 'Utilizador Autenticado',
+    buttons: ['Editar', 'Eliminar', 'Marcar como Vendido', 'Promover Plano', 'Renovar Anúncio'],
+    actions: ['Mudar "status" do anúncio para "sold" ou "archived"', 'Restaurar anúncios expirados para pendente após pagamento'],
+    technicalNotes: 'Os anúncios são filtrados localmente por `where("userId", "==", user.uid)`. Ao marcar como vendido, o anúncio sai da listagem pública mas permanece no histórico.',
+    failurePoints: [
+      'Inexistência do índice composto no Firestore para filtrar anúncios por userId e orderby.',
+      'Múltiplas requisições ao apagar anúncios consecutivamente.'
+    ],
+    tags: ['anúncios', 'gerir', 'renovar', 'destacar', 'apagar']
+  },
+  {
+    id: 'favoritos',
+    title: 'Favoritos',
+    type: 'Anúncios',
+    description: 'Secção na conta do utilizador que lista todos os anúncios que ele curtiu ou guardou para monitorar alterações de preço e disponibilidade.',
+    route: '/profile?tab=favorites',
+    mainFile: 'src/pages/Profile.tsx',
+    relatedComponents: ['src/components/AdCard.tsx'],
+    relatedFunctions: ['toggleFavoriteGlobal', 'fetchFavoriteAds'],
+    firestoreCollections: ['users', 'ads'],
+    access: 'Utilizador Autenticado',
+    buttons: ['Remover dos Favoritos (Coração)', 'Ver Detalhes do Anúncio', 'Contactar Vendedor'],
+    actions: ['Remover o ID do anúncio do array "favorites" no documento "users"'],
+    technicalNotes: 'Os favoritos são guardados como um array de strings contendo IDs de anúncios no documento do usuário. Se um anúncio for apagado pelo dono original, o ID órfão deve ser filtrado ou ignorado.',
+    failurePoints: [
+      'Falha de renderização ao tentar carregar dados de um anúncio favoritado que já foi completamente eliminado do banco.'
+    ],
+    tags: ['favoritos', 'salvar', 'anúncios', 'interesse']
+  },
+  {
+    id: 'compras',
+    title: 'Compras (Histórico)',
+    type: 'Monetização',
+    description: 'Controle de transações e histórico de faturas geradas pelos planos de destaque ou taxa de ativação da vitrine digital. Contém recibos virtuais e datas das operações.',
+    route: '/profile?tab=purchases',
+    mainFile: 'src/pages/Profile.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['fetchUserPurchases'],
+    firestoreCollections: ['purchases'],
+    access: 'Utilizador Autenticado',
+    buttons: ['Ver Recibo', 'Exportar Fatura', 'Contactar Suporte'],
+    actions: ['Aceder e listar documentos da subcoleção ou coleção global de compras filtrada por comprador'],
+    technicalNotes: 'Mostra todos os pagamentos virtuais simulados ou reais efetuados na plataforma por meio do checkout interno.',
+    failurePoints: [
+      'Diferença de fuso horário na formatação de datas de compras.'
+    ],
+    tags: ['compras', 'faturas', 'pagamentos', 'planos', 'recibo']
+  },
+  {
+    id: 'avaliacoes',
+    title: 'Avaliações de Vendedores',
+    type: 'Página',
+    description: 'Sistema de reputação que exibe depoimentos e pontuações de compradores com estrelas (1 a 5) sobre vendedores. Ajuda a dar credibilidade formal aos negócios do mercado luso.',
+    route: '/profile?tab=reviews',
+    mainFile: 'src/pages/Profile.tsx',
+    relatedComponents: ['src/components/ReviewModal.tsx'],
+    relatedFunctions: ['submitReview', 'calculateAverageRating'],
+    firestoreCollections: ['reviews', 'users'],
+    access: 'Qualquer utilizador autenticado pode avaliar; visualização é pública',
+    buttons: ['Escrever FeedBack', 'Submeter Avaliação', 'Classificar com Estrelas'],
+    actions: ['Escrever depoimento na coleção "reviews" e atualizar "ratingAverage" no documento "users" do vendedor'],
+    technicalNotes: 'A média de avaliação é guardada de forma denormalizada no perfil do usuário ("ratingAverage" e "ratingCount") para acelerar a renderização da home e detalhes do anúncio.',
+    failurePoints: [
+      'Usuários avaliando a si mesmos.',
+      'Divisão por zero ao recalcular média de pontuações vazias.'
+    ],
+    tags: ['avaliações', 'feedback', 'estrelas', 'reputação', 'vendedor']
+  },
+  {
+    id: 'trabalhos-empregos',
+    title: 'Trabalhos & Empregos',
+    type: 'Página',
+    description: 'Secção especializada da plataforma para anúncios de prestação de serviços, subcontratações, vagas de telemóvel temporárias, jardinagem, restauros, e conexões profissionais portuguesas e inglesas.',
+    route: '/trabalhos, /empregos',
+    mainFile: 'src/pages/Trabalhos.tsx',
+    relatedComponents: ['src/components/AdCard.tsx'],
+    relatedFunctions: ['fetchJobs', 'filterByJobCategory'],
+    firestoreCollections: ['ads'],
+    access: 'Público',
+    buttons: ['Filtros Avançados', 'Procurar Profissionais', 'Publicar Vaga'],
+    actions: ['Filtrar anúncios cuja categoria seja "Serviços" ou "Empregos"', 'Filtros rápidos por país ou modalidade'],
+    technicalNotes: 'Reutiliza a lógica de listagem do AdCard mas otimizada para tags de salário, horários e experiência requerida.',
+    failurePoints: [
+      'Filtros conflitantes resultando em ecrã vazio.'
+    ],
+    tags: ['trabalhos', 'empregos', 'vagas', 'serviços', 'anúncios', 'contratação']
+  },
+  {
+    id: 'empreendedores',
+    title: 'Empreendedores (Diretório)',
+    type: 'Vitrine',
+    description: 'Catálogo que agrega todos os negócios e empreendedores ativos no Mercado Luso. Exibe cards elegantes das vitrines contendo foto de capa grande, logotipo centralizado, cidade e contagem de itens de cada vitrine comercial.',
+    route: '/empreendedores',
+    mainFile: 'src/pages/Empreendedores.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['fetchShowcasesList'],
+    firestoreCollections: ['users'],
+    access: 'Público',
+    buttons: ['Visitar Vitrine ("Meu Negócio")', 'Filtros de Categoria', 'Pesquisa de Empreendedor'],
+    actions: ['Carregar utilizadores que têm "showcaseActive" como verdadeiro e estão com a vitrina aprovada ("showcaseApproved" == true)'],
+    technicalNotes: 'A exibição do cartão de vitrina foi remodelada recentemente para focar 80% na foto de capa de alta qualidade, com logotipo centralizado, e barra de CTA verde escura embaixo.',
+    failurePoints: [
+      'Capas desalinhadas devido a dimensões não recomendadas de imagem.',
+      'Vitrines sem nenhum produto listado aparecendo com 0 itens.'
+    ],
+    tags: ['empreendedores', 'negócios', 'vitrines', 'luso', 'diretório']
+  },
+  {
+    id: 'vitrine-digital',
+    title: 'Vitrine Digital (Negócio Individual)',
+    type: 'Vitrine',
+    description: 'Página bio dedicada ao negócio do empreendedor. Exibe banner de marca, logotipo circular, biografia corporativa, link de contacto prioritário por WhatsApp e grelha de produtos/serviços disponíveis.',
+    route: '/empreendedores/:slug',
+    mainFile: 'src/pages/EmpreendedorDetalhes.tsx',
+    relatedComponents: ['src/components/ShowcaseStats.tsx'],
+    relatedFunctions: ['incrementShowcaseVisit', 'loadShowcaseProducts', 'shareShowcase'],
+    firestoreCollections: ['users', 'showcaseProducts', 'showcaseVisits'],
+    access: 'Público',
+    buttons: ['Contactar no WhatsApp', 'Partilhar Vitrine', 'Explorar Produto', 'Ver no Mapa'],
+    actions: ['Registar entrada de visitantes únicos nas estatísticas da vitrina', 'Carregar todos os itens da subcoleção de produtos'],
+    technicalNotes: 'O layout foi otimizado recentemente para expandir a foto de capa do negócio a 100% da largura, cobrindo o ecrã com gradiente elegante, garantindo visualização imersiva para restauro e pastelarias.',
+    failurePoints: [
+      'Carregamento demorado ao buscar catálogo de produtos grandes.',
+      'Sincronização de fuso horário nas visitas.'
+    ],
+    tags: ['vitrine', 'negócio', 'página', 'bio', 'logo', 'capa', 'luso']
+  },
+  {
+    id: 'produtos-vitrine',
+    title: 'Produtos da Vitrine',
+    type: 'Vitrine',
+    description: 'Visualização de um produto específico de uma Vitrine Digital de Empreendedor. Mostra imagens ampliadas de alta definição, descrição detalhada do produto, preço e botão de pedido imediato via WhatsApp.',
+    route: '/empreendedores/:slug/produto/:productId',
+    mainFile: 'src/pages/EmpreendedorProduto.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['loadProductDetails', 'generateWhatsAppProductOrder'],
+    firestoreCollections: ['showcaseProducts', 'users'],
+    access: 'Público',
+    buttons: ['Encomendar no WhatsApp', 'Voltar à Vitrine', 'Ver Mais Imagens', 'Partilhar Link'],
+    actions: ['Gerar link do WhatsApp pré-formatado com o nome do produto e do negócio do empreendedor para fechar venda instantânea'],
+    technicalNotes: 'A submissão e o clique estruturam uma frase automática no WhatsApp (ex: Olá, tenho interesse no produto Coxinha de Frango da sua Vitrine no Mercado Luso!).',
+    failurePoints: [
+      'Erro no link do WhatsApp se o número do telefone tiver símbolos de parênteses ou espaços.',
+      'Imagens indisponíveis caindo no fallback padrão.'
+    ],
+    tags: ['produto', 'vitrine', 'itens', 'preço', 'whatsapp']
+  },
+  {
+    id: 'whatsapp-vitrine',
+    title: 'WhatsApp da Vitrine (Conexão Direta)',
+    type: 'Vitrine',
+    description: 'Funcionalidade central de integração que redireciona de imediato os interessados em produtos ou serviços direto para o chat restrito do telemóvel do empreendedor.',
+    route: 'Redirecionamento Externo',
+    mainFile: 'src/pages/EmpreendedorDetalhes.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['formatWhatsAppNumber', 'buildWhatsAppLink'],
+    firestoreCollections: ['users'],
+    access: 'Público',
+    buttons: ['Contactar via WhatsApp', 'Falar com Empreendedor'],
+    actions: ['Abrir aba externa no telemóvel ou desktop para https://wa.me/num'],
+    technicalNotes: 'O número de telemóvel é filtrado de antemão para conter apenas algarismos numéricos e precedido do código de área do país (+351 PT ou +44 UK).',
+    failurePoints: [
+      'Número de telefone digitado sem indicativo de país.'
+    ],
+    tags: ['whatsapp', 'contacto', 'mensagem', 'clique', 'redireccionar']
+  },
+  {
+    id: 'leads-interesses',
+    title: 'Leads / Interesses de Produtos',
+    type: 'Fluxo',
+    description: 'Painel onde o empreendedor consegue monitorizar quem clicou nos seus produtos da vitrina, quais os itens mais requisitados, registando a intenção de compra ou mensagens enviadas.',
+    route: '/profile?tab=interests',
+    mainFile: 'src/components/ShowcaseInterests.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['fetchShowcaseInterests', 'resolveInterestState'],
+    firestoreCollections: ['showcaseInterests', 'showcaseProducts'],
+    access: 'Empreendedor Logado (Dono da vitrine)',
+    buttons: ['Ver Detalhes do Lead', 'Marcar como Resolvido', 'Exportar Lista'],
+    actions: ['Carrega interessados e propostas submetidas por formulário alternativo nos produtos da vitrina para acompanhamento pós-venda'],
+    technicalNotes: 'As leads são salvas toda vez que um cliente autenticado clica para fazer uma encomenda, assegurando que o empreendedor tenha métricas confiáveis de clientes potenciais.',
+    failurePoints: [
+      'Demora na sincronização de novos cliques se a coleção estiver crescendo rápido sem paginação.'
+    ],
+    tags: ['leads', 'interesses', 'contactos', 'propostas', 'interações']
+  },
+  {
+    id: 'anuncios-destaque',
+    title: 'Canais de Anúncios em Destaque',
+    type: 'Anúncios',
+    description: 'Secções estrategicamente posicionadas na Home que rotacionam anúncios que adquiriram planos pagos. Conferem destaque nacional ou local com banners dinâmicos e cores exclusivas.',
+    route: '/',
+    mainFile: 'src/pages/Home.tsx',
+    relatedComponents: ['src/components/AdCard.tsx'],
+    relatedFunctions: ['fetchFeaturedAds'],
+    firestoreCollections: ['ads'],
+    access: 'Público',
+    buttons: ['Clique de Visualização', 'Setas de Navegação do Carrossel'],
+    actions: ['Filtrar anúncios cujo status seja "approved" de forma decrescente pela prioridade do plano (national > local > free)'],
+    technicalNotes: 'O backend ou a query do Firestore puxa os anúncios ativos e ordena por nível de plano. Anúncios em Destaque Nacional são visualizados em todo o site.',
+    failurePoints: [
+      'Falta de rotação dinâmica se poucos anúncios assinarem planos, exibindo sempre os mesmos.'
+    ],
+    tags: ['destaque', 'carrossel', 'principal', 'visibilidade']
+  },
+  {
+    id: 'destaque-local',
+    title: 'Plano de Destaque Local',
+    type: 'Monetização',
+    description: 'Plano que permite ao anunciante promover o seu anúncio especificamente dentro da sua cidade/região declarada no Mercado Luso, aparecendo listado nas pesquisas locais e no topo do feed citadino.',
+    route: '/create-ad, /profile?tab=ads',
+    mainFile: 'src/pages/CreateAd.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['selectLocalPlan', 'processPlanSubscription'],
+    firestoreCollections: ['ads', 'purchases', 'settings'],
+    access: 'Utilizador Autenticado',
+    buttons: ['Selecionar Plano Local', 'Simular Pagamento'],
+    actions: ['Definir campo "plan" como "local" no documento do anúncio', 'Escrever relatório de compra'],
+    technicalNotes: 'Os dias de expiração correspondem à configuração "planDurations.local" presente no Firestore settings.',
+    failurePoints: [
+      'Cidade do anúncio não coincidir com a do filtro, omitindo-o da pesquisa local.'
+    ],
+    tags: ['destaque', 'local', 'plano', 'pagamento', 'cidade']
+  },
+  {
+    id: 'destaque-nacional',
+    title: 'Plano de Destaque Nacional',
+    type: 'Monetização',
+    description: 'Plano de prioridade máxima que eleva o anúncio ao topo nacional. O anúncio é exibido em destaque geral em toda a plataforma para o país selecionado, multiplicando o engajamento e cliques de compra.',
+    route: '/create-ad, /profile?tab=ads',
+    mainFile: 'src/pages/CreateAd.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['selectNationalPlan', 'processPlanSubscription'],
+    firestoreCollections: ['ads', 'purchases', 'settings'],
+    access: 'Utilizador Autenticado',
+    buttons: ['Selecionar Destaque Nacional', 'Pagar Assinatura'],
+    actions: ['Definir o campo "plan" como "national" no Firestore e estender prazo de validade'],
+    technicalNotes: 'Submete o status inicial de destaque nacional. Anúncios nacionais recebem uma fita decorativa "Nacional" no cartão de anúncios.',
+    failurePoints: [
+      'Inexistência ou indisponibilidade de planos nacionais no settings global.'
+    ],
+    tags: ['destaque', 'nacional', 'plano', 'pagamento', 'país', 'topo']
+  },
+  {
+    id: 'pagina-precos',
+    title: 'Página de Preços',
+    type: 'Página',
+    description: 'Página informativa e comercial que detalha todos os planos disponíveis para anunciar e ativar vitrines no Mercado Luso. Apresenta o custo, duração de exibição e os recursos habilitados em cada modalidade (Grátis, Local, Nacional, Vitrine Premium).',
+    route: '/precos',
+    mainFile: 'src/pages/Precos.tsx',
+    relatedComponents: [],
+    relatedFunctions: [],
+    firestoreCollections: ['settings'],
+    access: 'Público',
+    buttons: ['Anunciar Agora', 'Ativar Minha Vitrina', 'Contactar Suporte Comercial'],
+    actions: ['Redirecionar para criação ou perfil de acordo com a seleção de plano feita pelo utilizador'],
+    technicalNotes: 'Os preços listados são carregados remotamente do documento global de definições ("settings") para evitar discrepâncias estruturais.',
+    failurePoints: [
+      'Valores de preços exibidos em euros para o Reino Unido se não forem adaptados conforme o país ativo.'
+    ],
+    tags: ['preços', 'planos', 'local', 'nacional', 'vitrine', 'subscrição']
+  },
+  {
+    id: 'convites-qrcode',
+    title: 'Sistema de Convites & QR Code',
+    type: 'Fluxo',
+    description: 'Recurso de atração de novos membros. Utilizadores conseguem partilhar o seu código de convite ou descarregar um QR Code dinâmico. O padrinho recebe créditos por indicação que podem ser gastos em planos.',
+    route: '/convite, /admin/invitations',
+    mainFile: 'src/pages/Convite.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['generateInvitationCode', 'renderDynamicQRCode', 'addReferralCredits'],
+    firestoreCollections: ['users', 'invitations'],
+    access: 'Utilizadores Autenticados para partilhar; Admin para gerir',
+    buttons: ['Copiar Link de Convite', 'Descarregar Imagem QR Code', 'Validar Código Administrador'],
+    actions: ['Registar novos convites na coleção "invitations" vinculando utilizador padrinho e afilhado'],
+    technicalNotes: 'O QR Code é renderizado utilizando bibliotecas padrão baseadas em tela ou SVG e contém o link direto de login integrado com o código de referência (ex: /login?ref=VALT12).',
+    failurePoints: [
+      'QR Code ilegível em telas de brilho excessivamente baixo.',
+      'Ciclos de referência infinitos (utilizador tentando convidar a si mesmo ou registos duplicados).'
+    ],
+    tags: ['convites', 'qr code', 'código', 'convidar', 'registo', 'indicar']
+  },
+  {
+    id: 'marketing',
+    title: 'Kit de Marketing',
+    type: 'Admin',
+    description: 'Ferramenta administrativa para divulgar canais de marketing e descarregar banners prontos. Admins podem carregar posters promocionais, cartazes, panfletos digitais para partilhar nas redes sociais.',
+    route: '/admin/marketing',
+    mainFile: 'src/pages/AdminMarketing.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['fetchMaterials', 'addMarketingMaterial', 'deleteMarketingMaterial'],
+    firestoreCollections: ['marketingMaterials'],
+    access: 'Admin ou Moderador',
+    buttons: ['Adicionar Material', 'Descarregar Banner', 'Eliminar Material', 'Copiar Link de Partilha'],
+    actions: ['Escrever material promocional no Firestore e arquivar imagem do design de marketing correspondente'],
+    technicalNotes: 'Suporta categorias de marketing (Social, Impresso, Story) estruturadas para partilhas de alta resolução.',
+    failurePoints: [
+      'Formato de arquivo não suportado (ex: .tiff ou ficheiros de design não web).'
+    ],
+    tags: ['marketing', 'banners, kit, partilha, redes sociais']
+  },
+  {
+    id: 'importacao-olx',
+    title: 'Importador OLX / Gumtree com IA',
+    type: 'Admin',
+    description: 'Funcionalidade mágica com Inteligência Artificial que simplifica a inserção de anúncios. O Administrador pode submeter links do OLX Portugal ou Gumtree UK e a IA interpreta, extrai e redige o anúncio no Mercado Luso de forma autónoma.',
+    route: '/admin/import',
+    mainFile: 'src/pages/AdminImport.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['scrapeMetadataLink', 'processWithGemini', 'confirmAutomationImport'],
+    firestoreCollections: ['ads', 'settings'],
+    access: 'Admin (Apenas)',
+    buttons: ['Colar Link', 'Iniciar Análise por IA', 'Submeter para Sistema', 'Limpar Campos'],
+    actions: ['Invocar chamada de API do servidor para extração de dados e conversão textual via IA (Gemini)'],
+    technicalNotes: 'Integra-se ao motor de IA para preencher imagens, preços, títulos e categorias encontradas no link externo, diminuindo o atrito para novos anunciantes.',
+    failurePoints: [
+      'Mudança na infraestrutura HTML do OLX ou Gumtree bloqueando extração.',
+      'Limite de Tokens ou falha de chave da API do Gemini.'
+    ],
+    tags: ['olx', 'gumtree', 'importação', 'ia', 'scraper', 'criar']
+  },
+  {
+    id: 'admin-dashboard',
+    title: 'Painel Geral do Admin (Dashboard)',
+    type: 'Admin',
+    description: 'Interface de controlo operacional para gerentes. Exibe estatísticas de desempenho consolidadas, número de anúncios ativos, faturação acumulada, novos utilizadores, e o feed central de anúncios pendentes para revisão rápida.',
+    route: '/admin/dashboard, /admin',
+    mainFile: 'src/pages/AdminDashboard.tsx',
+    relatedComponents: ['src/components/ShowcaseStats.tsx'],
+    relatedFunctions: ['loadDashboardMetrics', 'fetchRecentActivities'],
+    firestoreCollections: ['ads', 'users', 'purchases', 'settings'],
+    access: 'Admin (Apenas)',
+    buttons: ['Mais Estatísticas', 'Ver Compras', 'Filtrar por Período'],
+    actions: ['Agregação e leitura de métricas financeiras e cadastrais brutas no Firestore'],
+    technicalNotes: 'Permite monitorar a saúde global do sistema com visões rápidas de uso por região (Portugal vs UK).',
+    failurePoints: [
+      'Sobrecarga de consulta ao contar muitos documentos sem coleção de agregação secundária.'
+    ],
+    tags: ['dashboard', 'estatísticas', 'admin', 'resumo', 'gráficos']
+  },
+  {
+    id: 'gerir-anuncios',
+    title: 'Gerir e Moderar Anúncios',
+    type: 'Admin',
+    description: 'Secção administrativa onde o time do site modera novos anúncios enviados. Permite aprovar, recusar e suspender anúncios suspeitos de burla ou fora do escopo europeu.',
+    route: '/admin/ads',
+    mainFile: 'src/pages/AdminAds.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['approveAdState', 'rejectAdState', 'archiveExpiredAds'],
+    firestoreCollections: ['ads', 'notifications'],
+    access: 'Admin ou Moderador',
+    buttons: ['Aprovar Anúncio', 'Rejeitar Anúncio', 'Adicionar Justificativa', 'Pesquisar Anúncio'],
+    actions: ['Atualizar "status" do anúncio para "approved" ou "rejected" no Firestore e instanciar notificação automática ao anunciante'],
+    technicalNotes: 'Filtra anúncios por status (pending, approved, rejected, expired) e envia relatórios estruturados ao utilizador.',
+    failurePoints: [
+      'Inexistência do feedback de justificação do motivo da recusa, gerando frustração ao usuário.'
+    ],
+    tags: ['anúncios', 'aprovar', 'rejeitar', 'moderar', 'gerir']
+  },
+  {
+    id: 'utilizadores',
+    title: 'Gerir Utilizadores',
+    type: 'Admin',
+    description: 'Ficha de controle de todos os membros do Mercado Luso. Permite alterar o papel hierárquico (utilizador comum, moderador, administrador) e aplicar suspensões ou redefinições cadastrais.',
+    route: '/admin/users',
+    mainFile: 'src/pages/AdminUsers.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['changeUserRole', 'banUserAccount', 'adjustCreditsManually'],
+    firestoreCollections: ['users'],
+    access: 'Admin (Apenas)',
+    buttons: ['Tornar Administrador', 'Tornar Moderador', 'Revogar Acesso', 'Ver Ficha do Usuário'],
+    actions: ['Modificar atributo "role" do utilizador no Firestore, alterando imediatamente as suas capacidades de acesso no próximo login'],
+    technicalNotes: 'Usa guards rígidos de segurança para impedir que administradores revoguem o próprio privilégio de acesso de forma acidental.',
+    failurePoints: [
+      'Ação de banimento não deletar os anúncios ativos da pessoa de imediato.'
+    ],
+    tags: ['utilizadores', 'roles, admin, banir, moderador']
+  },
+  {
+    id: 'definicoes',
+    title: 'Definições do Sistema',
+    type: 'Admin',
+    description: 'Painel de configuração técnica das regras operacionais do Mercado Luso. Permite regular o número de dias que um anúncio dura, preços de destaques, limites de fotos grátis e ligar/desligar funcionalidades (como a Galeria de Fotos).',
+    route: '/admin/settings',
+    mainFile: 'src/pages/AdminSettings.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['saveGlobalSettings', 'restoreDefaultSystemSettings'],
+    firestoreCollections: ['settings'],
+    access: 'Admin (Apenas)',
+    buttons: ['Gravar Configurações', 'Limpar Parâmetros', 'Ativar Modo Compacto', 'Restaurar Padrão'],
+    actions: ['Atualizar o documento global "global" da coleção "settings" com novos limites operacionais'],
+    technicalNotes: 'Todos os componentes do site leem as durações e preços a partir desta coleção, garantindo maleabilidade absoluta da operação do portal.',
+    failurePoints: [
+      'Valores negativos salvos em limites numéricos provocando quebra na renderização de novos formulários.'
+    ],
+    tags: ['definições', 'configurações, prazos, preços, limites']
+  },
+  {
+    id: 'notificacoes-sistema',
+    title: 'Notificações Internas',
+    type: 'Firestore',
+    description: 'Mecanismo de informação que armazena mensagens, updates de aprovação, expirações de anúncios e relatórios no perfil de cada utilizador.',
+    route: 'Todas (Notificação em Sino)',
+    mainFile: 'src/App.tsx',
+    relatedComponents: [],
+    relatedFunctions: ['addNotificationSystem', 'markNotificationAsRead', 'deleteNotification'],
+    firestoreCollections: ['notifications'],
+    access: 'Dono da notificação ou Admin',
+    buttons: ['Marcar como Lida', 'Limpar Histórico', 'Clicar na Notificação de Encaminhamento'],
+    actions: ['Modificar "read" para true no documento da notificação e atualizar contador da interface'],
+    technicalNotes: 'Usa sub-snapshots ou escuta contínua indexada por userId para acender o alerta de sino vermelho piscando no cabeçalho.',
+    failurePoints: [
+      'Contagens de não lidas desalinhadas do banco devido a falhas de rede ao ler e transitar abas.'
+    ],
+    tags: ['notificações', 'alerta', 'aviso', 'sino', 'e-mail']
+  },
+  {
+    id: 'firestore-rules',
+    title: 'Regras de Segurança do Firestore (Rules)',
+    type: 'Firestore',
+    description: 'Protocolo de proteção a nível de servidor que dita quem pode ler ou escrever em cada coleção do banco de dados Cloud Firestore.',
+    route: 'N/A (Nível de Segurança)',
+    mainFile: 'firestore.rules',
+    relatedComponents: [],
+    relatedFunctions: [],
+    firestoreCollections: ['Todas as coleções listadas acima'],
+    access: 'Servidor Firebase (Invisível no Cliente)',
+    buttons: [],
+    actions: ['Validar token JWT, analisar uid, examinar roles para bloquear escritas maliciosas feitas de terminais externos'],
+    technicalNotes: 'Configurada na raiz do projeto. Garante que utilizadores normais não consigam alterar "role" no seu perfil ou subscrever destaque de graça.',
+    failurePoints: [
+      'Erros silenciosos na leitura se o utilizador autenticado não bater exatamente com o caminho esperado nos paths da regra.'
+    ],
+    tags: ['rules', 'firestore', 'segurança', 'regras, bases de dados']
+  },
+  {
+    id: 'storage-rules',
+    title: 'Regras Cloud Storage (Rules)',
+    type: 'Firestore',
+    description: 'Protocolo de segurança para upload e descarga de arquivos estáticos, fotos de anúncios e logotipos no Bucket do Firebase Cloud Storage.',
+    route: 'N/A',
+    mainFile: 'storage.rules',
+    relatedComponents: [],
+    relatedFunctions: [],
+    firestoreCollections: ['Não aplicável (Storage)'],
+    access: 'Servidor Storage',
+    buttons: [],
+    actions: ['Garantir que apenas utilizadores login consigam subir imagens para a pasta coletiva de anúncios de acordo com extensões JPG, PNG, WEBP'],
+    technicalNotes: 'Filtra os uploads por peso máximo do documento (ex: menor que 5MB) para mitigar uso danoso do provedor de infraestrutura cloud.',
+    failurePoints: [
+      'Uploads rejeitados imediatamente no frontend por conflito de cabeçalhos no tipo Mime do ficheiro.'
+    ],
+    tags: ['storage', 'regras', 'bucket, segurança, upload']
+  }
+];
+
+export const technicalFlows: TechnicalFlow[] = [
+  {
+    id: 'flow-criar-anuncio',
+    title: 'Como criar um anúncio',
+    description: 'Criação e registo básico de ofertas na plataforma por utilizadores comuns.',
+    startPoint: 'Clicar no Botão "+" ou "Anunciar" no cabeçalho principal',
+    buttonsInvolved: ['Anunciar', 'Escolher Imagens', 'Publicar Anúncio'],
+    pagesInvolved: ['CreateAd.tsx', 'Home.tsx'],
+    mainFiles: ['src/pages/CreateAd.tsx', 'src/components/SearchableCitySelect.tsx'],
+    firestoreCollections: ['ads', 'users'],
+    expectedResult: 'Novo anúncio gravado com plano "free" (entra como approved de imediato) ou plano pago (entra em moderação como pending).'
+  },
+  {
+    id: 'flow-destaque-local',
+    title: 'Como destacar anúncio local',
+    description: 'Garantir prioridade superior ao anúncio dentro do âmbito de captação citadina da região correspondente.',
+    startPoint: 'Pelo formulário CreateAd escolhendo plano "Local", ou no painel Meus Anúncios do Perfil clicando em "Promover"',
+    buttonsInvolved: ['Selecionar Plano Local', 'Concluir Pagamento'],
+    pagesInvolved: ['CreateAd.tsx', 'Profile.tsx', 'Precos.tsx'],
+    mainFiles: ['src/pages/CreateAd.tsx', 'src/pages/Profile.tsx'],
+    firestoreCollections: ['ads', 'purchases'],
+    expectedResult: 'Campo "plan" alterado para "local", validade prorrogada segundo configurações do painel admin, e registo no histórico de compras.'
+  },
+  {
+    id: 'flow-destaque-nacional',
+    title: 'Como destacar anúncio nacional',
+    description: 'Elevação máxima do anúncio para destaque em todas as pesquisas do país (Portugal ou Reino Unido).',
+    startPoint: 'Formulário de criação ao escolher plano "Nacional" ou ao promover anúncio grátis a partir do menu Meus Anúncios',
+    buttonsInvolved: ['Selecionar Plano Nacional', 'Efetuar Subscrição'],
+    pagesInvolved: ['CreateAd.tsx', 'Profile.tsx', 'Precos.tsx'],
+    mainFiles: ['src/pages/CreateAd.tsx', 'src/pages/Profile.tsx'],
+    firestoreCollections: ['ads', 'purchases'],
+    expectedResult: 'Campo "plan" redefinido para "national", habilitando o banner de topo e a fita azul de Destaque Nacional.'
+  },
+  {
+    id: 'flow-criar-vitrine',
+    title: 'Como criar uma Vitrine Digital',
+    description: 'Registo e setup do diretório comercial do empreendedor no catálogo de negócios do Mercado Luso.',
+    startPoint: 'Menu lateral do Perfil clicando na aba "Minha Vitrine" e ativando a chave "Ativar Vitrine"',
+    buttonsInvolved: ['Ativar Minha Vitrina', 'Carregar Foto de Capa', 'Carregar Logo', 'Salvar Informações da Vitrina'],
+    pagesInvolved: ['Profile.tsx', 'Empreendedores.tsx'],
+    mainFiles: ['src/pages/Profile.tsx'],
+    firestoreCollections: ['users'],
+    expectedResult: 'Flag "showcaseActive" definida para true, acionando o fluxo de aprovação obrigatória do Admin para evitar spams.'
+  },
+  {
+    id: 'flow-adicionar-produto-vitrine',
+    title: 'Como adicionar produto na Vitrine',
+    description: 'Criação do catálogo virtual de produtos vinculados diretamente ao negócio do empreendedor.',
+    startPoint: 'Dentro da aba "Minha Vitrina" no perfil, clicando no botão "Adicionar Novo Produto"',
+    buttonsInvolved: ['Adicionar Novo Produto', 'Fazer Upload do Produto', 'Gravar Produto'],
+    pagesInvolved: ['Profile.tsx', 'EmpreendedorDetalhes.tsx'],
+    mainFiles: ['src/pages/Profile.tsx', 'src/components/ShowcaseStats.tsx'],
+    firestoreCollections: ['showcaseProducts', 'users'],
+    expectedResult: 'Novo documento criado na coleção "showcaseProducts" vinculando o slug da vitrina e o uid proprietário.'
+  },
+  {
+    id: 'flow-whatsapp-vitrine',
+    title: 'Como funciona o WhatsApp da Vitrine',
+    description: 'Processamento de checkout verbal direto, contornando canais excessivos de taxas e registando prospecção direta.',
+    startPoint: 'Clicar num item no catálogo da Vitrina ou no botão "Falar Directo" no topo do negócio do Empreendedor',
+    buttonsInvolved: ['Contactar no WhatsApp', 'Encomendar via WhatsApp'],
+    pagesInvolved: ['EmpreendedorDetalhes.tsx', 'EmpreendedorProduto.tsx'],
+    mainFiles: ['src/pages/EmpreendedorDetalhes.tsx', 'src/pages/EmpreendedorProduto.tsx'],
+    firestoreCollections: ['users', 'showcaseInterests'],
+    expectedResult: 'Abertura externa do link do WhatsApp acompanhado de mensagem formalizada facilitando o contato instantâneo.'
+  },
+  {
+    id: 'flow-qrcode-convite',
+    title: 'Como funciona o QR Code de convite',
+    description: 'Promoção orgânica e captação de tráfego usando de gamificação e reciprocidade financeira.',
+    startPoint: 'Na barra lateral ou perfil, clicando em "Partilhar e Convidar"',
+    buttonsInvolved: ['Copiar Endereço de Convite', 'Obter QR Code PNG'],
+    pagesInvolved: ['Convite.tsx'],
+    mainFiles: ['src/pages/Convite.tsx'],
+    firestoreCollections: ['invitations', 'users'],
+    expectedResult: 'Exibição do código único. Caso o convidado se registre usando a URL, o padrinho adquire créditos automáticos.'
+  },
+  {
+    id: 'flow-aprovar-anuncio',
+    title: 'Como aprovar anúncio (Moderação)',
+    description: 'Inspeção manual efetuada pelo gestor para conferir legitimidade e manter qualidade premium das listagens.',
+    startPoint: 'Login como Administrador, acedendo ao Painel de "Moderar Anúncios" na barra de ferramentas lateral',
+    buttonsInvolved: ['Aprovar Anúncio', 'Rejeitar Anúncio', 'Pesquisa Rápida por Pendência'],
+    pagesInvolved: ['AdminAds.tsx', 'AdminDashboard.tsx'],
+    mainFiles: ['src/pages/AdminAds.tsx'],
+    firestoreCollections: ['ads', 'notifications'],
+    expectedResult: '"status" do anúncio atualizado para "approved", inserindo o anúncio na home e disparando aviso no sino do utilizador.'
+  },
+  {
+    id: 'flow-importador-ia',
+    title: 'Como importar via OLX/Gumtree',
+    description: 'Criação otimizada acelerada por rede neural artificial generativa integrada diretamente ao banco de dados.',
+    startPoint: 'Aceder a funcionalidade "Importar Anúncio com IA" no menu do Painel de Admin',
+    buttonsInvolved: ['Colar Link de Entrada', 'Iniciar Análise por IA', 'Publicar no Site'],
+    pagesInvolved: ['AdminImport.tsx'],
+    mainFiles: ['src/pages/AdminImport.tsx'],
+    firestoreCollections: ['ads'],
+    expectedResult: 'Preenchimento automatizado instantâneo de imagens, títulos, valores e categorias; criação veloz do anúncio.'
+  },
+  {
+    id: 'flow-painel-precos',
+    title: 'Como funciona o painel de preços',
+    description: 'Atualização comercial dos custos vigentes praticados pelo portal para destaques.',
+    startPoint: 'Painel Admin clicando na secção "Definições"',
+    buttonsInvolved: ['Alterar Valores de Planos', 'Gravar Mudanças'],
+    pagesInvolved: ['AdminSettings.tsx', 'Precos.tsx'],
+    mainFiles: ['src/pages/AdminSettings.tsx', 'src/pages/Precos.tsx'],
+    firestoreCollections: ['settings'],
+    expectedResult: 'Novas métricas financeiras atualizadas na mesma hora em toda a plataforma.'
+  },
+  {
+    id: 'flow-limites-fotos',
+    title: 'Como funcionam os limites de fotos/produtos',
+    description: 'Configuração restritiva de abuso para controlar custos com infraestrutura e incentivar upgrades de Destaques pagos.',
+    startPoint: 'Criação de novos anúncios ou produtos, consultando definições guardadas no banco',
+    buttonsInvolved: ['Submeter Novo Ficheiro'],
+    pagesInvolved: ['CreateAd.tsx', 'Profile.tsx'],
+    mainFiles: ['src/pages/AdminSettings.tsx', 'src/pages/CreateAd.tsx'],
+    firestoreCollections: ['settings'],
+    expectedResult: 'Impedir upload de fotos excedentes caso o limite do plano associado seja ultrapassado (ex: Máximo 3 imagens para Free).'
+  }
+];
