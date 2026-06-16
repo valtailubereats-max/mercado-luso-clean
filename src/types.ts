@@ -391,6 +391,8 @@ export interface GiveawayParticipation {
   email?: string;
   sharesCount: number;
   ticketsCount: number;
+  lastShareAt?: any; // Firestore Timestamp
+  lastShareChannel?: string;
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
 }

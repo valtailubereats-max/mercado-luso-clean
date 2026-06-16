@@ -97,6 +97,33 @@ export default function Sorteios() {
       return;
     }
 
+    const currentParticipation = participationsMap[g.id];
+    const previousTickets = currentParticipation?.ticketsCount ?? 0;
+
+    // Check ticket count limit (Max 3)
+    if (previousTickets >= 3) {
+      alert('Já atingiu o limite de 3 bilhetes para este sorteio. Obrigado por partilhar!');
+      return;
+    }
+
+    // Check minimum 5-minute interval between tickets
+    if (currentParticipation && currentParticipation.lastShareAt) {
+      const lastShareDate = currentParticipation.lastShareAt.toDate 
+        ? currentParticipation.lastShareAt.toDate() 
+        : new Date(currentParticipation.lastShareAt);
+      const now = new Date();
+      const diffMs = now.getTime() - lastShareDate.getTime();
+      const intervalMs = 5 * 60 * 1000; // 5 minutes (300,000 ms)
+      
+      if (diffMs < intervalMs) {
+        const remainingMs = intervalMs - diffMs;
+        const remainingMin = Math.floor(remainingMs / (60 * 1000));
+        const remainingSec = Math.floor((remainingMs % (60 * 1000)) / 1000);
+        alert(`⏳ Por favor, aguarde 5 minutos entre partilhas. Falta ${remainingMin} min e ${remainingSec} seg.`);
+        return;
+      }
+    }
+
     setParticipatingId(g.id);
     try {
       // 1. Prepare share window link and text
@@ -135,9 +162,7 @@ export default function Sorteios() {
 
       // 3. Register or increment participation
       const partId = `${g.id}_${user.uid}`;
-      const currentParticipation = participationsMap[g.id];
       const previousShares = currentParticipation?.sharesCount ?? 0;
-      const previousTickets = currentParticipation?.ticketsCount ?? 0;
 
       const newSharesCount = previousShares + 1;
       const newTicketsCount = previousTickets + 1;
@@ -150,6 +175,8 @@ export default function Sorteios() {
         userEmail: user.email || '',
         sharesCount: newSharesCount,
         ticketsCount: newTicketsCount,
+        lastShareAt: Timestamp.now(),
+        lastShareChannel: channel,
         createdAt: currentParticipation?.createdAt || Timestamp.now(),
         updatedAt: Timestamp.now()
       };
@@ -217,8 +244,8 @@ export default function Sorteios() {
           </div>
           <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100/80 space-y-2">
             <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">3</span>
-            <h3 className="font-bold text-slate-900 text-sm">Acumule Bilhetes</h3>
-            <p className="text-slate-500 text-xs leading-relaxed"><strong>Cada partilha vale 1 bilhete</strong>. Quanto mais partilhar, mais chances terá de ganhar (sem limite!).</p>
+            <h3 className="font-bold text-slate-900 text-sm">Ganhe Até 3 Bilhetes</h3>
+            <p className="text-slate-500 text-xs leading-relaxed"><strong>Cada partilha vale 1 bilhete (máximo 3)</strong>. É necessário aguardar um intervalo de 5 minutos entre partilhas.</p>
           </div>
         </div>
       </div>
@@ -323,79 +350,89 @@ export default function Sorteios() {
                         /* Case 2: AUTHENTICATED */
                         <div className="space-y-3 pt-1">
                           {isRegistered && (
-                            <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-3.5 space-y-1.5 text-emerald-800 animate-fade-in whitespace-pre-line">
-                              <p className="text-sm font-extrabold flex items-center gap-1">
-                                <Check size={16} className="text-emerald-600" />
-                                Participação confirmada!
-                              </p>
-                              <p className="text-xs font-semibold text-emerald-700 leading-snug">
-                                Você já tem <strong className="text-emerald-950 font-black text-sm">{ticketsCount}</strong> {ticketsCount === 1 ? 'bilhete' : 'bilhetes'} neste sorteio.
-                              </p>
-                            </div>
+                            ticketsCount >= 3 ? (
+                              <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-3.5 space-y-1 text-emerald-800 animate-fade-in text-center">
+                                <p className="text-xs font-extrabold flex items-center justify-center gap-1.5 leading-snug">
+                                  <Check size={16} className="text-emerald-600 shrink-0" />
+                                  <span>Já atingiu o limite de 3 bilhetes para este sorteio. Obrigado por partilhar!</span>
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-3.5 space-y-1 text-emerald-800 animate-fade-in text-center">
+                                <p className="text-sm font-extrabold flex items-center justify-center gap-1.5 leading-none">
+                                  <span>🎟️ Os seus bilhetes: {ticketsCount} de 3</span>
+                                </p>
+                                <p className="text-[11px] font-semibold text-emerald-700 leading-tight pt-1">
+                                  Partilhe novamente para ganhar mais chances.
+                                </p>
+                              </div>
+                            )
                           )}
 
                           {/* Sharing container action buttons */}
-                          {!isShareTrayOpen ? (
-                            <button
-                              onClick={() => setActiveShareId(g.id)}
-                              disabled={participatingId === g.id}
-                              className={`w-full h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-all shadow-md ${
-                                isRegistered 
-                                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 hover:scale-[1.01]' 
-                                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:scale-[1.01] animate-pulseHover'
-                              }`}
-                            >
-                              <Share2 size={15} />
-                              {isRegistered ? (
-                                <span>Partilhar novamente</span>
-                              ) : (
-                                <span>Partilhar Mercado Luso</span>
-                              )}
-                            </button>
-                          ) : (
-                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2 animate-slideDown">
-                              <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider text-center">Partilhe em qualquer canal para ganhar +1 Bilhete</p>
-                              
-                              <div className="grid grid-cols-2 gap-2">
+                          {ticketsCount < 3 && (
+                            !isShareTrayOpen ? (
+                              <button
+                                onClick={() => setActiveShareId(g.id)}
+                                disabled={participatingId === g.id}
+                                className={`w-full h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-all shadow-md ${
+                                  isRegistered 
+                                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 hover:scale-[1.01]' 
+                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:scale-[1.01] animate-pulseHover'
+                                }`}
+                              >
+                                <Share2 size={15} />
+                                {isRegistered ? (
+                                  <span>Partilhar novamente</span>
+                                ) : (
+                                  <span>Partilhar Mercado Luso</span>
+                                )}
+                              </button>
+                            ) : (
+                              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2 animate-slideDown">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider text-center">Partilhe em qualquer canal para ganhar +1 Bilhete</p>
+                                
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => handleShareAndRegister(g, 'whatsapp')}
+                                    className="py-2.5 px-3 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-1.5"
+                                  >
+                                    <span>💬 WhatsApp</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleShareAndRegister(g, 'facebook')}
+                                    className="py-2.5 px-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
+                                  >
+                                    <span>👥 Facebook</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleShareAndRegister(g, 'twitter')}
+                                    className="py-2.5 px-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition flex items-center justify-center gap-1.5"
+                                  >
+                                    <span>🐦 Twitter / X</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleShareAndRegister(g, 'copylink')}
+                                    className="py-2.5 px-3 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-100 transition flex items-center justify-center gap-1.5"
+                                  >
+                                    <Copy size={12} />
+                                    <span>Copiar Link</span>
+                                  </button>
+                                </div>
+
                                 <button
-                                  onClick={() => handleShareAndRegister(g, 'whatsapp')}
-                                  className="py-2.5 px-3 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-1.5"
+                                  onClick={() => setActiveShareId(null)}
+                                  className="w-full text-center text-[10px] text-slate-400 font-bold hover:text-slate-600 py-1"
                                 >
-                                  <span>💬 WhatsApp</span>
-                                </button>
-                                <button
-                                  onClick={() => handleShareAndRegister(g, 'facebook')}
-                                  className="py-2.5 px-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition flex items-center justify-center gap-1.5"
-                                >
-                                  <span>👥 Facebook</span>
-                                </button>
-                                <button
-                                  onClick={() => handleShareAndRegister(g, 'twitter')}
-                                  className="py-2.5 px-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition flex items-center justify-center gap-1.5"
-                                >
-                                  <span>🐦 Twitter / X</span>
-                                </button>
-                                <button
-                                  onClick={() => handleShareAndRegister(g, 'copylink')}
-                                  className="py-2.5 px-3 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-100 transition flex items-center justify-center gap-1.5"
-                                >
-                                  <Copy size={12} />
-                                  <span>Copiar Link</span>
+                                  Cancelar
                                 </button>
                               </div>
-
-                              <button
-                                onClick={() => setActiveShareId(null)}
-                                className="w-full text-center text-[10px] text-slate-400 font-bold hover:text-slate-600 py-1"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
+                            )
                           )}
 
-                          {isRegistered && (
+                          {isRegistered && ticketsCount < 3 && (
                             <p className="text-[10px] text-slate-500 font-semibold leading-relaxed text-center flex items-center justify-center gap-1">
-                              <span>🎟️ Cada partilha adicional gera mais uma chance de ganhar.</span>
+                              <span>🎟️ Cada partilha adicional (com intervalo de 5 min) gera mais uma chance.</span>
                             </p>
                           )}
                         </div>

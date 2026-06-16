@@ -606,6 +606,34 @@ export const manualItems: ManualItem[] = [
       'Uploads rejeitados imediatamente no frontend por conflito de cabeçalhos no tipo Mime do ficheiro.'
     ],
     tags: ['storage', 'regras', 'bucket, segurança, upload']
+  },
+  {
+    id: 'campanhas-sorteios',
+    title: 'Campanhas e Sorteios (Passatempos)',
+    type: 'Página',
+    description: 'Módulo dinâmico de sorteios periódicos para impulsionar a partilha do Mercado Luso. Exige esforço mínimo para se qualificar (1 partilha obrigatória), concedendo bilhetes adicionais proporcionalmente a cada partilha extra em canais oficiais (como WhatsApp, Facebook e Twitter).',
+    route: '/sorteios',
+    mainFile: 'src/pages/Sorteios.tsx',
+    relatedComponents: ['src/pages/AdminSorteios.tsx'],
+    relatedFunctions: ['handleShareAndRegister', 'handleDrawWinners', 'handleUpdateWinnerStatus'],
+    firestoreCollections: ['giveaways', 'participations', 'shares'],
+    access: 'Público para consulta; Utilizador Autenticado para partilhar; Admin para criar e sortear',
+    buttons: ['Partilhar Mercado Luso / Partilhar novamente', 'Ver Regras do Passatempo', 'Sortear (Admin)', 'Listar Participantes (Admin)'],
+    actions: [
+      'Validar login antes de abrir as opções de partilha',
+      'Registrar a intenção de partilha em /shares',
+      'Verificar o limite máximo de 3 bilhetes por sorteio e utilizador',
+      'Garantir intervalo mínimo de 5 minutos entre novos bilhetes gerados pelo mesmo utilizador',
+      'Atualizar o documento em /participations com sharesCount, ticketsCount, lastShareAt, lastShareChannel, createdAt e updatedAt',
+      'Efetuar sorteio ponderado no painel administrativo de acordo com o ticketsCount de cada participante'
+    ],
+    technicalNotes: 'As participações contêm registros individuais em /participations. Cada partilha aceita atualiza lastShareAt que é usado para o bloqueio decorativo de 5 minutos, garantindo resistência a spams de geração ilimitada de bilhetes.',
+    failurePoints: [
+      'Geração infinita de bilhetes se o bloqueio temporal de 5 minutos não for validado contra lastShareAt no documento.',
+      'Sorteio uniforme que desvalorize quem efetuou partilhas extras (resolvido por amostragem baseada em peso).',
+      'Incompatibilidade do fuso horário ao comparar timestamps do servidor.'
+    ],
+    tags: ['sorteios', 'parcerias', 'campanhas', 'bilhetes', 'partilhar', 'whatsapp', 'pesos', 'manual']
   }
 ];
 
@@ -730,5 +758,16 @@ export const technicalFlows: TechnicalFlow[] = [
     mainFiles: ['src/pages/AdminSettings.tsx', 'src/pages/CreateAd.tsx'],
     firestoreCollections: ['settings'],
     expectedResult: 'Impedir upload de fotos excedentes caso o limite do plano associado seja ultrapassado (ex: Máximo 3 imagens para Free).'
+  },
+  {
+    id: 'flow-sorteio-participacao',
+    title: 'Como funciona a participação nos sorteios',
+    description: 'Fluxo seguro de participação, geração de bilhetes (máx. 3) e bloqueio temporário de 5 minutos entre partilhas extras.',
+    startPoint: 'Aceder à página /sorteios estando autenticado e clicar em "Partilhar Mercado Luso"',
+    buttonsInvolved: ['Partilhar Mercado Luso', 'Confirmar Partilha (WhatsApp, Facebook, Twitter, Copiar Link)', 'Partilhar novamente'],
+    pagesInvolved: ['Sorteios.tsx', 'AdminSorteios.tsx'],
+    mainFiles: ['src/pages/Sorteios.tsx', 'src/pages/AdminSorteios.tsx', 'firestore.rules'],
+    firestoreCollections: ['giveaways', 'participations', 'shares'],
+    expectedResult: 'A 1ª partilha cria a participação garantida com 1 bilhete. Partilhas adicionais geram mais bilhetes (máx 3), respeitando o espaço mínimo de 5 minutos desde a última partilha.'
   }
 ];

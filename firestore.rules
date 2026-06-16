@@ -188,7 +188,9 @@ service cloud.firestore {
              data.userName is string && data.userName.size() > 0 &&
              data.userEmail is string &&
              data.sharesCount is number &&
-             data.ticketsCount is number;
+             data.ticketsCount is number &&
+             (!('lastShareAt' in data) || data.lastShareAt is timestamp) &&
+             (!('lastShareChannel' in data) || data.lastShareChannel is string);
     }
 
     function isValidShare(data) {

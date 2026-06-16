@@ -860,7 +860,7 @@ const Home = () => {
                     style={{
                       borderColor: customBorder || 'rgba(255,255,255,0.25)',
                     }}
-                    className={`relative overflow-hidden h-10 md:h-12 w-14 md:w-16 flex items-center justify-center gap-1 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold outline-none select-none animate-country-pulse`}
+                    className={`relative overflow-hidden h-10 md:h-12 w-28 md:w-32 flex items-center justify-center gap-1 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold outline-none select-none animate-country-pulse`}
                     title="Mudar de Comunidade"
                     id="community-toggle-button"
                   >
