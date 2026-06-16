@@ -14,7 +14,7 @@ import {
   getLastFeaturedFetchTime 
 } from '../utils/cache';
 import AdCard from '../components/AdCard';
-import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp } from 'lucide-react';
+import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 // @ts-ignore
 import lisbonAerial from '../assets/images/lisbon_aerial_1780755446715.png';
@@ -1137,71 +1137,58 @@ const Home = () => {
                 <Link 
                   key={vitrine.uid} 
                   to={linkTo}
-                  className="w-[260px] sm:w-[290px] shrink-0 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all flex flex-col justify-between overflow-hidden group scroll-snap-align-start cursor-pointer"
+                  className="w-[270px] sm:w-[300px] h-[340px] shrink-0 bg-[#0d0e12] rounded-[1.75rem] border border-slate-800/60 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden group scroll-snap-align-start cursor-pointer"
                   style={{ scrollSnapAlign: 'start' }}
                 >
-                  {/* Banner & Logo overlay */}
-                  <div className="relative">
-                    <div className="h-24 w-full bg-slate-100 overflow-hidden relative flex items-center justify-center">
-                      <img 
-                        src={vitrine.showcaseCover || fallbackCover} 
-                        alt="" 
-                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-25 scale-110 pointer-events-none" 
-                        referrerPolicy="no-referrer"
-                      />
-                      <img 
-                        src={vitrine.showcaseCover || fallbackCover} 
-                        alt={vitrine.showcaseName} 
-                        className="relative max-w-full max-h-full object-contain z-10 p-1 group-hover:scale-102 transition-transform duration-500" 
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
-                    </div>
+                  {/* Banner Cover taking ~80% of the card height */}
+                  <div className="relative h-[275px] w-full bg-slate-900 overflow-hidden">
+                    <img 
+                      src={vitrine.showcaseCover || fallbackCover} 
+                      alt={vitrine.showcaseName} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      referrerPolicy="no-referrer"
+                    />
                     
-                    {/* Logo (centered, circular, and overposto overlapping banner - bottom 20px of 40px) */}
-                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-10 h-10 rounded-full bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden z-10">
+                    {/* Centered circular logo at the top over the banner */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-white border-2 border-white shadow-md flex items-center justify-center overflow-hidden z-20">
                       {vitrine.showcaseLogo && vitrine.showcaseLogo.trim() !== '' ? (
                         <img src={vitrine.showcaseLogo} alt="Logo" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
                       ) : (
-                        <span className="text-lg">🏬</span>
+                        <span className="text-xl">🏬</span>
                       )}
+                    </div>
+
+                    {/* Dark gradient overlay on bottom of the image for text contrast */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent pt-16 p-4 flex flex-col justify-end z-10">
+                      <div className="flex justify-between items-end gap-2 text-white">
+                        <div className="min-w-0 flex-1">
+                          {/* Name */}
+                          <h3 className="font-extrabold text-white text-base sm:text-lg leading-tight line-clamp-1 truncate drop-shadow-md">
+                            {vitrine.showcaseName}
+                          </h3>
+                          {/* Location */}
+                          <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-350 font-medium mt-1 truncate drop-shadow-sm">
+                            <MapPin size={11} className="text-slate-400 shrink-0" />
+                            <span className="truncate">{vitrine.city ? `${vitrine.city}, ` : ''}{vitrine.country === 'Portugal' ? '🇵🇹 pt' : '🇬🇧 uk'}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Compact items badge on bottom right corner of image */}
+                        <div className="px-2 py-1 bg-black/65 border border-white/10 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shrink-0 shadow-xs">
+                          <span>📦</span>
+                          <span>{vitrine.productsCount} {vitrine.productsCount === 1 ? 'item' : 'itens'}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Body details */}
-                  <div className="p-4 pt-6 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        {/* Category Label */}
-                        <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-wider block w-fit truncate max-w-[130px]">
-                          {vitrine.showcaseCategory || 'Outros'}
-                        </span>
-
-                        {/* Active products counter badge */}
-                        <span className="text-[9px] font-bold text-slate-550 bg-slate-50 border border-slate-150 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                          📦 {vitrine.productsCount} {vitrine.productsCount === 1 ? 'item' : 'itens'}
-                        </span>
-                      </div>
-
-                      {/* Name */}
-                      <h3 className="font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm line-clamp-1 leading-snug">
-                        {vitrine.showcaseName}
-                      </h3>
-
-                      {/* Location */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-bold">
-                        <MapPin size={11} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{vitrine.city ? `${vitrine.city}, ` : ''}{vitrine.country === 'Portugal' ? '🇵🇹 pt' : '🇬🇧 uk'}</span>
-                      </div>
-                    </div>
-
-                    {/* Action button - acts as static visual CTA */}
-                    <div className="pt-2 border-t border-slate-50">
-                      <div
-                        className="w-full py-2 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-700 group-hover:text-white font-extrabold text-xs flex items-center justify-center gap-1 rounded-xl transition-all shadow-xs border border-indigo-100 group-hover:border-indigo-650 text-center"
-                      >
-                        Meu Negócio
-                      </div>
+                  {/* Bottom ~20% of the card - CTA button */}
+                  <div className="p-3 bg-[#0d0e12] flex items-center justify-center h-[65px] shrink-0 border-t border-slate-900/35">
+                    <div
+                      className="w-full py-2 bg-[#136338] group-hover:bg-[#1a5e37] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 rounded-xl transition-all shadow-md text-center border border-emerald-800/10"
+                    >
+                      <Store size={14} className="text-white shrink-0" />
+                      <span>Meu Negócio</span>
                     </div>
                   </div>
                 </Link>
