@@ -549,6 +549,18 @@ const Profile = () => {
     }
   }, [profile]);
 
+  useEffect(() => {
+    if (currentTab === 'vitrine') {
+      const scrollTimer = setTimeout(() => {
+        const el = document.getElementById('vitrine-comercial-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 350);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [currentTab]);
+
   const handleMockShowcasePaymentSuccess = async () => {
     if (!user) return;
     setShowcasePaymentLoading(true);
@@ -560,7 +572,10 @@ const Profile = () => {
         showcaseActive: true
       };
       
-      await updateDoc(userRef, updatePayload);
+      await setDoc(userRef, updatePayload, { merge: true });
+      if (refreshProfile) {
+        await refreshProfile();
+      }
       
       const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
       const isPortugal = country === 'Portugal';
@@ -908,13 +923,24 @@ const Profile = () => {
         <button
           onClick={() => navigate('/profile?tab=perfil')}
           className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)
+            currentTab === 'perfil' || !['perfil', 'vitrine', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)
               ? 'bg-white text-indigo-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-800'
           }`}
           id="btn-tab-perfil"
         >
           Meu Perfil
+        </button>
+        <button
+          onClick={() => navigate('/profile?tab=vitrine')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            currentTab === 'vitrine'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-vitrine"
+        >
+          🏪 Vitrine Digital
         </button>
         <button
           onClick={() => navigate('/profile?tab=anuncios')}
@@ -962,7 +988,7 @@ const Profile = () => {
         </button>
       </div>
 
-      {(currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)) && (
+      {(currentTab === 'perfil' || currentTab === 'vitrine' || !['perfil', 'vitrine', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)) && (
         <div className="space-y-12" id="profile-perfil-tab-content">
           <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1073,7 +1099,7 @@ const Profile = () => {
             </div>
           </div>
           {/* DIVISOR DE VITRINE DIGITAL */}
-          <div className="md:col-span-2 border-t border-slate-100 my-4 pt-6">
+          <div className="md:col-span-2 border-t border-slate-100 my-4 pt-6" id="vitrine-comercial-section">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                 <ShoppingBag size={20} />

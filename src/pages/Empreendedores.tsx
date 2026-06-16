@@ -251,7 +251,7 @@ const Empreendedores = () => {
             </button>
           ) : (
             <Link
-              to="/profile?tab=perfil"
+              to="/profile?tab=vitrine"
               className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 text-sm"
             >
               Ativar Minha Vitrine

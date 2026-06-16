@@ -9,7 +9,7 @@ import { db } from '../firebase';
 
 const VitrineComercial = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { settings } = useSettings();
   const isPromoActive = settings?.launchPromoActive !== false;
   const [showCheckout, setShowCheckout] = useState(false);
@@ -32,11 +32,11 @@ const VitrineComercial = () => {
     setLoading(true);
     try {
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         showcasePaid: true,
         showcaseActive: true,
         showcasePlan: 'premium'
-      });
+      }, { merge: true });
 
       const profileRef = doc(db, 'sellerPublicProfiles', user.uid);
       await setDoc(profileRef, {
@@ -48,13 +48,17 @@ const VitrineComercial = () => {
         showcaseApproved: true
       }, { merge: true });
 
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
       if (isPromoActive) {
         alert(`Parabéns! A sua entrada na Vitrine Digital foi ativada gratuitamente através da Oferta de Lançamento! 🎁`);
       } else {
         alert(`Parabéns! Subscrição da sua Vitrine Digital ativada com sucesso! Vantagens e limites ativos.`);
       }
       setShowCheckout(false);
-      navigate('/profile');
+      navigate('/profile?tab=vitrine');
     } catch (err) {
       console.error(err);
       alert('Erro ao processar o seu pagamento simulado.');
@@ -133,7 +137,7 @@ const VitrineComercial = () => {
             {user ? (
               profile?.showcasePaid ? (
                 <button
-                  onClick={() => navigate('/profile')}
+                  onClick={() => navigate('/profile?tab=vitrine')}
                   className="px-8 py-4.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm transition-all shadow-xl shadow-indigo-950/40 flex items-center gap-2"
                 >
                   Gerir a Minha Vitrine Ativa <ArrowRight size={16} />
