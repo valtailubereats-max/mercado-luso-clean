@@ -100,6 +100,7 @@ const AdminAds = () => {
   const [adminImagePositionY, setAdminImagePositionY] = useState<number>(50);
   const [adminImageZoom, setAdminImageZoom] = useState<number>(1);
   const [savingPosition, setSavingPosition] = useState(false);
+  const [savedPositionSuccess, setSavedPositionSuccess] = useState(false);
 
   useEffect(() => {
     if (selectedAd) {
@@ -132,7 +133,10 @@ const AdminAds = () => {
         imagePositionY: adminImagePositionY,
         imageZoom: adminImageZoom
       } : null);
-      alert('Enquadramento do anúncio guardado com sucesso!');
+      setSavedPositionSuccess(true);
+      setTimeout(() => {
+        setSavedPositionSuccess(false);
+      }, 2000);
     } catch (err) {
       console.error(err);
       alert('Erro ao guardar enquadramento.');
@@ -1277,11 +1281,15 @@ const AdminAds = () => {
                   <div className="flex justify-end pt-1 bg-none">
                     <button
                       type="button"
-                      disabled={savingPosition}
+                      disabled={savingPosition || savedPositionSuccess}
                       onClick={handleSaveEnquadramento}
-                      className="w-full bg-slate-900 hover:bg-indigo-600 text-white disabled:opacity-50 font-black text-xs py-2 px-3 rounded-xl transition-all shadow-sm cursor-pointer"
+                      className={`w-full font-black text-xs py-2 px-3 rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1 ${
+                        savedPositionSuccess 
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100' 
+                          : 'bg-slate-900 hover:bg-indigo-600 text-white'
+                      }`}
                     >
-                      {savingPosition ? 'A Guardar...' : 'Guardar Enquadramento'}
+                      {savingPosition ? 'A Guardar...' : savedPositionSuccess ? '✓ Guardado com Sucesso!' : 'Guardar Enquadramento'}
                     </button>
                   </div>
                 </div>

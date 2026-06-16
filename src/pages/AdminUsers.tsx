@@ -244,7 +244,7 @@ const AdminUsers = () => {
       // Close modal gracefully after a short delay
       setTimeout(() => {
         setEditingUser(null);
-      }, 1500);
+      }, 2000);
 
     } catch (err: any) {
       console.error("Error editing user:", err);
@@ -1273,15 +1273,19 @@ const AdminUsers = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSaving}
-                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs transition-colors shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    disabled={isSaving || !!editSuccess}
+                    className={`px-6 py-3 rounded-2xl font-bold text-xs transition-colors shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                      editSuccess 
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100' 
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
+                    }`}
                   >
                     {isSaving ? (
                       <div className="w-4 h-4 border-2 border-white border-b-transparent rounded-full animate-spin"></div>
                     ) : (
                       <UserCheck size={14} />
                     )}
-                    {isSaving ? 'A guardar...' : 'Guardar Alterações'}
+                    {isSaving ? 'A guardar...' : editSuccess ? '✓ Guardado com Sucesso!' : 'Guardar Alterações'}
                   </button>
                 </div>
               </form>

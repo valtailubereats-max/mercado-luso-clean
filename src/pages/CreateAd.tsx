@@ -45,6 +45,7 @@ const CreateAd = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   const prefill = location.state?.prefill;
   const urlCategory = new URLSearchParams(location.search).get('category');
@@ -772,15 +773,24 @@ const CreateAd = () => {
       clearHomeCache();
       if (id) {
         if (isAdmin && originalAd?.sellerId !== user.uid) {
-          alert('Anúncio atualizado com sucesso (Edição de Administrador).');
-          navigate('/admin/ads');
+          setSaveSuccessMsg('Anúncio atualizado com sucesso (Edição de Administrador).');
+          setTimeout(() => {
+            setSaveSuccessMsg(null);
+            navigate('/admin/ads');
+          }, 2000);
         } else {
-          alert('Anúncio atualizado! O seu anúncio voltou para a fila de aprovação do administrador.');
-          navigate('/profile?tab=anuncios');
+          setSaveSuccessMsg('Anúncio atualizado! O seu anúncio voltou para a fila de aprovação do administrador.');
+          setTimeout(() => {
+            setSaveSuccessMsg(null);
+            navigate('/profile?tab=anuncios');
+          }, 2000);
         }
       } else {
-        alert('Anúncio enviado! Receberá um alerta quando o seu anúncio estiver aprovado.');
-        navigate('/profile?tab=anuncios');
+        setSaveSuccessMsg('Anúncio enviado! Receberá um alerta quando o seu anúncio estiver aprovado.');
+        setTimeout(() => {
+          setSaveSuccessMsg(null);
+          navigate('/profile?tab=anuncios');
+        }, 2000);
       }
     } catch (err) {
       handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, `ads/${id || 'new'}`);
@@ -847,9 +857,12 @@ const CreateAd = () => {
         : (formData.plan === 'national' ? '€7.99' : '€4.99');
       const levelText = formData.plan === 'national' ? 'Destaque Nacional ⭐⭐⭐' : 'Destaque Local ⭐';
 
-      alert(`Pagamento de ${priceText} confirmado com sucesso via Stripe! O seu anúncio agora é ${levelText} por 30 dias!`);
       setShowPaymentModal(false);
-      navigate('/profile?tab=anuncios');
+      setSaveSuccessMsg(`Pagamento de ${priceText} confirmado com sucesso via Stripe! O seu anúncio agora é ${levelText} por 30 dias!`);
+      setTimeout(() => {
+        setSaveSuccessMsg(null);
+        navigate('/profile?tab=anuncios');
+      }, 2000);
     } catch (err) {
       console.error(err);
       alert('Ocorreu um erro ao concluir o pagamento.');
@@ -1884,6 +1897,28 @@ const CreateAd = () => {
               </div>
             </motion.div>
           </div>
+        )}
+        {/* Global Save Success Temporary Overlay (2 seconds feedback) */}
+        {saveSuccessMsg && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white border border-slate-100 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4"
+            >
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
+                <Check size={32} strokeWidth={3} className="animate-pulse" />
+              </div>
+              <h3 className="text-xl font-brand font-black text-slate-900">Salvo com Sucesso!</h3>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed">{saveSuccessMsg}</p>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

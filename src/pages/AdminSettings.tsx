@@ -31,6 +31,7 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
   const [newCategory, setNewCategory] = useState('');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Email Configuration and Interactive Testing state
   const [emailsEnabled, setEmailsEnabled] = useState(() => {
@@ -188,6 +189,11 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
     try {
       await updateDoc(doc(db, 'settings', 'global'), { ...settings });
       setSuccessMsg('Configurações salvas com sucesso.');
+      setIsSaved(true);
+      setTimeout(() => {
+        setIsSaved(false);
+      }, 2000);
+      
       setTimeout(() => {
         setSuccessMsg(null);
       }, 4000);
@@ -689,11 +695,15 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
         <div className="sticky bottom-8 z-20">
           <button
             type="submit"
-            disabled={saving}
-            className="w-full md:w-auto flex items-center justify-center gap-3 bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-200 disabled:opacity-50"
+            disabled={saving || isSaved}
+            className={`w-full md:w-auto flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-black text-lg transition-all shadow-2xl disabled:opacity-50 ${
+              isSaved 
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200/50' 
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200/50'
+            }`}
           >
-            <Save size={24} />
-            {saving ? 'Salvando...' : 'GUARDAR CONFIGURAÇÕES'}
+            {isSaved ? <CheckCircle2 size={24} /> : <Save size={24} />}
+            {saving ? 'Salvando...' : isSaved ? 'CONFIGURAÇÕES SALVAS!' : 'GUARDAR CONFIGURAÇÕES'}
           </button>
         </div>
       </form>

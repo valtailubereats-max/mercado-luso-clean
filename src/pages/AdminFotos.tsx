@@ -67,6 +67,7 @@ export default function AdminFotos() {
   
   // Alert banner State
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [savedSuccess, setSavedSuccess] = useState(false);
   
   const colPath = 'photoStoreItems';
 
@@ -265,6 +266,10 @@ export default function AdminFotos() {
 
       clearForm();
       await fetchItems();
+      setSavedSuccess(true);
+      setTimeout(() => {
+        setSavedSuccess(false);
+      }, 2000);
     } catch (err) {
       console.error('Erro ao salvar item da loja:', err);
       showToast('Erro ao gravar dados no Firestore.', 'error');
@@ -497,14 +502,20 @@ export default function AdminFotos() {
                   </button>
                   <button
                     type="submit"
-                    disabled={uploading || loading}
-                    className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-100 cursor-pointer disabled:opacity-50"
+                    disabled={uploading || loading || savedSuccess}
+                    className={`px-6 py-3 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50 ${
+                      savedSuccess 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100' 
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'
+                    }`}
                   >
                     {(uploading || loading) ? (
                       <>
                         <Loader2 className="animate-spin" size={16} />
                         <span>A gravar...</span>
                       </>
+                    ) : savedSuccess ? (
+                      <span>✓ Guardado com Sucesso!</span>
                     ) : (
                       <span>Gravar Foto</span>
                     )}

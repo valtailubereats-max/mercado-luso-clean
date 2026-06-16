@@ -82,6 +82,8 @@ const Profile = () => {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isUploadingProductImg, setIsUploadingProductImg] = useState<boolean[]>([false, false]);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [productSavedSuccess, setProductSavedSuccess] = useState(false);
 
   const fetchShowcaseProducts = async () => {
     if (!user) return;
@@ -281,10 +283,13 @@ const Profile = () => {
       await setDoc(profileRef, { productsCount: nextProductsCount }, { merge: true });
 
       await setDoc(productRef, payload, { merge: true });
-      alert('Item guardado com sucesso!');
-      setShowProductModal(false);
-      setEditingProduct(null);
+      setProductSavedSuccess(true);
       fetchShowcaseProducts();
+      setTimeout(() => {
+        setProductSavedSuccess(false);
+        setShowProductModal(false);
+        setEditingProduct(null);
+      }, 2000);
     } catch (err) {
       console.error('Error saving product:', err);
       handleFirestoreError(err, OperationType.WRITE, `sellerPublicProfiles/${user.uid}/products/${editingProduct.id}`);
@@ -781,7 +786,11 @@ const Profile = () => {
 
       localStorage.setItem('selectedCountry', country);
       await refreshProfile();
-      navigate('/');
+      setProfileSaved(true);
+      setTimeout(() => {
+        setProfileSaved(false);
+        navigate('/');
+      }, 2000);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
     } finally {
@@ -1445,10 +1454,21 @@ const Profile = () => {
           <div className="md:col-span-2">
             <button
               type="submit"
-              disabled={loading || uploadingLogo || uploadingCover}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+              disabled={loading || uploadingLogo || uploadingCover || profileSaved}
+              className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 ${
+                profileSaved 
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
+              }`}
             >
-              {loading ? 'A guardar...' : 'Guardar Alterações'}
+              {profileSaved ? (
+                <>
+                  <CheckCircle size={20} />
+                  <span>✓ Alterações Guardadas!</span>
+                </>
+              ) : (
+                <span>{loading ? 'A guardar...' : 'Guardar Alterações'}</span>
+              )}
             </button>
           </div>
         </form>
@@ -2300,10 +2320,21 @@ const Profile = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSavingProduct || isUploadingProductImg.some(Boolean)}
-                  className="w-1/2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                  disabled={isSavingProduct || isUploadingProductImg.some(Boolean) || productSavedSuccess}
+                  className={`w-1/2 py-3 font-bold rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                    productSavedSuccess 
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
                 >
-                  {isSavingProduct ? 'A guardar...' : 'Guardar Item'}
+                  {productSavedSuccess ? (
+                    <>
+                      <CheckCircle size={16} />
+                      <span>✓ Item Guardado!</span>
+                    </>
+                  ) : (
+                    <span>{isSavingProduct ? 'A guardar...' : 'Guardar Item'}</span>
+                  )}
                 </button>
               </div>
             </form>

@@ -61,6 +61,7 @@ export default function AdminShowcases() {
   const [editCover, setEditCover] = useState('');
   const [editLogo, setEditLogo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   // Fetch Showcases
@@ -223,9 +224,13 @@ export default function AdminShowcases() {
 
       // Update local state
       setShowcases(prev => prev.map(s => s.uid === uid ? { ...s, ...updatedValues } : s));
-      setEditingShowcase(null);
+      setIsSaved(true);
       setSuccessMsg("Dados da vitrine atualizados com sucesso pela equipe!");
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setTimeout(() => {
+        setIsSaved(false);
+        setEditingShowcase(null);
+        setSuccessMsg(null);
+      }, 2000);
     } catch (err: any) {
       console.error(err);
       setEditError("Erro ao guardar modificações na base de dados.");
@@ -751,11 +756,22 @@ export default function AdminShowcases() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSaving}
-                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1 disabled:opacity-50"
+                    disabled={isSaving || isSaved}
+                    className={`px-5 py-2 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1 disabled:opacity-50 ${
+                      isSaved 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 shadow-md' 
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                    }`}
                   >
                     {isSaving && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
-                    <span>Guardar Alterações</span>
+                    {isSaved ? (
+                      <>
+                        <Check size={12} strokeWidth={3} />
+                        <span>✓ Guardado!</span>
+                      </>
+                    ) : (
+                      <span>Guardar Alterações</span>
+                    )}
                   </button>
                 </div>
 
