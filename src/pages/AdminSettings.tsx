@@ -144,7 +144,7 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           categories: data.categories || CATEGORIES,
           ptRibbonScale: data.ptRibbonScale !== undefined ? data.ptRibbonScale : 150,
           showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
-          highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 3,
+          highlightSpeed: data.highlightSpeed !== undefined ? data.highlightSpeed : 6,
           showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false,
           searchGroupBgColor: data.searchGroupBgColor || '#ffffff',
           searchGroupOpacity: data.searchGroupOpacity !== undefined ? data.searchGroupOpacity : 10,
@@ -163,7 +163,7 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           categories: CATEGORIES,
           ptRibbonScale: 150,
           showTotalAdsBadge: true,
-          highlightSpeed: 3,
+          highlightSpeed: 6,
           showTotalUsersBadge: false,
           searchGroupBgColor: '#ffffff',
           searchGroupOpacity: 10,
@@ -574,7 +574,7 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
                   min="0" 
                   max="10" 
                   step="1"
-                  value={settings.highlightSpeed !== undefined ? settings.highlightSpeed : 3} 
+                  value={settings.highlightSpeed !== undefined ? settings.highlightSpeed : 6} 
                   onChange={(e) => setSettings({ ...settings, highlightSpeed: parseInt(e.target.value) })} 
                   className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />

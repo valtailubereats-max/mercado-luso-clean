@@ -198,7 +198,17 @@ const Home = () => {
 
   // Custom Dropdown states
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Manter controle atualizado do país selecionado em uma ref mutável para o cleanup do useEffect
   const countryRef = useRef(country);
@@ -685,7 +695,7 @@ const Home = () => {
       baseArray.push(...filteredFeaturedAds);
     }
     const items = [...baseArray, ...baseArray];
-    const speedMultiplier = settings?.highlightSpeed ?? 1;
+    const speedMultiplier = settings?.highlightSpeed !== undefined ? settings.highlightSpeed : 6;
     let duration = '35s';
     if (speedMultiplier > 0) {
       // Cada item no conjunto base demora ~2.8 segundos para deslocar em velocidade padrão
@@ -902,8 +912,12 @@ const Home = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        style={getDropdownBgStyle(country)}
-                        className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-12 md:top-14 z-[9999] w-48 border border-white/10 text-white rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5"
+                        style={isMobile ? getDropdownBgStyle(country) : {}}
+                        className={`absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-12 md:top-14 z-[9999] w-52 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5 border border-slate-150 ${
+                          isMobile 
+                            ? "bg-slate-950 border-white/10 text-white" 
+                            : "bg-white border-slate-200/80 text-slate-800 shadow-xl"
+                        }`}
                       >
                         <button
                           type="button"
@@ -911,10 +925,14 @@ const Home = () => {
                             handleCountryChange('Portugal');
                             setCountryDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
-                            country === 'Portugal' 
-                              ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
-                              : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer select-none border ${
+                            isMobile
+                              ? (country === 'Portugal'
+                                  ? 'bg-indigo-600 border-white/15 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20'
+                                  : 'bg-slate-950/85 border-white/10 hover:bg-slate-900/95 hover:scale-[1.02] text-white')
+                              : (country === 'Portugal'
+                                  ? 'bg-[#046a38]/10 text-[#046a38] border-[#046a38]/20 font-black shadow-xs'
+                                  : 'bg-slate-50 border-slate-200 text-slate-705 hover:bg-[#e3f6ea] hover:border-[#bfead0] hover:text-[#046a38] hover:scale-[1.01] font-semibold')
                           }`}
                         >
                           <span className="text-lg">🇵🇹</span>
@@ -926,10 +944,14 @@ const Home = () => {
                             handleCountryChange('Reino Unido');
                             setCountryDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left text-sm font-black transition-all cursor-pointer border border-white/15 select-none ${
-                            country === 'Reino Unido' 
-                              ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20' 
-                              : 'bg-slate-950/85 hover:bg-slate-900/95 hover:scale-[1.02] text-white'
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer select-none border ${
+                            isMobile
+                              ? (country === 'Reino Unido'
+                                  ? 'bg-indigo-600 border-white/15 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20'
+                                  : 'bg-slate-950/85 border-white/10 hover:bg-slate-900/95 hover:scale-[1.02] text-white')
+                              : (country === 'Reino Unido'
+                                  ? 'bg-[#046a38]/10 text-[#046a38] border-[#046a38]/20 font-black shadow-xs'
+                                  : 'bg-slate-50 border-slate-200 text-slate-705 hover:bg-[#e3f6ea] hover:border-[#bfead0] hover:text-[#046a38] hover:scale-[1.01] font-semibold')
                           }`}
                         >
                           <span className="text-lg">🇬🇧</span>
@@ -1112,9 +1134,10 @@ const Home = () => {
               const linkTo = `/empreendedores/${vitrine.showcaseSlug}`;
               const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=450&h=150&fit=crop&q=80';
               return (
-                <div 
+                <Link 
                   key={vitrine.uid} 
-                  className="w-[260px] sm:w-[290px] shrink-0 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group scroll-snap-align-start"
+                  to={linkTo}
+                  className="w-[260px] sm:w-[290px] shrink-0 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all flex flex-col justify-between overflow-hidden group scroll-snap-align-start cursor-pointer"
                   style={{ scrollSnapAlign: 'start' }}
                 >
                   {/* Banner & Logo overlay */}
@@ -1135,10 +1158,10 @@ const Home = () => {
                       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
                     </div>
                     
-                    {/* Logo */}
-                    <div className="absolute left-4 -bottom-4 w-12 h-12 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden z-10">
+                    {/* Logo (centered, circular, and overposto overlapping banner - bottom 20px of 40px) */}
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-10 h-10 rounded-full bg-white border border-slate-100 shadow-sm flex items-center justify-center overflow-hidden z-10">
                       {vitrine.showcaseLogo && vitrine.showcaseLogo.trim() !== '' ? (
-                        <img src={vitrine.showcaseLogo} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={vitrine.showcaseLogo} alt="Logo" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
                       ) : (
                         <span className="text-lg">🏬</span>
                       )}
@@ -1172,17 +1195,16 @@ const Home = () => {
                       </div>
                     </div>
 
-                    {/* Action button */}
+                    {/* Action button - acts as static visual CTA */}
                     <div className="pt-2 border-t border-slate-50">
-                      <Link
-                        to={linkTo}
-                        className="w-full py-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-extrabold text-xs flex items-center justify-center gap-1 rounded-xl transition-all cursor-pointer shadow-xs border border-indigo-100 hover:border-indigo-650"
+                      <div
+                        className="w-full py-2 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-700 group-hover:text-white font-extrabold text-xs flex items-center justify-center gap-1 rounded-xl transition-all shadow-xs border border-indigo-100 group-hover:border-indigo-650 text-center"
                       >
-                        Ver Vitrine
-                      </Link>
+                        Meu Negócio
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

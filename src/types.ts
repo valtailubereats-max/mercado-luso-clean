@@ -150,6 +150,9 @@ export interface Ad {
   experienceRequired?: string;
   contactPhone?: string;
   useProfilePhone?: boolean;
+  isDuplicate?: boolean;
+  duplicateReason?: string;
+  duplicateOf?: string;
 }
 
 export interface Favorite {

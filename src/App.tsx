@@ -10,6 +10,7 @@ import { collection, query, where, orderBy, doc, updateDoc, limit, onSnapshot, a
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Trabalhos from './pages/Trabalhos';
+import Precos from './pages/Precos';
 import Profile from './pages/Profile';
 import CreateAd from './pages/CreateAd';
 import AdminDashboard from './pages/AdminDashboard';
@@ -280,6 +281,18 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
+            <Link to="/empreendedores" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
+              Empreendedores
+            </Link>
+            <Link to="/trabalhos" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
+              Trabalhos
+            </Link>
+            <Link to="/precos" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
+              Preços
+            </Link>
+            <Link to="/links" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
+              Links Úteis
+            </Link>
             {!user && (
               <button onClick={handlePublishClick} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 cursor-pointer transition-colors">
                 <Plus size={20} /> <span>Publicar</span>
@@ -414,6 +427,14 @@ const Navbar = () => {
                         id="nav-empreendedores-link"
                       >
                         🏪 Empreendedores
+                      </Link>
+                      <Link
+                        to="/precos"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        id="nav-precos-link"
+                      >
+                        🏷️ Preços
                       </Link>
 
                       <div className="border-t border-slate-100 my-2" />
@@ -561,6 +582,14 @@ const Navbar = () => {
                         >
                           🏪 Empreendedores
                         </Link>
+                        <Link
+                          to="/precos"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-precos-link-guest"
+                        >
+                          🏷️ Preços
+                        </Link>
 
                         <div className="border-t border-slate-100 my-2" />
 
@@ -618,6 +647,8 @@ const Navbar = () => {
                 <Link to="/fotos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-705 text-slate-700">Fotos</Link>
               )}
               <Link to="/empreendedores" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Empreendedores</Link>
+              <Link to="/trabalhos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Trabalhos</Link>
+              <Link to="/precos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Preços</Link>
               
               {user ? <>
                 {isAdmin && (
@@ -854,6 +885,7 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/trabalhos" element={<Trabalhos />} />
                 <Route path="/empregos" element={<Trabalhos />} />
+                <Route path="/precos" element={<Precos />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/create-ad" element={<ProtectedRoute><CreateAd /></ProtectedRoute>} />
@@ -892,6 +924,7 @@ export default function App() {
                 <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap items-center">
                   <Link to="/faq" className="hover:text-indigo-600">Perguntas Frequentes</Link>
                   <Link to="/sugestoes" className="hover:text-indigo-600">Sugestões</Link>
+                  <Link to="/precos" className="hover:text-emerald-600 font-bold text-emerald-600">Preços 🏷️</Link>
                   <Link to="/terms" className="hover:text-indigo-600" style={{ color: '#ff2056' }}>Termos de Uso</Link>
                   <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
                   <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>

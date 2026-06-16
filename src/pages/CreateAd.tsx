@@ -46,6 +46,12 @@ const CreateAd = () => {
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    show: boolean;
+    reason: string;
+    adData: any;
+    adId: string;
+  } | null>(null);
 
   const prefill = location.state?.prefill;
   const urlCategory = new URLSearchParams(location.search).get('category');
@@ -550,6 +556,127 @@ const CreateAd = () => {
     });
   };
 
+  const normalizeTextForDuplicates = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // remove accents
+      .replace(/[^a-z0-9]/g, "") // remove special chars/spaces
+      .trim();
+  };
+
+  const areTitlesSimilarForDuplicates = (t1: string, t2: string) => {
+    const n1 = normalizeTextForDuplicates(t1);
+    const n2 = normalizeTextForDuplicates(t2);
+    if (!n1 || !n2) return false;
+    if (n1 === n2) return true;
+    if (n1.includes(n2) || n2.includes(n1)) return true;
+    
+    const words1 = t1.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const words2 = t2.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    if (words1.length === 0 || words2.length === 0) return false;
+    const common = words1.filter(w => words2.includes(w));
+    const ratio = common.length / Math.max(words1.length, words2.length);
+    return ratio >= 0.7; // 70% of words in common
+  };
+
+  const executeSaveAd = async (finalAdData: any, targetAdId: string) => {
+    setLoading(true);
+    try {
+      await setDoc(doc(db, 'ads', targetAdId), finalAdData, { merge: true });
+
+      // Notificação interna automática para admins e moderadores quando um novo anúncio for criado como pendente
+      if (!id && finalAdData.status === 'pending') {
+        console.log('[PENDING EMAIL] start');
+        try {
+          const staffQuery = query(
+            collection(db, 'users'),
+            where('role', 'in', ['admin', 'moderator'])
+          );
+          const staffSnapshot = await getDocs(staffQuery);
+          
+          const staffUids: string[] = [];
+          const staffEmails: string[] = [];
+          const creatorUid = user?.uid;
+          const creatorEmail = (user?.email || profile?.email || '').toLowerCase().trim();
+
+          staffSnapshot.forEach(docSnap => {
+            const uid = docSnap.id;
+            const sData = docSnap.data();
+            
+            if (uid !== creatorUid) {
+              staffUids.push(uid);
+              if (sData && sData.email) {
+                const sEmail = sData.email.toLowerCase().trim();
+                if (sEmail && sEmail !== creatorEmail) {
+                  staffEmails.push(sData.email);
+                }
+              }
+            }
+          });
+
+          for (const staffUid of staffUids) {
+            const notifId = `pending_${targetAdId}_${staffUid}_${Date.now()}`;
+            const notifData = {
+              userId: staffUid,
+              title: 'Novo anúncio pendente',
+              message: `Há um novo anúncio aguardando aprovação: "${finalAdData.title}"`,
+              createdAt: serverTimestamp(),
+              read: false,
+              adId: targetAdId,
+              type: 'ad_pending'
+            };
+            await setDoc(doc(db, 'notifications', notifId), notifData);
+          }
+
+          if (staffEmails.length > 0) {
+            for (const email of staffEmails) {
+              try {
+                await sendEmailGeneric('anuncio_pendente_staff', email, {
+                  staffEmails: [email],
+                  adTitle: finalAdData.title,
+                  adId: targetAdId,
+                  sellerName: finalAdData.sellerName || 'Anunciante'
+                });
+              } catch (err: any) {
+                console.warn('[PENDING EMAIL] error:', err.message || err);
+              }
+            }
+          }
+        } catch (notifErr: any) {
+          console.warn('[PENDING EMAIL] error:', notifErr.message || notifErr);
+        }
+      }
+
+      clearHomeCache();
+      if (id) {
+        if (isAdmin && originalAd?.sellerId !== user.uid) {
+          setSaveSuccessMsg('Anúncio atualizado com sucesso (Edição de Administrador).');
+          setTimeout(() => {
+            setSaveSuccessMsg(null);
+            navigate('/admin/ads');
+          }, 2000);
+        } else {
+          setSaveSuccessMsg('Anúncio atualizado! O seu anúncio voltou para a fila de aprovação do administrador.');
+          setTimeout(() => {
+            setSaveSuccessMsg(null);
+            navigate('/profile?tab=anuncios');
+          }, 2000);
+        }
+      } else {
+        setSaveSuccessMsg('Anúncio enviado! Receberá um alerta quando o seu anúncio estiver aprovado.');
+        setTimeout(() => {
+          setSaveSuccessMsg(null);
+          navigate('/profile?tab=anuncios');
+        }, 2000);
+      }
+    } catch (err) {
+      handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, `ads/${targetAdId}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) {
@@ -633,7 +760,7 @@ const CreateAd = () => {
         ? (formData.sellerPhone.replace(/\s+/g, ' ').trim() || profile.phone || '')
         : (formData.useProfilePhone ? (profile.phone || '') : (formData.contactPhone?.replace(/\s+/g, ' ').trim() || profile.phone || ''));
 
-      const adData = {
+      const adData: any = {
         id: adId,
         title: formData.title,
         description: formData.description,
@@ -687,6 +814,88 @@ const CreateAd = () => {
       const isPaidDestaque = formData.plan === 'local' || formData.plan === 'national';
       const alreadyHasThisDestaque = originalAd?.isFeatured && (originalAd?.plan === formData.plan || (originalAd?.plan === 'highlight' && formData.plan === 'local'));
 
+      // --- VERIFICAÇÃO DE DUPLICIDADE ---
+      setLoading(true);
+      
+      // 1. Verificar se sourceUrl igual já existe globalmente (Bloquear Direto!)
+      if (validSourceUrl) {
+        const qSource = query(collection(db, 'ads'), where('sourceUrl', '==', validSourceUrl));
+        const snapSource = await getDocs(qSource);
+        const dupSourceAd = snapSource.docs.find(docSnap => docSnap.id !== adId);
+        if (dupSourceAd) {
+          alert("Erro: Este link de importação (OLX/Gumtree) já foi publicado ou importado em outro anúncio no Mercado Luso. Não são permitidos anúncios duplicados.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. Buscar outros anúncios do mesmo vendedor para verificar similaridade
+      const qSeller = query(collection(db, 'ads'), where('sellerId', '==', user.uid));
+      const snapSeller = await getDocs(qSeller);
+      const sellerAds = snapSeller.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as any));
+
+      let isDuplicateLocal = false;
+      let dupReasonLocal = '';
+      let dupOfIdLocal = '';
+
+      for (const existingAd of sellerAds) {
+        if (existingAd.id === adId) continue;
+        
+        let matchCount = 0;
+        const reasons: string[] = [];
+
+        // Comparar título parecido
+        if (areTitlesSimilarForDuplicates(adData.title, existingAd.title)) {
+          matchCount++;
+          reasons.push('título muito parecido');
+        }
+        // Comparar cidade
+        if (adData.city && existingAd.city && adData.city.toLowerCase().trim() === existingAd.city.toLowerCase().trim()) {
+          matchCount++;
+          reasons.push('mesma cidade');
+        }
+        // Comparar preço
+        if (adData.price > 0 && existingAd.price > 0 && Math.abs(adData.price - existingAd.price) < 0.01) {
+          matchCount++;
+          reasons.push('mesmo preço');
+        }
+        // Comparar imagem principal
+        if (adData.imageUrl && existingAd.imageUrl && adData.imageUrl === existingAd.imageUrl) {
+          matchCount++;
+          reasons.push('mesma imagem principal');
+        }
+
+        if (matchCount >= 2) {
+          isDuplicateLocal = true;
+          dupReasonLocal = `Potencial duplicado com o seu anúncio "${existingAd.title}" (${reasons.join(', ')}).`;
+          dupOfIdLocal = existingAd.id;
+          break;
+        }
+      }
+
+      if (isDuplicateLocal) {
+        adData.isDuplicate = true;
+        adData.duplicateReason = dupReasonLocal;
+        adData.duplicateOf = dupOfIdLocal;
+      } else {
+        adData.isDuplicate = false;
+        adData.duplicateReason = '';
+        adData.duplicateOf = '';
+      }
+
+      // Se for detetado potencial duplicado, exibe aviso e interrompe para confirmação do usuário
+      if (isDuplicateLocal) {
+        setDuplicateWarning({
+          show: true,
+          reason: dupReasonLocal,
+          adData: adData,
+          adId: adId
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Se não houver duplicado local, prosseguir normalmente para salvar ou cobrar destaque
       if (isPaidDestaque && !alreadyHasThisDestaque) {
         setPendingAdData(adData);
         setShowPaymentModal(true);
@@ -694,104 +903,7 @@ const CreateAd = () => {
         return;
       }
 
-      await setDoc(doc(db, 'ads', adId), adData, { merge: true });
-
-      // Notificação interna automática para admins e moderadores quando um novo anúncio for criado como pendente
-      if (!id && adData.status === 'pending') {
-        console.log('[PENDING EMAIL] start');
-        try {
-          // 3. está buscando corretamente users onde role in ["admin", "moderator"];
-          const staffQuery = query(
-            collection(db, 'users'),
-            where('role', 'in', ['admin', 'moderator'])
-          );
-          const staffSnapshot = await getDocs(staffQuery);
-          
-          const staffUids: string[] = [];
-          const staffEmails: string[] = [];
-          const creatorUid = user?.uid;
-          const creatorEmail = (user?.email || profile?.email || '').toLowerCase().trim();
-
-          staffSnapshot.forEach(docSnap => {
-            const uid = docSnap.id;
-            const sData = docSnap.data();
-            
-            // Exclude the creator from notifications and emails
-            if (uid !== creatorUid) {
-              staffUids.push(uid);
-              if (sData && sData.email) {
-                const sEmail = sData.email.toLowerCase().trim();
-                if (sEmail && sEmail !== creatorEmail) {
-                  staffEmails.push(sData.email);
-                }
-              }
-            }
-          });
-
-          console.log('[PENDING EMAIL] staff emails found:', staffEmails);
-
-          // 4. está criando documentos na collection "notifications";
-          for (const staffUid of staffUids) {
-            const notifId = `pending_${adId}_${staffUid}_${Date.now()}`;
-            const notifData = {
-              userId: staffUid,
-              title: 'Novo anúncio pendente',
-              message: `Há um novo anúncio aguardando aprovação: "${adData.title}"`,
-              createdAt: serverTimestamp(),
-              read: false,
-              adId: adId,
-              type: 'ad_pending'
-            };
-            await setDoc(doc(db, 'notifications', notifId), notifData);
-          }
-
-          // Enviar email para admins/moderadores se houver algum email cadastrado
-          if (staffEmails.length > 0) {
-            for (const email of staffEmails) {
-              try {
-                const res = await sendEmailGeneric('anuncio_pendente_staff', email, {
-                  staffEmails: [email],
-                  adTitle: adData.title,
-                  adId: adId,
-                  sellerName: adData.sellerName || 'Anunciante'
-                });
-                if (res.success) {
-                  console.log('[PENDING EMAIL] sent to:', email);
-                } else {
-                  console.warn('[PENDING EMAIL] error:', res.error || 'Failed to send email generic response not success');
-                }
-              } catch (err: any) {
-                console.warn('[PENDING EMAIL] error:', err.message || err);
-              }
-            }
-          }
-        } catch (notifErr: any) {
-          console.warn('[PENDING EMAIL] error:', notifErr.message || notifErr);
-        }
-      }
-
-      clearHomeCache();
-      if (id) {
-        if (isAdmin && originalAd?.sellerId !== user.uid) {
-          setSaveSuccessMsg('Anúncio atualizado com sucesso (Edição de Administrador).');
-          setTimeout(() => {
-            setSaveSuccessMsg(null);
-            navigate('/admin/ads');
-          }, 2000);
-        } else {
-          setSaveSuccessMsg('Anúncio atualizado! O seu anúncio voltou para a fila de aprovação do administrador.');
-          setTimeout(() => {
-            setSaveSuccessMsg(null);
-            navigate('/profile?tab=anuncios');
-          }, 2000);
-        }
-      } else {
-        setSaveSuccessMsg('Anúncio enviado! Receberá um alerta quando o seu anúncio estiver aprovado.');
-        setTimeout(() => {
-          setSaveSuccessMsg(null);
-          navigate('/profile?tab=anuncios');
-        }, 2000);
-      }
+      await executeSaveAd(adData, adId);
     } catch (err) {
       handleFirestoreError(err, id ? OperationType.UPDATE : OperationType.CREATE, `ads/${id || 'new'}`);
     } finally {
@@ -1898,6 +2010,77 @@ const CreateAd = () => {
             </motion.div>
           </div>
         )}
+        {duplicateWarning && duplicateWarning.show && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100"
+            >
+              {/* Header */}
+              <div className="relative p-6 bg-amber-50 border-b border-amber-100 text-slate-900 flex items-start gap-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+                  <AlertCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Anúncio Parecido Detetado</h3>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                    Parece que este anúncio já existe no seu perfil. Deseja revisar antes de publicar?
+                  </p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-amber-700 block">Motivo do aviso:</span>
+                  <p className="text-sm text-slate-700 leading-relaxed font-semibold">
+                    {duplicateWarning.reason}
+                  </p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    A publicação de anúncios duplicados pode levar à moderação ou suspensão do anúncio pela equipa do Mercado Luso. Recomendamos editar o anúncio anterior ou diferenciá-lo se forem produtos/serviços distintos.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-6 pt-0 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDuplicateWarning(null);
+                  }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold py-4 rounded-xl transition-all text-center text-sm cursor-pointer"
+                >
+                  Revisar e Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const finalAdData = duplicateWarning.adData;
+                    const finalAdId = duplicateWarning.adId;
+                    setDuplicateWarning(null);
+                    
+                    const isPaidDestaque = finalAdData.plan === 'local' || finalAdData.plan === 'national';
+                    const alreadyHasThisDestaque = originalAd?.isFeatured && (originalAd?.plan === finalAdData.plan || (originalAd?.plan === 'highlight' && finalAdData.plan === 'local'));
+
+                    if (isPaidDestaque && !alreadyHasThisDestaque) {
+                      setPendingAdData(finalAdData);
+                      setShowPaymentModal(true);
+                    } else {
+                      await executeSaveAd(finalAdData, finalAdId);
+                    }
+                  }}
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-4 rounded-xl transition-all text-center text-sm shadow-md cursor-pointer"
+                >
+                  Publicar de qualquer forma
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* Global Save Success Temporary Overlay (2 seconds feedback) */}
         {saveSuccessMsg && (
           <motion.div

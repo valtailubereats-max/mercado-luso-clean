@@ -301,7 +301,11 @@ const AdminAds = () => {
 
   const filteredAds = ads.filter(ad => {
     // 1. Status Filter
-    const matchesFilter = adFilter === 'all' ? true : (ad.status === adFilter || ad.adStatus === adFilter);
+    const matchesFilter = adFilter === 'all' 
+      ? true 
+      : adFilter === 'duplicates' 
+        ? ad.isDuplicate === true 
+        : (ad.status === adFilter || ad.adStatus === adFilter);
 
     // 2. Country Filter
     const adCountry = ad.country || 'Portugal';
@@ -440,6 +444,7 @@ const AdminAds = () => {
               {[
                 { id: 'all', label: 'Todos' },
                 { id: 'pending', label: 'Pendentes' },
+                { id: 'duplicates', label: 'Duplicados⚠️' },
                 { id: 'approved', label: 'Ativos' },
                 { id: 'expired', label: 'Expirados' },
                 { id: 'rejected', label: 'Rejeitados' },
@@ -615,6 +620,15 @@ const AdminAds = () => {
                   <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 break-all mb-1.5" title={ad.title}>
                     {ad.title}
                   </h3>
+
+                  {ad.isDuplicate && (
+                    <div className="mb-2 bg-amber-50 text-amber-800 border border-amber-100 rounded-lg p-2 text-[10px] font-semibold flex items-start gap-1">
+                      <AlertCircle size={12} className="shrink-0 text-amber-600 mt-0.5" />
+                      <div>
+                        <span>Suspeita Duplicado: {ad.duplicateReason}</span>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-sm sm:text-base font-black text-indigo-600">
@@ -812,12 +826,19 @@ const AdminAds = () => {
                       {isColVisible('titulo') && (
                         <td className="py-3 px-4 border-none font-medium">
                           <div className="max-w-[200px]">
-                            <div 
-                              className="font-bold text-slate-900 truncate hover:text-indigo-600 transition-colors cursor-pointer"
-                              onClick={() => setSelectedAd(ad)}
-                              title={ad.title}
-                            >
-                              {ad.title}
+                            <div className="flex items-center gap-1.5 flex-wrap max-w-full">
+                              <div 
+                                className="font-bold text-slate-900 truncate hover:text-indigo-600 transition-colors cursor-pointer"
+                                onClick={() => setSelectedAd(ad)}
+                                title={ad.title}
+                              >
+                                {ad.title}
+                              </div>
+                              {ad.isDuplicate && (
+                                <span className="bg-amber-100 text-amber-800 text-[8px] font-black uppercase tracking-wider px-1 rounded inline-block whitespace-nowrap shrink-0" title={ad.duplicateReason}>
+                                  Duplicado⚠️
+                                </span>
+                              )}
                             </div>
                             <div className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 tracking-wider">{ad.category}</div>
                             <div className="text-[8px] text-slate-300 font-mono mt-0.5">ID: {ad.id}</div>
@@ -1336,6 +1357,21 @@ const AdminAds = () => {
                     </div>
                   </div>
                 </div>
+
+                {selectedAd.isDuplicate && (
+                  <div className="bg-amber-50 text-amber-900 border-2 border-amber-200 rounded-2xl p-4 text-xs font-semibold space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                      <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                      <span>ALERTA DE ANÚNCIO DUPLICADO</span>
+                    </div>
+                    <p className="text-slate-705 leading-relaxed font-medium">
+                      O sistema identificou este anúncio como um potencial duplicado do mesmo vendedor.
+                    </p>
+                    <p className="text-slate-900 font-black bg-amber-100/40 p-2.5 rounded-xl mt-1 select-text">
+                      Razão: {selectedAd.duplicateReason}
+                    </p>
+                  </div>
+                )}
 
                 {/* Description */}
                 <div className="space-y-2">

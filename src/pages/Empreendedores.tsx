@@ -271,79 +271,80 @@ const Empreendedores = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
-                className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md hover:shadow-xl transition-all flex flex-col justify-between w-[290px] sm:w-[320px] shrink-0 snap-center md:w-auto md:shrink md:snap-align-none"
               >
-                {/* Visual Top Area with Capa & Logo overlap */}
-                <div className="relative">
-                  <div className="h-32 w-full bg-slate-100 overflow-hidden relative flex items-center justify-center">
-                    <img 
-                      src={elem.showcaseCover || fallbackCover} 
-                      alt="" 
-                      className="absolute inset-0 w-full h-full object-cover blur-md opacity-25 scale-110 pointer-events-none" 
-                      referrerPolicy="no-referrer"
-                    />
-                    <img 
-                      src={elem.showcaseCover || fallbackCover} 
-                      alt="Capa do negócio" 
-                      className="relative max-w-full max-h-full object-contain z-10 p-1 group-hover:scale-102 transition-transform duration-500" 
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
-                  </div>
-                  
-                  {/* Logo block */}
-                  <div className="absolute left-6 -bottom-6 w-16 h-16 rounded-2xl bg-white border-2 border-white shadow-md flex items-center justify-center overflow-hidden z-10">
-                    {elem.showcaseLogo && elem.showcaseLogo.trim() !== '' ? (
-                      <img src={elem.showcaseLogo || null} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    ) : (
-                      <span className="text-xl">🏬</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Info Area */}
-                <div className="p-6 pt-8 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    {/* Category Label & Products count */}
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider block w-fit">
-                        {mapCategoryToNew(elem.showcaseCategory || '')}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-150 px-2 py-0.5 rounded-lg flex items-center gap-1 shrink-0">
-                        📦 {elem.productsCount} {elem.productsCount === 1 ? 'item ativo' : 'itens ativos'}
-                      </span>
+                <Link
+                  to={linkTo}
+                  className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all flex flex-col justify-between w-[290px] sm:w-[320px] shrink-0 snap-center md:w-auto md:shrink md:snap-align-none cursor-pointer h-full"
+                >
+                  {/* Visual Top Area with Capa & Logo overlap */}
+                  <div className="relative">
+                    <div className="h-32 w-full bg-slate-100 overflow-hidden relative flex items-center justify-center">
+                      <img 
+                        src={elem.showcaseCover || fallbackCover} 
+                        alt="" 
+                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-25 scale-110 pointer-events-none" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <img 
+                        src={elem.showcaseCover || fallbackCover} 
+                        alt="Capa do negócio" 
+                        className="relative max-w-full max-h-full object-contain z-10 p-1 group-hover:scale-102 transition-transform duration-500" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
                     </div>
-
-                    {/* Business Name */}
-                    <h2 className="text-xl font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors pt-1">
-                      {elem.showcaseName}
-                    </h2>
-
-                    {/* Location Badge */}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-                      <MapPin size={13} className="text-slate-400" />
-                      <span>{elem.city ? `${elem.city}, ` : ''}{elem.country === 'Portugal' ? '🇵🇹 Portugal' : elem.country === 'Reino Unido' ? '🇬🇧 Reino Unido' : elem.country}</span>
+                    
+                    {/* Logo block: circular, centralized, overposto (-bottom-[26px]), subtle shadow, size reduced ~18.7% to w-[52px] */}
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-[26px] w-[52px] h-[52px] rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center overflow-hidden z-10">
+                      {elem.showcaseLogo && elem.showcaseLogo.trim() !== '' ? (
+                        <img src={elem.showcaseLogo || null} alt="Logo" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="text-lg">🏬</span>
+                      )}
                     </div>
-
-                    {/* Description Excerpt */}
-                    <p className="text-slate-500 text-xs leading-relaxed pt-2 line-clamp-3">
-                      {elem.showcaseDescription}
-                    </p>
                   </div>
 
-                  {/* Action Link block */}
-                  <div className="pt-5 mt-auto border-t border-slate-50">
-                    <Link
-                      to={linkTo}
-                      className="w-full flex items-center justify-between font-black text-sm text-indigo-600 group-hover:text-indigo-700 transition-colors"
-                    >
-                      <span>Ver Vitrine</span>
-                      <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:translate-x-1 transition-transform group-hover:bg-indigo-600 group-hover:text-white">
-                        <ArrowRight size={14} />
+                  {/* Info Area */}
+                  <div className="p-6 pt-8 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      {/* Category Label & Products count */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider block w-fit">
+                          {mapCategoryToNew(elem.showcaseCategory || '')}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-150 px-2 py-0.5 rounded-lg flex items-center gap-1 shrink-0">
+                          📦 {elem.productsCount} {elem.productsCount === 1 ? 'item ativo' : 'itens ativos'}
+                        </span>
                       </div>
-                    </Link>
+
+                      {/* Business Name */}
+                      <h2 className="text-xl font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors pt-1">
+                        {elem.showcaseName}
+                      </h2>
+
+                      {/* Location Badge */}
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                        <MapPin size={13} className="text-slate-400" />
+                        <span>{elem.city ? `${elem.city}, ` : ''}{elem.country === 'Portugal' ? '🇵🇹 Portugal' : elem.country === 'Reino Unido' ? '🇬🇧 Reino Unido' : elem.country}</span>
+                      </div>
+
+                      {/* Description Excerpt */}
+                      <p className="text-slate-500 text-xs leading-relaxed pt-2 line-clamp-3">
+                        {elem.showcaseDescription}
+                      </p>
+                    </div>
+
+                    {/* Action Link block - acts as static visual CTA */}
+                    <div className="pt-5 mt-auto border-t border-slate-50">
+                      <div className="w-full flex items-center justify-between font-black text-sm text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                        <span>Meu Negócio</span>
+                        <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:translate-x-1 transition-transform group-hover:bg-indigo-600 group-hover:text-white">
+                          <ArrowRight size={14} />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </motion.div>
             );
           })}
