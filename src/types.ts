@@ -61,6 +61,7 @@ export interface MarketplaceSettings {
   searchGroupOpacity?: number;
   compactCardMode?: boolean;
   enableFotosFeature?: boolean;
+  launchPromoActive?: boolean;
 }
 
 export interface UserProfile {
@@ -351,5 +352,41 @@ export interface PhotoStoreItem {
   createdAt: any; // Firestore Timestamp
   updatedAt?: any; // Firestore Timestamp
   createdBy: string;
+}
+
+export interface GiveawayWinner {
+  userId: string;
+  name: string;
+  email: string;
+  drawDate: any; // Firestore Timestamp or Date ISO string
+  status: 'Aguardando Contacto' | 'Contactado' | 'Prémio Entregue';
+  prizeImage?: string;
+  prizeTitle?: string;
+  country?: string;
+}
+
+export interface Giveaway {
+  id: string;
+  title: string;
+  description: string;
+  prizeImage: string;
+  country: 'Portugal' | 'Reino Unido' | 'Ambos';
+  startDate: string; // ISO-8601 string or date input
+  endDate: string; // ISO-8601 string or date input
+  rules: string;
+  winnersCount: number;
+  status: 'Ativo' | 'Encerrado' | 'Finalizado';
+  createdAt: any; // Firestore Timestamp
+  createdBy: string;
+  winners?: GiveawayWinner[];
+}
+
+export interface GiveawayParticipation {
+  id: string; // `${giveawayId}_${userId}`
+  giveawayId: string;
+  userId: string;
+  name: string;
+  email: string;
+  participationDate: any; // Firestore Timestamp
 }
 

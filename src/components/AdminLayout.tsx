@@ -18,7 +18,8 @@ import {
   Camera,
   Store,
   QrCode,
-  BookOpen
+  BookOpen,
+  Gift
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,6 +55,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
     { icon: Users, label: 'Utilizadores', path: '/admin/users' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
+    { icon: Gift, label: 'Sorteios & Campanhas', path: '/admin/sorteios' },
     { icon: QrCode, label: 'Convites', path: '/admin/invitations' },
     { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
     { icon: Camera, label: 'Loja de Fotos', path: '/admin/fotos' },

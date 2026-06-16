@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, ChevronLeft, Check, Play, MessageSquare, Tag, Eye, ArrowRight, ShieldCheck, HelpCircle, Sparkles, Star, Smartphone, Laptop, Database, CreditCard, RefreshCcw, X } from 'lucide-react';
 import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -9,6 +10,8 @@ import { db } from '../firebase';
 const VitrineComercial = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { settings } = useSettings();
+  const isPromoActive = settings?.launchPromoActive !== false;
   const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
@@ -45,7 +48,11 @@ const VitrineComercial = () => {
         showcaseApproved: true
       }, { merge: true });
 
-      alert(`Parabéns! Subscrição da sua Vitrine Digital ativada com sucesso! Vantagens e limites ativos.`);
+      if (isPromoActive) {
+        alert(`Parabéns! A sua entrada na Vitrine Digital foi ativada gratuitamente através da Oferta de Lançamento! 🎁`);
+      } else {
+        alert(`Parabéns! Subscrição da sua Vitrine Digital ativada com sucesso! Vantagens e limites ativos.`);
+      }
       setShowCheckout(false);
       navigate('/profile');
     } catch (err) {
@@ -115,6 +122,13 @@ const VitrineComercial = () => {
             Abandone os anúncios individuais desorganizados. Tenha a sua própria montra elegante de serviços ou produtos com catálogo digital integrado e botões diretos de contacto no Mercado Luso.
           </p>
 
+          {isPromoActive && (
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-semibold flex items-center gap-2.5 max-w-2xl">
+              <span className="text-xl">🎁</span>
+              <span>A Vitrine Digital encontra-se gratuita durante o período de lançamento do Mercado Luso.</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-4 pt-4">
             {user ? (
               profile?.showcasePaid ? (
@@ -126,10 +140,10 @@ const VitrineComercial = () => {
                 </button>
               ) : (
                 <button
-                  onClick={() => setShowCheckout(true)}
-                  className="px-8 py-4.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm transition-all shadow-xl shadow-indigo-950/40 flex items-center gap-2"
+                  onClick={isPromoActive ? handleCheckoutSuccess : () => setShowCheckout(true)}
+                  className={`px-8 py-4.5 rounded-2xl ${isPromoActive ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-500'} text-white font-extrabold text-sm transition-all shadow-xl shadow-indigo-950/40 flex items-center gap-2`}
                 >
-                  Ativar Vitrine Profissional Agora <ArrowRight size={16} />
+                  {isPromoActive ? "Ativar Vitrine Profissional Grátis 🎁" : "Ativar Vitrine Profissional Agora"} <ArrowRight size={16} />
                 </button>
               )
             ) : (
@@ -176,18 +190,29 @@ const VitrineComercial = () => {
         {/* Pricing block */}
         <div className="p-8 md:p-12 rounded-3xl bg-gradient-to-br from-indigo-50 via-white to-slate-50 border-2 border-indigo-200/50 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
           <div className="space-y-4 max-w-lg">
-            <span className="text-[10px] font-black uppercase tracking-widest bg-indigo-150 text-indigo-700 px-3 py-1.5 rounded-full inline-block">Plan Único Completo</span>
+            <span className="text-[10px] font-black uppercase tracking-widest bg-indigo-150 text-indigo-700 px-3 py-1.5 rounded-full inline-block">Plano Único Completo</span>
             <h3 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">Um investimento que cabe no seu bolso</h3>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
               Diferente de marketplaces caros ou percentagens elevadas, na Vitrine Digital o utilizador paga um valor fixo honesto mensal, mantendo 100% das suas margens de lucro de vendas!
             </p>
+            {isPromoActive && (
+              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-[#046a38] text-xs font-bold flex items-center gap-2">
+                <span>🎁 A Vitrine Digital encontra-se gratuita durante o período de lançamento do Mercado Luso.</span>
+              </div>
+            )}
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm w-full md:max-w-xs text-center space-y-4 shrink-0">
             <div>
               <span className="text-xs font-bold text-slate-400 block uppercase">Subscrição Profissional</span>
               <span className="text-4xl font-black text-indigo-600 block mt-1 tracking-tight">
-                {currencySymbol}{price}<span className="text-xs font-bold text-slate-400">/mês</span>
+                <span className={isPromoActive ? "line-through text-slate-300 mr-2 text-2xl" : ""}>
+                  {currencySymbol}{price}
+                </span>
+                {isPromoActive && (
+                  <span className="text-emerald-600 font-extrabold text-3xl">Grátis 🎁</span>
+                )}
+                {!isPromoActive && <span className="text-xs font-bold text-slate-400">/mês</span>}
               </span>
             </div>
             <ul className="text-xs text-slate-600 font-semibold space-y-2 text-left bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200">
@@ -206,10 +231,10 @@ const VitrineComercial = () => {
                 </button>
               ) : (
                 <button
-                  onClick={() => setShowCheckout(true)}
-                  className="w-full bg-indigo-650 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wide"
+                  onClick={isPromoActive ? handleCheckoutSuccess : () => setShowCheckout(true)}
+                  className={`w-full ${isPromoActive ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/20' : 'bg-indigo-650 hover:bg-indigo-700'} text-white font-extrabold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wide`}
                 >
-                  Subscrever Agora por Stripe
+                  {isPromoActive ? "Subscrever Gratuitamente 🎁" : "Subscrever Agora por Stripe"}
                 </button>
               )
             ) : (

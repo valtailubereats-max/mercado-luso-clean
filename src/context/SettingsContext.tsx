@@ -61,7 +61,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             showTotalAdsBadge: data.showTotalAdsBadge !== undefined ? data.showTotalAdsBadge : true,
             showTotalUsersBadge: data.showTotalUsersBadge !== undefined ? data.showTotalUsersBadge : false,
             compactCardMode: data.compactCardMode !== undefined ? data.compactCardMode : false,
-            enableFotosFeature: data.enableFotosFeature !== undefined ? data.enableFotosFeature : false
+            enableFotosFeature: data.enableFotosFeature !== undefined ? data.enableFotosFeature : false,
+            launchPromoActive: data.launchPromoActive !== undefined ? data.launchPromoActive : true
           });
         } else {
           // Initialize if doesn't exist
@@ -77,7 +78,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             showTotalAdsBadge: true,
             showTotalUsersBadge: false,
             compactCardMode: false,
-            enableFotosFeature: false
+            enableFotosFeature: false,
+            launchPromoActive: true
           };
           setDoc(doc(db, 'settings', 'global'), defaultSettings).catch((err) => {
             console.error("Error initializing default settings:", err);

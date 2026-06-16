@@ -43,6 +43,8 @@ import AdminLayout from './components/AdminLayout';
 import OptimizedImage from './components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
 import Links from './pages/Links';
+import Sorteios from './pages/Sorteios';
+import AdminSorteios from './pages/AdminSorteios';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Ad } from './types';
@@ -427,6 +429,14 @@ const Navbar = () => {
                       >
                         🏷️ Preços
                       </Link>
+                      <Link
+                        to="/sorteios"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        id="nav-sorteios-link"
+                      >
+                        🎁 Campanhas & Sorteios
+                      </Link>
 
                       <div className="border-t border-slate-100 my-2" />
 
@@ -591,6 +601,14 @@ const Navbar = () => {
                           id="nav-precos-link-guest"
                         >
                           🏷️ Preços
+                        </Link>
+                        <Link
+                          to="/sorteios"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-sorteios-link-guest"
+                        >
+                          🎁 Campanhas & Sorteios
                         </Link>
 
                         <div className="border-t border-slate-100 my-2" />
@@ -915,10 +933,12 @@ export default function App() {
                 <Route path="/sugestoes" element={<Suggestions />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/links" element={<Links />} />
+                <Route path="/sorteios" element={<Sorteios />} />
                 <Route path="/convite" element={<Convite />} />
                 <Route path="/admin/invitations" element={<AdminLayout><AdminInvitations /></AdminLayout>} />
                 <Route path="/admin/suggestions" element={<AdminLayout><AdminSuggestions /></AdminLayout>} />
                 <Route path="/admin/manual-tecnico" element={<AdminLayout><AdminManualTecnico /></AdminLayout>} />
+                <Route path="/admin/sorteios" element={<AdminLayout><AdminSorteios /></AdminLayout>} />
               </Routes>
             </main>
             <footer className="bg-white border-t border-slate-200 py-12 mt-20">

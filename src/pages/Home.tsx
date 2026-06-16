@@ -79,48 +79,13 @@ const Home = () => {
     : 'placeholder:text-slate-900/80 placeholder:font-black placeholder:tracking-wide placeholder:uppercase placeholder:text-[10px] sm:placeholder:text-[11px]';
   const blurClass = settings?.searchGroupOpacity === 0 ? '' : 'backdrop-blur-3xl';
 
-  const getDropdownBgStyle = (currentCountry: string) => {
-    let flagSvg = '';
+  const getFlagSvgUrl = (currentCountry: string) => {
     if (currentCountry === 'Portugal') {
-      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect width='240' height='400' fill='%23006600'/%3E%3Crect x='240' width='360' height='400' fill='%23ff0000'/%3E%3Ccircle cx='240' cy='200' r='65' fill='%23ffe600'/%3E%3Cpath d='M240,165 v70 M205,200 h70' stroke='%23ff0000' stroke-width='10'/%3E%3C/svg%3E")`;
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect width='240' height='400' fill='%23006600'/%3E%3Crect x='240' width='360' height='400' fill='%23ff0000'/%3E%3Ccircle cx='240' cy='200' r='65' fill='%23ffe600'/%3E%3Cpath d='M240,165 v70 M205,200 h70' stroke='%23ff0000' stroke-width='10'/%3E%3C/svg%3E`;
     } else if (currentCountry === 'Reino Unido') {
-      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3Crect width='60' height='30' fill='%23012169'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23fff' stroke-width='6'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23c8102e' stroke-width='4'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23c8102e' stroke-width='6'/%3E%3C/svg%3E")`;
-    } else {
-      return { backgroundColor: '#0f172a' };
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3Crect width='60' height='30' fill='%23012169'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23fff' stroke-width='6'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23c8102e' stroke-width='4'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23c8102e' stroke-width='6'/%3E%3C/svg%3E`;
     }
-    return {
-      backgroundImage: flagSvg,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
-  };
-
-  const getFlagBgStyle = (currentCountry: string) => {
-    let flagSvg = '';
-    if (currentCountry === 'Portugal') {
-      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect width='240' height='400' fill='%23006600'/%3E%3Crect x='240' width='360' height='400' fill='%23ff0000'/%3E%3Ccircle cx='240' cy='200' r='65' fill='%23ffe600'/%3E%3Cpath d='M240,165 v70 M205,200 h70' stroke='%23ff0000' stroke-width='10'/%3E%3C/svg%3E")`;
-    } else if (currentCountry === 'Reino Unido') {
-      flagSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30'%3E%3Crect width='60' height='30' fill='%23012169'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23fff' stroke-width='6'/%3E%3Cpath d='M0%2C0 L60%2C30 M60%2C0 L0%2C30' stroke='%23c8102e' stroke-width='4'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M0%2C15 H60 M30%2C0 V30' stroke='%23c8102e' stroke-width='6'/%3E%3C/svg%3E")`;
-    } else {
-      return {
-        backgroundColor: customBg || 'rgba(255,255,255,0.25)',
-      };
-    }
-
-    const userOpacity = settings?.searchGroupOpacity !== undefined ? settings.searchGroupOpacity / 100 : 0.25;
-    
-    // Dynamically inject opacity attribute in original SVG node string for exact alpha control
-    const dimmedFlagSvg = flagSvg.replace('%3Csvg', `%3Csvg opacity='${userOpacity}'`);
-
-    const overlayColor = hasCustomStyles
-      ? hexToRgba(settings?.searchGroupBgColor, settings?.searchGroupOpacity)
-      : (isLightText ? 'rgba(15, 23, 42, 0.45)' : 'rgba(255, 255, 255, 0.45)');
-
-    return {
-      backgroundImage: `linear-gradient(${overlayColor}, ${overlayColor}), ${dimmedFlagSvg}`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
+    return '';
   };
 
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
@@ -764,19 +729,19 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 hidden lg:block" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-4 md:py-8 lg:py-10">
+        <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-3 md:py-6 lg:py-7.5">
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }}
             className="mx-auto max-w-5xl"
           >
-            <div className="flex flex-col items-center justify-center text-center gap-5 md:gap-6 w-full">
+            <div className="flex flex-col items-center justify-center text-center gap-3.5 md:gap-4 w-full">
 
               {/* Painel Lusófono elegante integrado diretamente sobre a imagem sem quadro translúcido (Proposta A Melhorada e Purificada) */}
               <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-4xl flex flex-col items-center justify-center gap-5 md:gap-6 select-none tracking-tight relative overflow-hidden px-2 py-4"
+                className="w-full max-w-4xl flex flex-col items-center justify-center gap-3.5 md:gap-4 select-none tracking-tight relative overflow-hidden px-2 py-2"
               >
                 <div className="text-center space-y-2.5 md:space-y-4">
                   {/* Badge da comunidade com as cores clássicas (verde e amarelo) integradas de forma luxuosa */}
@@ -838,7 +803,7 @@ const Home = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onFocus={handleSearchFocus}
                   placeholder="✨ O que procura hoje? Digite aqui..."
-                  className={`w-full ${blurClass} rounded-full py-3.5 sm:py-4 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-sm sm:text-base focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
+                  className={`w-full ${blurClass} rounded-full py-3 sm:py-3.5 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-sm sm:text-base focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
                   style={{
                     backgroundColor: customBg || 'rgba(15,23,42,0.3)',
                     borderColor: customBorder || 'rgba(255,255,255,0.2)',
@@ -893,15 +858,37 @@ const Home = () => {
                       setShowTooltip(false);
                     }}
                     style={{
-                      borderColor: customBorder || 'rgba(255,255,255,0.4)',
-                      ...getFlagBgStyle(country)
+                      borderColor: customBorder || 'rgba(255,255,255,0.25)',
                     }}
-                    className={`h-10 md:h-12 px-4 md:px-5 flex items-center gap-2 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold text-xs md:text-sm tracking-tight outline-none select-none animate-country-pulse`}
+                    className={`relative overflow-hidden h-10 md:h-12 w-14 md:w-16 flex items-center justify-center gap-1 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold outline-none select-none animate-country-pulse`}
                     title="Mudar de Comunidade"
                     id="community-toggle-button"
                   >
-                    <span className="truncate max-w-[85px] sm:max-w-none">{country}</span>
-                    <span className="text-[10px] opacity-60 ml-0.5">▼</span>
+                    {/* Camada 1: Bandeira de fundo com 100% de opacidade (sem transparência nem desbotamento) */}
+                    {getFlagSvgUrl(country) && (
+                      <div 
+                        className="absolute inset-0 z-0 pointer-events-none select-none"
+                        style={{
+                          backgroundImage: `url("${getFlagSvgUrl(country)}")`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          opacity: 1,
+                        }}
+                      />
+                    )}
+
+                    {/* Camada 2: Cor de fundo transparente configurável / máscara de sobreposição */}
+                    <div 
+                      className="absolute inset-0 z-10 pointer-events-none select-none"
+                      style={{
+                        backgroundColor: customBg || 'rgba(15,23,42,0.35)',
+                      }}
+                    />
+
+                    {/* Camada 3: Conteúdo interativo */}
+                    <div className="relative z-20 flex items-center justify-center w-full h-full">
+                      <span className="text-[10px] md:text-xs opacity-90 text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] filter shrink-0">▼</span>
+                    </div>
                   </button>
 
                   {/* Dropdown de Países Personalizado */}
@@ -912,12 +899,7 @@ const Home = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        style={isMobile ? getDropdownBgStyle(country) : {}}
-                        className={`absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-12 md:top-14 z-[9999] w-52 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5 border border-slate-150 ${
-                          isMobile 
-                            ? "bg-slate-950 border-white/10 text-white" 
-                            : "bg-white border-slate-200/80 text-slate-800 shadow-xl"
-                        }`}
+                        className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-12 md:top-14 z-[9999] w-52 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5 border border-slate-200 bg-white text-slate-800"
                       >
                         <button
                           type="button"
@@ -926,13 +908,9 @@ const Home = () => {
                             setCountryDropdownOpen(false);
                           }}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer select-none border ${
-                            isMobile
-                              ? (country === 'Portugal'
-                                  ? 'bg-indigo-600 border-white/15 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20'
-                                  : 'bg-slate-950/85 border-white/10 hover:bg-slate-900/95 hover:scale-[1.02] text-white')
-                              : (country === 'Portugal'
-                                  ? 'bg-[#046a38]/10 text-[#046a38] border-[#046a38]/20 font-black shadow-xs'
-                                  : 'bg-slate-50 border-slate-200 text-slate-705 hover:bg-[#e3f6ea] hover:border-[#bfead0] hover:text-[#046a38] hover:scale-[1.01] font-semibold')
+                            country === 'Portugal'
+                              ? 'bg-emerald-50 text-[#046a38] border-emerald-200 font-extrabold shadow-sm'
+                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-[#e3f6ea] hover:border-[#bfead0] hover:text-[#046a38] hover:scale-[1.01] font-semibold'
                           }`}
                         >
                           <span className="text-lg">🇵🇹</span>
@@ -945,13 +923,9 @@ const Home = () => {
                             setCountryDropdownOpen(false);
                           }}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer select-none border ${
-                            isMobile
-                              ? (country === 'Reino Unido'
-                                  ? 'bg-indigo-600 border-white/15 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)] ring-1 ring-white/20'
-                                  : 'bg-slate-950/85 border-white/10 hover:bg-slate-900/95 hover:scale-[1.02] text-white')
-                              : (country === 'Reino Unido'
-                                  ? 'bg-[#046a38]/10 text-[#046a38] border-[#046a38]/20 font-black shadow-xs'
-                                  : 'bg-slate-50 border-slate-200 text-slate-705 hover:bg-[#e3f6ea] hover:border-[#bfead0] hover:text-[#046a38] hover:scale-[1.01] font-semibold')
+                            country === 'Reino Unido'
+                              ? 'bg-blue-50 text-blue-800 border-blue-200 font-extrabold shadow-sm'
+                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-blue-50 hover:border-blue-150 hover:text-blue-800 hover:scale-[1.01] font-semibold'
                           }`}
                         >
                           <span className="text-lg">🇬🇧</span>

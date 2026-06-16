@@ -149,7 +149,8 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           searchGroupBgColor: data.searchGroupBgColor || '#ffffff',
           searchGroupOpacity: data.searchGroupOpacity !== undefined ? data.searchGroupOpacity : 10,
           compactCardMode: data.compactCardMode !== undefined ? data.compactCardMode : false,
-          enableFotosFeature: data.enableFotosFeature !== undefined ? data.enableFotosFeature : false
+          enableFotosFeature: data.enableFotosFeature !== undefined ? data.enableFotosFeature : false,
+          launchPromoActive: data.launchPromoActive !== undefined ? data.launchPromoActive : true
         });
       } else {
         const defaultSettings: MarketplaceSettings = {
@@ -168,7 +169,8 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
           searchGroupBgColor: '#ffffff',
           searchGroupOpacity: 10,
           compactCardMode: false,
-          enableFotosFeature: false
+          enableFotosFeature: false,
+          launchPromoActive: true
         };
         await setDoc(doc(db, 'settings', 'global'), defaultSettings);
         setSettings(defaultSettings);
@@ -554,6 +556,26 @@ const AdminSettings = ({ onClose }: AdminSettingsProps) => {
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-emerald-100">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5 text-emerald-950">
+                  <span>🎁 Promoção de Lançamento Ativa</span>
+                </h3>
+                <p className="text-xs text-emerald-800 font-medium font-semibold leading-relaxed">
+                  Quando ativo, exibe mensagens indicando que as funcionalidades premium (Destaque Local, Destaque Nacional e Vitrine Digital) estão gratuitas durante a fase de lançamento da plataforma.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={settings.launchPromoActive !== false} 
+                  onChange={(e) => setSettings({ ...settings, launchPromoActive: e.target.checked })} 
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
               </label>
             </div>
 

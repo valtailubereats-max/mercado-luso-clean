@@ -896,7 +896,7 @@ const CreateAd = () => {
       }
 
       // Se não houver duplicado local, prosseguir normalmente para salvar ou cobrar destaque
-      if (isPaidDestaque && !alreadyHasThisDestaque) {
+      if (isPaidDestaque && !alreadyHasThisDestaque && !isPromoActive) {
         setPendingAdData(adData);
         setShowPaymentModal(true);
         setLoading(false);
@@ -1109,6 +1109,8 @@ const CreateAd = () => {
       setIsImporting(false);
     }
   };
+
+  const isPromoActive = settings?.launchPromoActive !== false;
 
   if (fetching) return <div className="text-center py-20">A carregar...</div>;
 
@@ -1768,6 +1770,13 @@ const CreateAd = () => {
                     <div>
                       <p className="font-extrabold text-slate-900 text-sm">Destaque Local</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">Destaque na sua cidade</p>
+                      {isPromoActive && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1.5 text-[9px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">
+                            🎁 Gratuito no Lançamento
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1785,8 +1794,13 @@ const CreateAd = () => {
                     </div>
                     <div className="flex justify-between items-center text-[10px]">
                       <span className="font-bold text-amber-800">Investimento:</span>
-                      <span className="font-black text-amber-600">
-                        {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                      <span className="font-black text-amber-600 flex flex-col items-end">
+                        <span className={isPromoActive ? "line-through text-slate-400 font-bold" : ""}>
+                          {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                        </span>
+                        {isPromoActive && (
+                          <span className="text-emerald-600 font-black text-[9px]">Grátis 🎁</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -1811,6 +1825,13 @@ const CreateAd = () => {
                     <div>
                       <p className="font-extrabold text-slate-900 text-sm">Destaque Nacional</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">Visibilidade em todo o país</p>
+                      {isPromoActive && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1.5 text-[9px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">
+                            🎁 Gratuito no Lançamento
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1828,8 +1849,13 @@ const CreateAd = () => {
                     </div>
                     <div className="flex justify-between items-center text-[10px]">
                       <span className="font-bold text-indigo-700">Investimento:</span>
-                      <span className="font-black text-indigo-600">
-                        {formData.country === 'Reino Unido' ? '£7.99' : '€7.99'}
+                      <span className="font-black text-indigo-600 flex flex-col items-end">
+                        <span className={isPromoActive ? "line-through text-slate-400 font-bold" : ""}>
+                          {formData.country === 'Reino Unido' ? '£7.99' : '€7.99'}
+                        </span>
+                        {isPromoActive && (
+                          <span className="text-emerald-600 font-black text-[9px]">Grátis 🎁</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -2065,7 +2091,7 @@ const CreateAd = () => {
                     const isPaidDestaque = finalAdData.plan === 'local' || finalAdData.plan === 'national';
                     const alreadyHasThisDestaque = originalAd?.isFeatured && (originalAd?.plan === finalAdData.plan || (originalAd?.plan === 'highlight' && finalAdData.plan === 'local'));
 
-                    if (isPaidDestaque && !alreadyHasThisDestaque) {
+                    if (isPaidDestaque && !alreadyHasThisDestaque && !isPromoActive) {
                       setPendingAdData(finalAdData);
                       setShowPaymentModal(true);
                     } else {

@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, whe
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { clearHomeCache } from '../utils/cache';
 import { Ad, UserProfile, COUNTRY_CODES, CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
@@ -21,6 +22,8 @@ import { calculateTotalPoints, calculateProgressPoints, POINTS_THRESHOLD, POINTS
 
 const Profile = () => {
   const { user, profile, refreshProfile, favorites } = useAuth();
+  const { settings } = useSettings();
+  const isPromoActive = settings?.launchPromoActive !== false;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightAdId = searchParams.get('highlight');
@@ -581,10 +584,14 @@ const Profile = () => {
       setShowcasePlan('premium');
       setShowcaseActive(true);
       
-      alert(isPortugal 
-        ? 'Adesão à Vitrine Digital com sucesso via Stripe! Pagamento mensal de €8.99 confirmado.' 
-        : 'Adesão à Vitrine Digital com sucesso via Stripe! Pagamento mensal de £8.99 confirmado.'
-      );
+      if (isPromoActive) {
+        alert('Parabéns! A sua Vitrine Digital foi ativada gratuitamente durante o período de lançamento! 🎁');
+      } else {
+        alert(isPortugal 
+          ? 'Adesão à Vitrine Digital com sucesso via Stripe! Pagamento mensal de €8.99 confirmado.' 
+          : 'Adesão à Vitrine Digital com sucesso via Stripe! Pagamento mensal de £8.99 confirmado.'
+        );
+      }
       
       setShowShowcasePaymentModal(false);
     } catch (err) {
@@ -1084,12 +1091,26 @@ const Profile = () => {
                   Profissional
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-base text-yellow-300 flex items-center gap-1.5">
-                    🌟 Aderir à Vitrine Digital (£8.99 / €8.99 por mês)
+                  <h4 className="font-extrabold text-base text-yellow-300 flex items-center gap-1.5 flex-wrap">
+                    <span>🌟 Aderir à Vitrine Digital</span>
+                    <span className={isPromoActive ? "line-through text-slate-400 font-bold ml-1 text-sm" : ""}>
+                      (£8.99 / €8.99 por mês)
+                    </span>
+                    {isPromoActive && (
+                      <span className="text-emerald-400 font-black text-xs bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30 animate-pulse">
+                        Grátis no Lançamento 🎁
+                      </span>
+                    )}
                   </h4>
                   <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
                     A Vitrine Digital é uma subscrição profissional que permite criar o site exclusivo do seu negócio dentro do Mercado Luso. Promova a sua marca, conquiste mais leads e exiba o seu catálogo digital de forma profissional!
                   </p>
+                  {isPromoActive && (
+                    <div className="mt-3 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                      <span>🎁</span>
+                      <span>A Vitrine Digital encontra-se gratuita durante o período de lançamento do Mercado Luso.</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 text-[11px] text-slate-300 border-t border-indigo-800/50 pt-3">
@@ -1102,10 +1123,10 @@ const Profile = () => {
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowShowcasePaymentModal(true)}
-                    className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-extrabold text-xs text-center text-white transition-all shadow-lg shadow-indigo-950/50 flex-1 flex items-center justify-center gap-2"
+                    onClick={isPromoActive ? handleMockShowcasePaymentSuccess : () => setShowShowcasePaymentModal(true)}
+                    className={`px-5 py-3 rounded-xl ${isPromoActive ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/50'} font-extrabold text-xs text-center text-white transition-all flex-1 flex items-center justify-center gap-2`}
                   >
-                    🚀 Ativar Vitrine Digital (Stripe Simulator)
+                    {isPromoActive ? "🎁 Ativar Vitrine Digital Grátis" : "🚀 Ativar Vitrine Digital (Stripe Simulator)"}
                   </button>
                   <a
                     href="/vitrine-comercial"

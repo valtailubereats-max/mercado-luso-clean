@@ -4,10 +4,14 @@ import { Helmet } from 'react-helmet-async';
 import { Check, Star, Crown, Store, Smile, ArrowRight, Sparkles, AlertCircle, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Precos() {
   const { user } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
+
+  const isPromoActive = settings?.launchPromoActive !== false;
 
   // Detect selected country for secondary currency presentation
   const [selectedCountry, setSelectedCountry] = React.useState<'Portugal' | 'Reino Unido'>(() => {
@@ -69,6 +73,47 @@ export default function Precos() {
             Escolha a opção que melhor se adapta às suas necessidades.
           </p>
         </div>
+
+        {isPromoActive && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8 p-6 rounded-3xl bg-emerald-50 border-2 border-emerald-500/30 shadow-sm relative overflow-hidden"
+          >
+            {/* Subtle background decoration */}
+            <div className="absolute right-0 bottom-0 w-32 h-32 bg-[#046a38]/5 blur-2xl rounded-full pointer-events-none" />
+            
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-5 justify-between relative z-10">
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 bg-[#046a38] text-white text-[11px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-xs">
+                    🎁 Oferta de Lançamento
+                  </span>
+                </div>
+                <p className="text-slate-800 font-extrabold text-base md:text-lg leading-snug">
+                  Por tempo limitado, as funcionalidades premium do Mercado Luso podem ser utilizadas gratuitamente durante a fase inicial da plataforma.
+                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-1">
+                  <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider">Inclui:</span>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                      ⭐ Destaque Local
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                      👑 Destaque Nacional
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                      🏪 Vitrine Digital
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-emerald-100/70 border border-emerald-200 text-[#046a38] p-4 rounded-2xl md:max-w-xs shrink-0 self-stretch flex items-center justify-center font-bold text-xs text-center leading-relaxed">
+                Os preços apresentados entrarão em vigor numa fase futura.
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Highlighted trust indicators banner inside a modern layout */}
         <motion.div

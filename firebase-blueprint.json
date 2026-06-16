@@ -287,6 +287,41 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "action", "createdAt"]
+    },
+    "Giveaway": {
+      "title": "Giveaway",
+      "description": "Campaign Giveaway and Raffles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "prizeImage": { "type": "string" },
+        "country": { "type": "string", "enum": ["Portugal", "Reino Unido", "Ambos"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "rules": { "type": "string" },
+        "winnersCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Ativo", "Encerrado", "Finalizado"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" },
+        "winners": { "type": "array" }
+      },
+      "required": ["id", "title", "description", "prizeImage", "country", "startDate", "endDate", "rules", "winnersCount", "status", "createdAt", "createdBy"]
+    },
+    "GiveawayParticipation": {
+      "title": "GiveawayParticipation",
+      "description": "User participation in a giveaway",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "giveawayId": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "participationDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "giveawayId", "userId", "name", "email", "participationDate"]
     }
   },
   "firestore": {
@@ -357,6 +392,14 @@
     "/invitationVisits/{visitId}": {
       "schema": "InvitationVisit",
       "description": "Tracking of visits and actions on invitation page"
+    },
+    "/giveaways/{giveawayId}": {
+      "schema": "Giveaway",
+      "description": "Campaign Giveaway and Raffles"
+    },
+    "/participations/{participationId}": {
+      "schema": "GiveawayParticipation",
+      "description": "User participation in a giveaway"
     }
   }
 }
