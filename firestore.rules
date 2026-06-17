@@ -202,7 +202,10 @@ service cloud.firestore {
 
     match /settings/{settingsId} {
       allow read: if true;
-      allow write: if isValidSettings(request.resource.data) && isAdmin();
+      allow write: if isAdmin() && (
+        (settingsId == 'global' && isValidSettings(request.resource.data)) ||
+        (settingsId in ['health_last_run', 'health_email_tracker'])
+      );
     }
 
     match /users/{userId} {

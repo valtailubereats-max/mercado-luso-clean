@@ -322,15 +322,31 @@ export async function runHealthChecks(): Promise<{
   else level = 'Crítico';
 
   // Log running snapshot metadata
-  await setDoc(doc(db, 'settings', 'health_last_run'), {
-    lastCheckAt: new Date(),
-    healthPercentage: percentage,
-    level,
-    openAlertsCount: finalOpenAlerts.length
-  }, { merge: true });
+  console.log('[DEBUG_HEALTH] All 8 sub-checks completed successfully. Alerts count:', alertsToCreate.length);
+  console.log('[DEBUG_HEALTH] Computed health score:', percentage, 'level:', level);
+  
+  try {
+    console.log('[DEBUG_HEALTH] Preparing to write execution snapshot metadata to "settings/health_last_run"...');
+    await setDoc(doc(db, 'settings', 'health_last_run'), {
+      lastCheckAt: new Date(),
+      healthPercentage: percentage,
+      level,
+      openAlertsCount: finalOpenAlerts.length
+    }, { merge: true });
+    console.log('[DEBUG_HEALTH] Successfully wrote snapshot metadata to "settings/health_last_run"');
+  } catch (writeErr: any) {
+    console.error('[DEBUG_HEALTH] CRITICAL FAIL on writing settings/health_last_run:', writeErr?.message || writeErr, writeErr);
+    throw writeErr; // preserve throwing to keep original error bubbling
+  }
 
   // Handle email alerts trigger on level change
-  await handleHealthLevelChangeEmails(percentage, level, finalOpenAlerts);
+  try {
+    console.log('[DEBUG_HEALTH] Processing email alerts check...');
+    await handleHealthLevelChangeEmails(percentage, level, finalOpenAlerts);
+  } catch (emailErr: any) {
+    console.error('[DEBUG_HEALTH] FAIL on handling change emails check:', emailErr);
+    throw emailErr;
+  }
 
   return {
     alerts: finalOpenAlerts,
@@ -350,8 +366,10 @@ async function handleHealthLevelChangeEmails(
 
   try {
     // Read the last sent email level configuration from settings to avoid repetitions
+    console.log('[DEBUG_HEALTH] Reading security settings tracker "settings/health_email_tracker"...');
     const trackingDocRef = doc(db, 'settings', 'health_email_tracker');
     const docSnap = await getDoc(trackingDocRef);
+    console.log('[DEBUG_HEALTH] Done reading tracker doc. Exists:', docSnap.exists());
     const trackingData = docSnap.exists() ? docSnap.data() : null;
 
     const now = new Date();
@@ -413,11 +431,13 @@ async function handleHealthLevelChangeEmails(
     }
 
     // Save tracking metadata after successful send
+    console.log('[DEBUG_HEALTH] Saving email dispatch state to tracker "settings/health_email_tracker"...');
     await setDoc(trackingDocRef, {
       lastSentTime: now,
       lastLevel: currentLevel,
       lastPercentage: currentPercentage
     }, { merge: true });
+    console.log('[DEBUG_HEALTH] Wrote settings/health_email_tracker successfully');
 
   } catch (err) {
     console.warn('[HealthService] Failed to dispatch health emails:', err);
