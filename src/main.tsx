@@ -3,27 +3,43 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Programmatically unregister any stale service workers from older sessions or other applets running on the same domain
+// Register our Mercado Luso PWA Service Worker
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('[PWA] Service Worker registered successfully:', reg.scope);
+      })
+      .catch((err) => {
+        console.error('[PWA] Service Worker registration failed:', err);
+      });
+  });
+
+  // Programmatically unregister older/stale service workers from other domains or older applet versions
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (const registration of registrations) {
-      registration.unregister().then((success) => {
-        if (success) {
-          console.log('[CacheCleaner] Unregistered stale service worker successfully');
-        }
-      });
+      const scriptURL = registration.active?.scriptURL || registration.installing?.scriptURL || registration.waiting?.scriptURL || '';
+      if (scriptURL && !scriptURL.endsWith('/sw.js')) {
+        registration.unregister().then((success) => {
+          if (success) {
+            console.log('[CacheCleaner] Unregistered stale service worker successfully:', scriptURL);
+          }
+        });
+      }
     }
   }).catch((err) => {
     console.error('[CacheCleaner] Error finding registrations:', err);
   });
 }
 
-// Programmatically clear all browser Cache Storage buckets
+// Programmatically clear stale browser caches while protecting active PWA cache
 if (typeof window !== 'undefined' && 'caches' in window) {
   caches.keys().then((keys) => {
     return Promise.all(keys.map((key) => {
-      console.log(`[CacheCleaner] Removing stale cache: ${key}`);
-      return caches.delete(key);
+      if (key !== 'mercado-luso-pwa-v1') {
+        console.log(`[CacheCleaner] Removing stale cache: ${key}`);
+        return caches.delete(key);
+      }
     }));
   }).catch((err) => {
     console.error('[CacheCleaner] Error clearing caches:', err);

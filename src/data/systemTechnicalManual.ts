@@ -678,6 +678,26 @@ export const manualItems: ManualItem[] = [
       'Falha na busca pela home ao filtrar países "Ambos" se a computação reativa local ignorar esse valor no seletor de localização padrão.'
     ],
     tags: ['destaques', 'permanentes', 'carrossel', 'fallback', 'admin', 'moderadores', 'ambos']
+  },
+  {
+    id: 'pwa-install',
+    title: 'PWA (Progressive Web App) - Instalação e Configuração',
+    type: 'Página',
+    description: 'Transformação do Mercado Luso num PWA instalável de forma instantânea em dispositivos móveis e desktop, dispensando lojas oficiais como Google Play Store e Apple App Store.',
+    route: 'Todas as rotas (Global)',
+    mainFile: 'public/manifest.webmanifest',
+    relatedComponents: ['src/hooks/usePWA.ts', 'src/components/PWAInstallButton.tsx', 'public/sw.js'],
+    relatedFunctions: ['installApp', 'dismissInstall', 'registerServiceWorker', 'caches.match'],
+    firestoreCollections: [],
+    access: 'Público (Qualquer visitante)',
+    buttons: ['📱 Instalar Mercado Luso (Menu Mobile)', '📱 Instalar App (Perfil)', '📱 Instalar App (Rodapé)'],
+    actions: ['Instalar App nativamente (Android/Chrome)', 'Exibir guia passo a passo ilustrado (iOS/Safari)', 'Armazenar preferência de adiamento (Not Now) por 7 dias no localStorage'],
+    technicalNotes: 'Usa um Service worker de ciclo de ativação imediata (skipWaiting/clients.claim) e cache dinâmico com estratégia Network-First para evitar problemas de asset bloqueado ou travamento de updates na plataforma. Isento de requisitos de firestore.rules.',
+    failurePoints: [
+      'Bloqueio do prompt nativo se a ligação não for HTTPS (permitido somente em localhost para testes).',
+      'Registo do Service Worker ignorado pelo navegador caso já exista uma sessão com service worker travado em cache.'
+    ],
+    tags: ['pwa', 'instalação', 'offline', 'safari', 'chrome', 'android', 'iphone', 'service-worker']
   }
 ];
 
@@ -835,5 +855,16 @@ export const technicalFlows: TechnicalFlow[] = [
     mainFiles: ['src/pages/AdminSystemHealth.tsx', 'src/utils/healthService.ts', 'src/firebase.ts', 'src/utils/emailService.ts'],
     firestoreCollections: ['system_health_alerts', 'system_health_events', 'settings'],
     expectedResult: 'Sinalização visual imediata do percentual de integridade no dashboard admin, registo do alerta em estado "aberto", envio de e-mail automatizado de alerta ao Staff administrativo mantendo intervalos de 30 minutos anti-spam.'
+  },
+  {
+    id: 'flow-instalacao-pwa',
+    title: 'Fluxo de Instalação do PWA (Android / iPhone)',
+    description: 'Processo robusto e discreto para permitir instalação nativa sem as lojas de aplicativos convencionais.',
+    startPoint: 'Utilizador clica em qualquer botão "📱 Instalar Mercado Luso" (Perfil, Menu ou Rodapé) no telemóvel',
+    buttonsInvolved: ['📱 Instalar App', 'Ok, Entendido', 'Agora não'],
+    pagesInvolved: ['Profile.tsx', 'Home.tsx', 'Todas'],
+    mainFiles: ['src/hooks/usePWA.ts', 'src/components/PWAInstallButton.tsx', 'public/sw.js'],
+    firestoreCollections: [],
+    expectedResult: 'No Android/Chrome, abre-se o prompt nativo do sistema para adicionar ao ecrã inicial. No iOS/Safari, exibe-se um modal dinâmico que ilustra as etapas: Partilhar -> Adicionar ao Ecrã Principal. Em caso de recusa, oculta o banner por 7 dias.'
   }
 ];

@@ -18,6 +18,7 @@ import ReviewModal from '../components/ReviewModal';
 import AdCard from '../components/AdCard';
 import ShowcaseStats from '../components/ShowcaseStats';
 import ShowcaseInterests from '../components/ShowcaseInterests';
+import { PWAInstallButton } from '../components/PWAInstallButton';
 import { calculateTotalPoints, calculateProgressPoints, POINTS_THRESHOLD, POINTS_PER_REFERRAL, POINTS_PER_AD } from '../utils/rewards';
 
 const Profile = () => {
@@ -1072,6 +1073,7 @@ const Profile = () => {
 
       {(currentTab === 'perfil' || currentTab === 'vitrine' || !['perfil', 'vitrine', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)) && (
         <div className="space-y-12" id="profile-perfil-tab-content">
+          <PWAInstallButton variant="button" />
           <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

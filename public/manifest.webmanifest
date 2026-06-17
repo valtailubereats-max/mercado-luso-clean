@@ -1,12 +1,11 @@
 {
   "name": "Mercado Luso",
-  "short_name": "Mercado Luso",
+  "short_name": "MercadoLuso",
   "description": "Marketplace da comunidade lusófona e anúncios classificados em Portugal.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#52b64d",
-  "orientation": "portrait",
+  "theme_color": "#046a38",
   "icons": [
     {
       "src": "/icon-192.png",

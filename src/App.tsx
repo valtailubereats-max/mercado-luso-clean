@@ -38,6 +38,7 @@ import AdminSystemHealth from './pages/AdminSystemHealth';
 import VitrineComercial from './pages/VitrineComercial';
 import Convite from './pages/Convite';
 import AdminInvitations from './pages/AdminInvitations';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import AdminManualTecnico from './pages/AdminManualTecnico';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
@@ -671,6 +672,8 @@ const Navbar = () => {
               <Link to="/trabalhos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Trabalhos</Link>
               <Link to="/precos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Preços</Link>
               
+              <PWAInstallButton variant="menu-item" onClickAction={() => setIsOpen(false)} />
+              
               {user ? <>
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">
@@ -945,7 +948,7 @@ export default function App() {
             </main>
             <footer className="bg-white border-t border-slate-200 py-12 mt-20">
               <div className="max-w-7xl mx-auto px-4 text-center">
-                <p className="text-sm font-extrabold transition-colors" style={{ color: '#52b64d' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
+                <p className="text-sm font-extrabold transition-colors" style={{ color: '#046a38' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
                 <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap items-center">
                   <Link to="/faq" className="hover:text-indigo-600">Perguntas Frequentes</Link>
                   <Link to="/sugestoes" className="hover:text-indigo-600">Sugestões</Link>
@@ -955,6 +958,7 @@ export default function App() {
                   <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>
                   <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
                   <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>
+                  <PWAInstallButton variant="footer-link" />
                   <a href="mailto:mercadolusopt@gmail.com" className="hover:text-indigo-600 text-slate-500 transition-colors normal-case flex items-center gap-1 font-semibold">
                     <span>📧</span> Contacto: mercadolusopt@gmail.com
                   </a>
