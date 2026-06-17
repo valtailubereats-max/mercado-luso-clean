@@ -306,18 +306,6 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/empreendedores" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
-              Empreendedores
-            </Link>
-            <Link to="/trabalhos" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
-              Trabalhos
-            </Link>
-            <Link to="/precos" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
-              Preços
-            </Link>
-            <Link to="/links" className="text-slate-600 hover:text-indigo-600 font-bold text-sm transition-colors">
-              Links Úteis
-            </Link>
             {!user && (
               <button onClick={handlePublishClick} className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1 cursor-pointer transition-colors">
                 <Plus size={20} /> <span>Publicar</span>
@@ -422,6 +410,14 @@ const Navbar = () => {
                         id="nav-empreendedores-link"
                       >
                         🏪 Empreendedores
+                      </Link>
+                      <Link
+                        to="/trabalhos"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        id="nav-trabalhos-link"
+                      >
+                        💼 Trabalhos
                       </Link>
                       <Link
                         to="/precos"
@@ -595,6 +591,14 @@ const Navbar = () => {
                           id="nav-empreendedores-link"
                         >
                           🏪 Empreendedores
+                        </Link>
+                        <Link
+                          to="/trabalhos"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-trabalhos-link-guest"
+                        >
+                          💼 Trabalhos
                         </Link>
                         <Link
                           to="/precos"
