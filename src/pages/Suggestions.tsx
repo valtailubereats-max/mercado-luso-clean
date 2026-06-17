@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { MessageSquare, Send, CheckCircle2, Sparkles } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, Sparkles, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { manualAddPoints } from '../utils/rewards';
 
 const Suggestions = () => {
+  const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -80,8 +82,19 @@ const Suggestions = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-slate-100"
+        className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-slate-100 relative"
       >
+        {/* Botão de Fechar / Voltar */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all cursor-pointer z-10"
+          aria-label="Voltar"
+          title="Voltar"
+          id="close-suggestions-btn"
+        >
+          <X size={20} />
+        </button>
+
         <div className="flex items-center gap-4 mb-8">
           <div className="w-12 h-12 bg-[#e8f7ee] rounded-2xl flex items-center justify-center text-pt-green">
             <MessageSquare size={28} />

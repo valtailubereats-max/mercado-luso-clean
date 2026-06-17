@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ShieldCheck, AlertTriangle, Send, Phone, MessageSquare, Info, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, AlertTriangle, Send, Phone, MessageSquare, Info, FileText, X } from 'lucide-react';
 
 const Report = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [adLink, setAdLink] = useState('');
@@ -42,8 +44,19 @@ const Report = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-slate-100"
+        className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-slate-100 relative"
       >
+        {/* Botão de Fechar / Voltar */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-6 right-6 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all cursor-pointer z-10"
+          aria-label="Voltar"
+          title="Voltar"
+          id="close-report-btn"
+        >
+          <X size={20} />
+        </button>
+
         <div className="flex items-center gap-4 mb-8">
           <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
             <AlertTriangle size={28} />
