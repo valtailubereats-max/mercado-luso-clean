@@ -450,5 +450,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidShare(request.resource.data) && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
+
+    match /system_health_alerts/{alertId} {
+      allow read, write: if isAdmin() || isModerator();
+    }
+
+    match /system_health_events/{eventId} {
+      allow read, write, create: if true;
+    }
   }
 }

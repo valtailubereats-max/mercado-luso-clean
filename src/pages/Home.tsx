@@ -428,19 +428,38 @@ const Home = () => {
         return;
       }
       try {
-        const q = query(
+        const qPaid = query(
           collection(db, 'ads'),
           where('status', '==', 'approved'),
           where('isFeatured', '==', true),
           where('country', '==', country),
           limit(20)
         );
-        const snapshot = await getDocsWithCacheFallback(q, `home/featured-ads/${country}`);
+        const qPerm = query(
+          collection(db, 'ads'),
+          where('status', '==', 'approved'),
+          where('isPermanentFeatured', '==', true)
+        );
+
+        const [paySnap, permSnap] = await Promise.all([
+          getDocsWithCacheFallback(qPaid, `home/featured-ads/${country}`),
+          getDocsWithCacheFallback(qPerm, `home/featured-permanent`)
+        ]);
+
         if (!active) return;
-        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+
+        const payDocs = paySnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+        const permDocs = permSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad));
+
+        const allDocs = [...payDocs];
+        permDocs.forEach(pAd => {
+          if (!allDocs.some(f => f.id === pAd.id)) {
+            allDocs.push(pAd);
+          }
+        });
         
-        setCachedFeaturedAds(docs, country);
-        setFeaturedAds(docs);
+        setCachedFeaturedAds(allDocs, country);
+        setFeaturedAds(allDocs);
         fetchedFeaturedCountry.current = country;
       } catch (err) {
         console.error('Erro ao buscar anúncios destacados:', err);
@@ -603,49 +622,80 @@ const Home = () => {
 
   const filteredFeaturedAds = useMemo(() => {
     const now = new Date();
+    
     let result = featuredAds.filter(ad => {
       if (ad.category === 'Trabalho/Empregos') return false;
-      if (!ad.isFeatured || !ad.featuredUntil) return false;
-      const featuredUntilDate = ad.featuredUntil.seconds
-        ? ad.featuredUntil.toDate()
-        : new Date(ad.featuredUntil);
-      if (featuredUntilDate <= now) return false;
-
+      
       const search = searchTerm.toLowerCase().trim();
       const matchesSearch = !search || ad.title?.toLowerCase().includes(search) || ad.description?.toLowerCase().includes(search);
       const matchesStatus = ad.status === 'approved' && (ad.adStatus === 'active' || ad.adStatus === 'sold' || !ad.adStatus);
-      return matchesSearch && matchesStatus;
-    });
+      if (!matchesSearch || !matchesStatus) return false;
 
-    result = result.filter(ad => {
+      // Allow country match or Ambos (for permanent)
       const adCountry = ad.country || 'Portugal';
-      return adCountry === country;
-    });
-    if (category !== 'Todas') result = result.filter(ad => ad.category === category);
-    
-    // Filtro inteligente de cidades para destaques Locais vs Nacionais
-    result = result.filter(ad => {
+      const matchesCountry = adCountry === country || (ad.isPermanentFeatured && adCountry === 'Ambos');
+      if (!matchesCountry) return false;
+
+      // Category filter
+      if (category !== 'Todas' && ad.category !== category) return false;
+
+      // City / Regional limits
       const isNational = ad.featuredLevel === 'national' || ad.plan === 'national' || !ad.featuredLevel;
-      
-      if (city === 'Todas') {
-        // Na homepage nacional, mostramos apenas destaques Nacionais (Premium)
-        return isNational;
-      } else {
-        // Numa cidade específica, mostramos Destaques Nacionais + Destaques Locais daquela cidade
+      if (city !== 'Todas') {
         const isLocal = ad.featuredLevel === 'local' || ad.plan === 'local' || ad.plan === 'highlight' || ad.plan === 'intermediate';
-        if (isNational) return true;
         if (isLocal) {
-          return ad.city?.toLowerCase().trim() === city.toLowerCase().trim();
+          if (ad.city?.toLowerCase().trim() !== city.toLowerCase().trim()) return false;
+        } else if (!isNational) {
+          return false;
         }
-        return false;
+      } else {
+        // city === 'Todas': show National (or all permanent if national or without city constraints)
+        if (!isNational) return false;
       }
+
+      return true;
     });
 
-    return result.sort((a, b) => {
+    // Check expiration only for non-permanent ads
+    const filteredActivePaid = result.filter(ad => {
+      if (ad.isPermanentFeatured) return false;
+      if (!ad.isFeatured || !ad.featuredUntil) return false;
+      
+      const featuredUntilDate = ad.featuredUntil.seconds
+        ? ad.featuredUntil.toDate()
+        : new Date(ad.featuredUntil);
+      return featuredUntilDate > now;
+    });
+
+    const filteredActivePermanent = result.filter(ad => ad.isPermanentFeatured);
+
+    // Priorities:
+    // 1. Destaques Nacionais ativos
+    // 2. Destaques Locais ativos
+    // 3. Destaques Permanentes
+    const paidNational = filteredActivePaid.filter(ad => ad.featuredLevel === 'national' || ad.plan === 'national' || !ad.featuredLevel);
+    const paidLocal = filteredActivePaid.filter(ad => ad.featuredLevel === 'local' || ad.plan === 'local' || ad.plan === 'highlight' || ad.plan === 'intermediate');
+
+    const sortByFeaturedUntilDesc = (a: Ad, b: Ad) => {
       const timeA = a.featuredUntil?.seconds ? a.featuredUntil.seconds * 1000 : new Date(a.featuredUntil).getTime();
       const timeB = b.featuredUntil?.seconds ? b.featuredUntil.seconds * 1000 : new Date(b.featuredUntil).getTime();
       return (timeB || 0) - (timeA || 0);
-    }).slice(0, 20);
+    };
+
+    paidNational.sort(sortByFeaturedUntilDesc);
+    paidLocal.sort(sortByFeaturedUntilDesc);
+
+    // Sort permanent highlights by creation date descending
+    filteredActivePermanent.sort((a, b) => {
+      const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
+      const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
+      return (timeB || 0) - (timeA || 0);
+    });
+
+    // Combine them in priority order: Paid National, Paid Local, Permanent Featured
+    let finalResult = [...paidNational, ...paidLocal, ...filteredActivePermanent];
+
+    return finalResult.slice(0, 20);
   }, [featuredAds, searchTerm, category, city, country]);
 
   const marqueeData = useMemo(() => {

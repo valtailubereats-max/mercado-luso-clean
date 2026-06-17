@@ -1,4 +1,4 @@
-import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, query, collection, where, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
@@ -45,6 +45,14 @@ export interface EmailData {
   };
   boas_vindas: {
     userName: string;
+  };
+  alerta_saude_sistema: {
+    adminName: string;
+    previousLevel?: string;
+    currentLevel: string;
+    healthPercentage: number;
+    alertDetailsString: string; // HTML or text listing alerts
+    actionRequired: string;
   };
 }
 
@@ -152,6 +160,14 @@ export async function sendEmailGeneric<T extends keyof EmailData>(
     return resJson;
   } catch (err: any) {
     console.warn(`[EmailService] Falha não impeditiva ao disparar email (${template}):`, err?.message || err);
+    // Log asynchronously to avoid blocking the caller
+    addDoc(collection(db, 'system_health_events'), {
+      type: 'email_failure',
+      error: err?.message || String(err),
+      timestamp: new Date(),
+      template
+    }).catch(logErr => console.warn('[EmailService] Failed to write failure event log:', logErr));
+    
     return { success: false, error: err?.message || String(err) };
   }
 }

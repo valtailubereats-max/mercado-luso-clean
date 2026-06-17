@@ -68,7 +68,7 @@ const CreateAd = () => {
     price: prefill?.price?.toString() || '',
     images: [] as string[],
     city: prefill?.city || PORTUGAL_CITIES[0],
-    country: (prefill?.country || 'Portugal') as 'Portugal' | 'Reino Unido',
+    country: (prefill?.country || 'Portugal') as 'Portugal' | 'Reino Unido' | 'Ambos',
     category: urlCategory || prefill?.category || categories[0] || 'Outros',
     plan: 'free' as 'free' | 'local' | 'national' | 'highlight',
     duration: 30, // Default for free
@@ -82,7 +82,8 @@ const CreateAd = () => {
     companyName: '',
     experienceRequired: '',
     useProfilePhone: true,
-    contactPhone: ''
+    contactPhone: '',
+    isPermanentFeatured: false
   });
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -289,7 +290,7 @@ const CreateAd = () => {
     };
   };
 
-  const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido') => {
+  const handleCountryChange = (newCountry: 'Portugal' | 'Reino Unido' | 'Ambos') => {
     const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
     
     setFormData(prev => {
@@ -411,7 +412,8 @@ const CreateAd = () => {
           companyName: data.companyName || '',
           experienceRequired: data.experienceRequired || '',
           useProfilePhone: data.useProfilePhone !== undefined ? data.useProfilePhone : true,
-          contactPhone: data.contactPhone || ''
+          contactPhone: data.contactPhone || '',
+          isPermanentFeatured: !!(data as any).isPermanentFeatured
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
@@ -795,6 +797,20 @@ const CreateAd = () => {
         experienceRequired: isJob ? formData.experienceRequired : ''
       };
 
+      if (isStaff) {
+        adData.isPermanentFeatured = !!formData.isPermanentFeatured;
+        if (formData.isPermanentFeatured) {
+          const farFuture = new Date();
+          farFuture.setFullYear(farFuture.getFullYear() + 100);
+          adData.isFeatured = true;
+          adData.featuredUntil = farFuture;
+          adData.featuredLevel = formData.plan === 'national' ? 'national' : 'local';
+          adData.featuredActivatedAt = new Date();
+        } else {
+          adData.isPermanentFeatured = false;
+        }
+      }
+
       // Proteger contra edição não autorizada de campos estratégicos em anúncios destacados com mais de 24h
       if (!isAdmin && isEditLocked && originalAd) {
         if (
@@ -896,7 +912,7 @@ const CreateAd = () => {
       }
 
       // Se não houver duplicado local, prosseguir normalmente para salvar ou cobrar destaque
-      if (isPaidDestaque && !alreadyHasThisDestaque && !isPromoActive) {
+      if (isPaidDestaque && !alreadyHasThisDestaque && !isPromoActive && !formData.isPermanentFeatured) {
         setPendingAdData(adData);
         setShowPaymentModal(true);
         setLoading(false);
@@ -1111,6 +1127,7 @@ const CreateAd = () => {
   };
 
   const isPromoActive = settings?.launchPromoActive !== false;
+  const isStaff = isAdmin || isModerator || profile?.role === 'admin' || profile?.role === 'moderator';
 
   if (fetching) return <div className="text-center py-20">A carregar...</div>;
 
@@ -1629,11 +1646,14 @@ const CreateAd = () => {
                 <select
                   value={formData.country}
                   disabled={!isAdmin && isEditLocked}
-                  onChange={(e) => handleCountryChange(e.target.value as 'Portugal' | 'Reino Unido')}
+                  onChange={(e) => handleCountryChange(e.target.value as any)}
                   className="w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold text-emerald-800 outline-none cursor-pointer appearance-none shadow-sm hover:border-emerald-200 transition-all font-sans disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="Portugal" className="font-bold text-slate-900 bg-white">🇵🇹 Portugal</option>
                   <option value="Reino Unido" className="font-bold text-slate-900 bg-white">🇬🇧 Reino Unido</option>
+                  {isStaff && (
+                    <option value="Ambos" className="font-bold text-slate-900 bg-white">🌐 Ambos os Países</option>
+                  )}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-emerald-800 font-bold select-none">
                   ▼
@@ -1707,6 +1727,70 @@ const CreateAd = () => {
             )}
 
             <div className="space-y-4 md:col-span-2">
+              {isStaff && (
+                <div className="p-6 bg-amber-500/10 border-2 border-amber-500/25 rounded-3xl space-y-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🛠️</span>
+                    <div>
+                      <h3 className="text-sm font-black text-amber-800 uppercase tracking-wider">Painel Administrativo: Destaque Permanente</h3>
+                      <p className="text-[11px] text-amber-900/75">Este anúncio pode ser configurado para nunca expirar e servir de preenchimento rotativo na Home.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white/60 rounded-2xl border border-amber-500/10 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <input
+                        id="isPermanentFeatured"
+                        type="checkbox"
+                        checked={formData.isPermanentFeatured}
+                        onChange={(e) => setFormData(prev => ({ ...prev, isPermanentFeatured: e.target.checked }))}
+                        className="w-5 h-5 accent-amber-600 rounded cursor-pointer"
+                      />
+                      <label htmlFor="isPermanentFeatured" className="text-sm font-bold text-slate-800 cursor-pointer select-none">
+                        ⭐ Ativar como Destaque Permanente
+                      </label>
+                    </div>
+                    <span className="text-[10px] font-black bg-amber-600 text-white px-2 py-1 rounded-lg uppercase tracking-wider">
+                      Staff Only
+                    </span>
+                  </div>
+
+                  {formData.isPermanentFeatured && (
+                    <motion.div 
+                      key="perm-fields"
+                      initial={{ opacity: 0, y: -10 }} 
+                      animate={{ opacity: 1, y: 0 }}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2"
+                    >
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-black tracking-wider text-amber-800 block">Nível do Destaque Permanente</label>
+                        <select
+                          value={formData.plan}
+                          onChange={(e) => setFormData(prev => ({ ...prev, plan: e.target.value as any }))}
+                          className="w-full px-4 py-3 bg-white border-2 border-amber-100 rounded-xl font-bold text-slate-800 outline-none cursor-pointer"
+                        >
+                          <option value="local">Destaque Local ⭐</option>
+                          <option value="national">Destaque Nacional ⭐⭐⭐</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-black tracking-wider text-amber-800 block">País de Exibição Permanente</label>
+                        <select
+                          value={formData.country}
+                          onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value as any }))}
+                          className="w-full px-4 py-3 bg-white border-2 border-amber-100 rounded-xl font-bold text-slate-800 outline-none cursor-pointer"
+                        >
+                          <option value="Portugal">🇵🇹 Portugal</option>
+                          <option value="Reino Unido">🇬🇧 Reino Unido</option>
+                          <option value="Ambos">🌐 Ambos os Países</option>
+                        </select>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider block">Tipo de Anúncio & Destaque</label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-4">
                 

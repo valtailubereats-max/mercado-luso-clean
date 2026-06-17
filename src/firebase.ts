@@ -10,7 +10,9 @@ import {
   Query,
   QuerySnapshot,
   DocumentReference,
-  DocumentSnapshot
+  DocumentSnapshot,
+  collection,
+  addDoc
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
@@ -120,8 +122,9 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMsg = error instanceof Error ? error.message : String(error);
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -139,6 +142,20 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+
+  // If this is a permission error, log it to our system_health_events collection
+  if (errorMsg.toLowerCase().includes('permission') || errorMsg.toLowerCase().includes('denied') || errorMsg.toLowerCase().includes('insufficient')) {
+    addDoc(collection(db, 'system_health_events'), {
+      type: 'firestore_error',
+      error: errorMsg,
+      timestamp: new Date(),
+      operationType,
+      path
+    }).catch(logErr => {
+      console.warn('Silent skip: Failed to log firestore health event to avoid loop:', logErr);
+    });
+  }
+
   throw new Error(JSON.stringify(errInfo));
 }
 

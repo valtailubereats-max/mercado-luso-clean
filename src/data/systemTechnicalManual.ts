@@ -475,6 +475,26 @@ export const manualItems: ManualItem[] = [
     tags: ['olx', 'gumtree', 'importação', 'ia', 'scraper', 'criar']
   },
   {
+    id: 'sistema-saude',
+    title: 'Monitor de Saúde do Sistema',
+    type: 'Admin',
+    description: 'Sistema automático de monitorização de integridade técnica e de conteúdo da plataforma. Mede o percentual de saúde total (100% de base) e alerta por e-mail a equipa de Staff sobre incidentes não resolvidos.',
+    route: '/admin/health',
+    mainFile: 'src/pages/AdminSystemHealth.tsx',
+    relatedComponents: ['src/utils/healthService.ts'],
+    relatedFunctions: ['runHealthChecks', 'logHealthEvent', 'handleHealthLevelChangeEmails'],
+    firestoreCollections: ['system_health_alerts', 'system_health_events', 'settings'],
+    access: 'Admin (Apenas)',
+    buttons: ['Carregar Verificações', 'Limpar Resolvidos', 'Marcar como Resolvido', 'Simular Incidentes (E-mail, Importação, Permissão)', 'Repor Tudo Saudável'],
+    actions: ['Efetuar 8 verificações automáticas na base de dados', 'Escrever alertas em "system_health_alerts"', 'Disparar notificações de e-mail ao Staff quando a saúde cai', 'Permitir que admins limpem e marquem incidentes como resolvidos'],
+    technicalNotes: 'Ficheiros envolvidos: 1. src/pages/AdminSystemHealth.tsx (Dashboard visual); 2. src/utils/healthService.ts (Verificação e envio de e-mails); 3. src/firebase.ts (Interceção silenciosa de erros de permissão do Firestore); 4. src/utils/emailService.ts (Interceção de falhas de envio de e-mail); 5. src/pages/AdminImport.tsx (Registo de falha de extração do Gemini).\n\nRegras de Dedução de Saúde:\nComeça em 100%. Cada alerta ativo aberto deduz pontos:\n- severidade info: reduz 3%\n- severidade warning: reduz 8%\n- severidade alert: reduz 15%\n- severidade critical: reduz 25%\n\nEstados de Alerta:\n- 🟢 Saudável: 85% a 100% (nenhum problema grave)\n- 🟡 Atenção: 65% a 84% (incidentes leves)\n- 🟠 Alerta: 40% a 64% (falhas moderadas)\n- 🔴 Crítico: 0% a 39% (interrupção crítica de fluxo)\n\nFluxo de E-mail:\nQuando o nível se altera para Amarelo, Laranja ou Vermelho, um e-mail é enviado a todos os admins registados. Um mecanismo de anti-spam limita disparos repetidos do mesmo estado a um período mínimo de 30 minutos.\n\nComo Adicionar Novas Verificações:\nDesenvolvedores futuros podem facilmente adicionar novos testes adicionando um bloco try-catch dentro da função "runHealthChecks()" em "src/utils/healthService.ts". Conclua a verificação computando os dados sob as condições desejadas e adicione as informações úteis ao array "alertsToCreate" usando "alertsToCreate.push({ title, description, severity, source, recommendedAction, relatedLink })". A pontuação vital e o fluxo de e-mails se adaptarão automaticamente!',
+    failurePoints: [
+      'Ciclos de envio de e-mail infinitos resolvidos pelo tracker com mínimo de 30 minutos.',
+      'Recursão infinita de escrita se um erro do Firestore for gerado pela própria escrita no log (tratado com catches silenciosos).'
+    ],
+    tags: ['saúde', 'monitor', 'alerta', 'correção', 'erros', 'status', 'verificação']
+  },
+  {
     id: 'admin-dashboard',
     title: 'Painel Geral do Admin (Dashboard)',
     type: 'Admin',
@@ -634,6 +654,30 @@ export const manualItems: ManualItem[] = [
       'Incompatibilidade do fuso horário ao comparar timestamps do servidor.'
     ],
     tags: ['sorteios', 'parcerias', 'campanhas', 'bilhetes', 'partilhar', 'whatsapp', 'pesos', 'manual']
+  },
+  {
+    id: 'destaques-permanentes',
+    title: 'Destaques Permanentes Administrativos (Fallback Inteligente)',
+    type: 'Admin',
+    description: 'Gestão exclusiva de anúncios que permanecem destacados indefinidamente na Home para preenchimento de carrosséis e manutenção de volume estético, funcionando como um fallback automático e inteligente na ausência de destaques pagos ativos.',
+    route: '/create-ad, /edit-ad/:id',
+    mainFile: 'src/pages/CreateAd.tsx',
+    relatedComponents: ['src/pages/Home.tsx', 'src/components/SearchableCitySelect.tsx'],
+    relatedFunctions: ['fetchFeatured', 'filteredFeaturedAds', 'handleSubmit', 'handleCountryChange'],
+    firestoreCollections: ['ads', 'users', 'settings'],
+    access: 'Apenas Administradores e Moderadores (Gestão no painel do formulário)',
+    buttons: ['Ativar como Destaque Permanente (Toggle)', 'Nível do Destaque Permanente (Local/Nacional)', 'Alternar País de Exibição Permanente (Portugal/Reino Unido/Ambos)'],
+    actions: [
+      'Bypassar o fluxo de faturamento do Stripe se for um Destaque Permanente ativo',
+      'Configurar a exibição regional ("Ambos") para anúncios que cruzam Portugal ou Reino Unido',
+      'Excluir a verificação de expiração temporal ao filtrar destaques na página inicial'
+    ],
+    technicalNotes: 'Os Destaques Permanentes configuram "isPermanentFeatured" como true, setam "isFeatured" como true, e definem uma data de expiração fixa simulando longos períodos (100 anos no futuro). Isso dispensa cronjobs e garante visibilidade ilimitada, ordenando-se abaixo de anúncios pagos legítimos.',
+    failurePoints: [
+      'Conflitos ao tentar faturar anúncios reclassificados manualmente para Destaque Permanente.',
+      'Falha na busca pela home ao filtrar países "Ambos" se a computação reativa local ignorar esse valor no seletor de localização padrão.'
+    ],
+    tags: ['destaques', 'permanentes', 'carrossel', 'fallback', 'admin', 'moderadores', 'ambos']
   }
 ];
 
@@ -769,5 +813,27 @@ export const technicalFlows: TechnicalFlow[] = [
     mainFiles: ['src/pages/Sorteios.tsx', 'src/pages/AdminSorteios.tsx', 'firestore.rules'],
     firestoreCollections: ['giveaways', 'participations', 'shares'],
     expectedResult: 'A 1ª partilha cria a participação garantida com 1 bilhete. Partilhas adicionais geram mais bilhetes (máx 3), respeitando o espaço mínimo de 5 minutos desde a última partilha.'
+  },
+  {
+    id: 'flow-destaque-permanente-admin',
+    title: 'Como gerir Destaques Permanentes (Staff)',
+    description: 'Fluxo administrativo para configurar anúncios de preenchimento rotativo eterno de destaques na página principal.',
+    startPoint: 'Aceder a criar ou editar anúncio como Admin ou Moderador, ativando "Destaque Permanente"',
+    buttonsInvolved: ['Ativar como Destaque Permanente', 'Nível do Destaque Permanente', 'País de Exibição Permanente', 'Criar/Publicar Anúncio'],
+    pagesInvolved: ['CreateAd.tsx', 'Home.tsx'],
+    mainFiles: ['src/pages/CreateAd.tsx', 'src/pages/Home.tsx', 'src/types.ts'],
+    firestoreCollections: ['ads'],
+    expectedResult: 'Criação ou atualização instantânea sem pagamento obrigatório, com preenchimento garantido do carrossel em Portugal, Reino Unido ou Ambos, agindo como fallback ordenado inferiormente aos destaques pagos vigentes.'
+  },
+  {
+    id: 'flow-monitor-saude',
+    title: 'Monitor de Saúde do Sistema e Notificações de Alerta',
+    description: 'Processo automatizado de deteção e tratamento de anomalias com fluxo de despacho de e-mails para Staff.',
+    startPoint: 'Ocorrência de anomalias (erro do Firestore, falha SMTP, importação rejeitada pelo Gemini) ou abertura da página de Saúde por um Admin',
+    buttonsInvolved: ['Carregar Verificações', 'Marcar como Resolvido', 'Limpar Resolvidos'],
+    pagesInvolved: ['AdminSystemHealth.tsx'],
+    mainFiles: ['src/pages/AdminSystemHealth.tsx', 'src/utils/healthService.ts', 'src/firebase.ts', 'src/utils/emailService.ts'],
+    firestoreCollections: ['system_health_alerts', 'system_health_events', 'settings'],
+    expectedResult: 'Sinalização visual imediata do percentual de integridade no dashboard admin, registo do alerta em estado "aberto", envio de e-mail automatizado de alerta ao Staff administrativo mantendo intervalos de 30 minutos anti-spam.'
   }
 ];

@@ -19,7 +19,8 @@ import {
   Store,
   QrCode,
   BookOpen,
-  Gift
+  Gift,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,6 +51,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: Activity, label: 'Saúde do Sistema', path: '/admin/health' },
     { icon: Upload, label: 'Importar via IA', path: '/admin/import' },
     { icon: ShoppingBag, label: 'Gerir Anúncios', path: '/admin/ads' },
     { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },

@@ -34,6 +34,7 @@ import Empreendedores from './pages/Empreendedores';
 import EmpreendedorDetalhes from './pages/EmpreendedorDetalhes';
 import EmpreendedorProduto from './pages/EmpreendedorProduto';
 import AdminShowcases from './pages/AdminShowcases';
+import AdminSystemHealth from './pages/AdminSystemHealth';
 import VitrineComercial from './pages/VitrineComercial';
 import Convite from './pages/Convite';
 import AdminInvitations from './pages/AdminInvitations';
@@ -913,6 +914,7 @@ export default function App() {
                 <Route path="/anuncio/:id" element={<AdDetails />} />
                 <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
                 <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+                <Route path="/admin/health" element={<AdminLayout><AdminSystemHealth /></AdminLayout>} />
                 <Route path="/admin/showcases" element={<AdminLayout><AdminShowcases /></AdminLayout>} />
                 <Route path="/admin/import" element={<AdminLayout><AdminImport /></AdminLayout>} />
                 <Route path="/admin/marketing" element={<AdminLayout><AdminMarketing /></AdminLayout>} />

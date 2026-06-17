@@ -202,6 +202,45 @@ function renderEmail(template: string, data: any): { subject: string; html: stri
       ctaText = 'Configurar meu Perfil';
       break;
 
+    case 'alerta_saude_sistema':
+      const levelColors: Record<string, string> = {
+        'Saudável': '#22c55e',
+        'Atenção': '#eab308',
+        'Alerta': '#f97316',
+        'Crítico': '#ef4444'
+      };
+      const alertColor = levelColors[data.currentLevel] || '#6366f1';
+      subject = `⚠️ Alerta de Saúde do Sistema: ${data.currentLevel} (${data.healthPercentage}%)`;
+      bodyContent = `
+        <p style="font-size: 16px; font-weight: bold; margin-top: 0;">Olá ${data.adminName || 'Administrador'},</p>
+        <p>O Monitor de Saúde do Sistema detetou uma alteração nos sinais vitais da aplicação.</p>
+        
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 6px solid ${alertColor};">
+          <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Estado Geral</p>
+          <h2 style="margin: 0 0 10px 0; font-size: 28px; font-weight: 800; color: ${alertColor};">
+            ${data.currentLevel} (${data.healthPercentage}%)
+          </h2>
+          ${data.previousLevel ? `<p style="margin: 0; font-size: 13px; color: #64748b;">Nível anterior: <strong>${data.previousLevel}</strong></p>` : ''}
+        </div>
+
+        <h3 style="font-size: 14px; font-weight: bold; margin: 25px 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em; color: #1e293b;">Alertas Ativos Encontrados:</h3>
+        <div style="background-color: #ffffff; border: 1px solid #f1f5f9; border-radius: 8px; font-size: 14px; line-height: 1.5; color: #475569;">
+          ${data.alertDetailsString || '<p style="padding: 15px; margin: 0; color: #64748b;">Nenhum alerta ativo de momento.</p>'}
+        </div>
+
+        ${data.actionRequired ? `
+          <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <strong style="color: #b45309; display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em;">Ação Recomendada</strong>
+            <span style="color: #78350f;">${data.actionRequired}</span>
+          </div>
+        ` : ''}
+
+        <p style="margin-top: 25px;">Por favor, examine o painel de saúde do sistema no painel administrativo para obter detalhes e resolver as ocorrências.</p>
+      `;
+      ctaLink = `${baseUrl}/admin/health`;
+      ctaText = 'Abrir Monitor de Saúde';
+      break;
+
     default:
       subject = `Notificação Automática Mercado Luso`;
       bodyContent = `

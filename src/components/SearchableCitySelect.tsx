@@ -8,7 +8,7 @@ interface SearchableCitySelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
-  country?: 'Portugal' | 'Reino Unido' | '';
+  country?: 'Portugal' | 'Reino Unido' | 'Ambos' | '';
   disabled?: boolean;
 }
 
@@ -50,6 +50,7 @@ export const SearchableCitySelect: React.FC<SearchableCitySelectProps> = ({
   const activeCities = useMemo(() => {
     if (country === 'Reino Unido') return UK_CITIES;
     if (country === 'Portugal') return PORTUGAL_CITIES;
+    if (country === 'Ambos') return [...PORTUGAL_CITIES, ...UK_CITIES];
     return [];
   }, [country]);
 

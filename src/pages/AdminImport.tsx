@@ -5,6 +5,8 @@ import { Upload, Sparkles, Check, AlertCircle, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { CITIES } from '../types';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const AdminImport = () => {
   const { categories } = useSettings();
@@ -58,6 +60,12 @@ const AdminImport = () => {
     } catch (err: any) {
       console.error('Erro no processamento do Gemini no servidor:', err);
       setError(`⚠️ Falha na IA: ${err.message || 'Erro inesperado'}`);
+      // Log failure to health events
+      addDoc(collection(db, 'system_health_events'), {
+        type: 'import_failure',
+        error: err?.message || String(err),
+        timestamp: new Date()
+      }).catch(logErr => console.warn('[AdminImport] Failed to log import failure:', logErr));
     } finally {
       setAnalyzing(false);
     }

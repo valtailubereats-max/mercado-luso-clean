@@ -117,7 +117,7 @@ export interface Ad {
   imageUrl: string; // Keep for backward compatibility, but use images[0]
   images: string[];
   city: string;
-  country?: 'Portugal' | 'Reino Unido';
+  country?: 'Portugal' | 'Reino Unido' | 'Ambos';
   category: string;
   sellerId: string;
   sellerPhone: string;
@@ -134,6 +134,7 @@ export interface Ad {
   contactEmail?: string;
   externalUrl?: string;
   isFeatured?: boolean;
+  isPermanentFeatured?: boolean;
   featuredUntil?: any; // Firestore Timestamp
   pointsEarned?: boolean;
   imagePositionX?: number;
@@ -404,4 +405,17 @@ export interface GiveawayShare {
   channel: string;
   createdAt: any; // Firestore Timestamp
 }
+
+export interface SystemHealthAlert {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'alert' | 'critical';
+  source: 'ads' | 'email' | 'import' | 'firestore' | 'vitrines' | 'sorteios' | 'destaque';
+  createdAt: any; // Date or Firestore Timestamp
+  status: 'aberto' | 'resolvido';
+  recommendedAction: string;
+  relatedLink: string;
+}
+
 
