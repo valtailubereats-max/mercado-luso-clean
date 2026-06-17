@@ -44,8 +44,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }, [loading, user, location.pathname, location.search, navigate]);
 
   React.useEffect(() => {
-    if (!loading && user && isStaff && isModerator && location.pathname !== '/admin/ads' && location.pathname !== '/admin/marketing' && location.pathname !== '/admin/showcases') {
-      navigate('/admin/ads', { replace: true });
+    const isAllowedPath = [
+      '/admin/dashboard',
+      '/admin/ads',
+      '/admin/marketing',
+      '/admin/showcases',
+      '/admin/invitations'
+    ].includes(location.pathname);
+
+    if (!loading && user && isStaff && isModerator && !isAllowedPath) {
+      navigate('/admin/dashboard', { replace: true });
     }
   }, [isModerator, isStaff, loading, location.pathname, navigate, user]);
 
@@ -93,7 +101,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const filterItem = (path: string) => {
     if (!isModerator) return true;
-    return path === '/admin/ads' || path === '/admin/marketing' || path === '/admin/showcases' || path === '/admin/invitations' || path === '/admin/sorteios';
+    return [
+      '/admin/dashboard',
+      '/admin/ads',
+      '/admin/marketing',
+      '/admin/showcases',
+      '/admin/invitations'
+    ].includes(path);
   };
 
   const groupedSections = [
@@ -221,7 +235,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
         {menuModel === 'classic' ? (
           menuItems
-            .filter((item) => !isModerator || item.path === '/admin/ads' || item.path === '/admin/marketing' || item.path === '/admin/showcases')
+            .filter((item) => !isModerator || [
+              '/admin/dashboard',
+              '/admin/ads',
+              '/admin/marketing',
+              '/admin/showcases',
+              '/admin/invitations'
+            ].includes(item.path))
             .map((item) => {
               const isActive = location.pathname === item.path;
               return (
