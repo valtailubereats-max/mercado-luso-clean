@@ -298,20 +298,20 @@ const Login = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-12 px-4">
+    <div className="max-w-md mx-auto mt-6 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100"
+        className="bg-white p-5 sm:p-6 rounded-3xl shadow-2xl border border-slate-100"
       >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-200">
-            <ShoppingBag size={32} />
+        <div className="text-center mb-4">
+          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white mx-auto mb-2 shadow-lg shadow-indigo-200">
+            <ShoppingBag size={24} />
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             {mode === 'login' ? 'Bem-vindo de volta!' : mode === 'register' ? 'Criar conta' : 'Recuperar senha'}
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">
+          <p className="text-slate-500 mt-1 font-medium text-sm leading-tight">
             {mode === 'login' 
               ? 'Entre para continuar a negociar.' 
               : mode === 'register' ? 'Junte-se ao maior mercado de Portugal.' : 'Introduza o seu e-mail para receber as instruções.'}
@@ -322,9 +322,9 @@ const Login = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-indigo-50 text-indigo-700 p-4 rounded-2xl mb-6 text-sm font-semibold border border-indigo-100 flex items-start gap-2.5"
+            className="bg-indigo-50 text-indigo-700 p-3 rounded-xl mb-4 text-xs font-semibold border border-indigo-100 flex items-start gap-2"
           >
-            <ShieldCheck size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+            <ShieldCheck size={16} className="text-indigo-600 shrink-0 mt-0.5" />
             <span>{searchParams.get('message')}</span>
           </motion.div>
         )}
@@ -333,7 +333,7 @@ const Login = () => {
           <motion.div 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm font-bold border border-red-100 flex items-center gap-2"
+            className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-xs font-bold border border-red-100 flex items-center gap-2"
           >
             <div className="w-1.5 h-1.5 bg-red-600 rounded-full shrink-0" />
             {error}
@@ -344,24 +344,24 @@ const Login = () => {
           <motion.div 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl mb-6 text-sm font-bold border border-emerald-100 flex items-center gap-2"
+            className="bg-emerald-50 text-emerald-600 p-3 rounded-xl mb-4 text-xs font-bold border border-emerald-100 flex items-center gap-2"
           >
             <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full shrink-0" />
             {successMessage}
           </motion.div>
         )}
 
-        <form onSubmit={mode === 'forgot' ? handlePasswordReset : handleEmailAuth} className="space-y-4 mb-6">
+        <form onSubmit={mode === 'forgot' ? handlePasswordReset : handleEmailAuth} className="space-y-3 mb-4">
           {mode === 'register' && (
             <>
               <div className="relative">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
                   placeholder="Nome completo"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-900"
                 />
               </div>
               <div className="space-y-1">
@@ -373,7 +373,7 @@ const Login = () => {
                   <select
                     value={profileCountry}
                     onChange={(e) => setProfileCountry(e.target.value as 'Portugal' | 'Reino Unido')}
-                    className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-800 appearance-none cursor-pointer"
+                    className="w-full pl-12 pr-10 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl outline-none transition-all font-bold text-slate-800 appearance-none cursor-pointer"
                   >
                     <option value="Portugal">🇵🇹 Portugal</option>
                     <option value="Reino Unido">🇬🇧 Reino Unido</option>
@@ -384,31 +384,31 @@ const Login = () => {
             </>
           )}
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="email"
               placeholder="E-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-900"
             />
           </div>
           {mode !== 'forgot' && (
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-900"
+                className="w-full pl-12 pr-12 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-900"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           )}
@@ -438,49 +438,49 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50 group"
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50 group"
           >
             <span>{loading ? 'A processar...' : (mode === 'login' ? 'Entrar' : mode === 'register' ? 'Criar Conta' : 'Enviar E-mail')}</span>
-            {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+            {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
           </button>
         </form>
 
         {mode !== 'forgot' && (
           <>
-            <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
+            <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 mb-4">
               <input
                 type="checkbox"
                 id="terms"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                className="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
               />
-              <label htmlFor="terms" className="text-xs text-slate-600 cursor-pointer leading-relaxed font-medium">
+              <label htmlFor="terms" className="text-xs text-slate-600 cursor-pointer leading-tight font-medium">
                 Li e concordo com os <Link to="/terms" className="text-indigo-600 font-bold hover:underline">Termos de Uso</Link> e reconheço que a plataforma é apenas intermediária.
               </label>
             </div>
 
-            <div className="relative mb-6">
+            <div className="relative mb-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-100"></div>
               </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
-                <span className="bg-white px-4 text-slate-400">Aceder com Chave Google</span>
+              <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+                <span className="bg-white px-3 text-slate-400">Aceder com Chave Google</span>
               </div>
             </div>
 
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-50 hover:border-indigo-200 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 py-2.5 rounded-xl font-bold hover:bg-slate-50 hover:border-indigo-200 transition-all disabled:opacity-50 text-sm"
             >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
               <span>Google</span>
             </button>
           </>
         )}
 
-        <div className="text-center mt-6">
+        <div className="text-center mt-4">
           {mode === 'forgot' ? (
             <button
               onClick={() => {
@@ -519,7 +519,7 @@ const Login = () => {
           )}
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-50 text-center text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black flex items-center justify-center gap-2">
+        <div className="mt-4 pt-3 border-t border-slate-50 text-center text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black flex items-center justify-center gap-1.5">
           <ShieldCheck size={14} />
           <span>Seguro e Rápido</span>
         </div>
