@@ -49,6 +49,32 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   }, [isModerator, isStaff, loading, location.pathname, navigate, user]);
 
+  const [menuModel, setMenuModel] = useState<'classic' | 'grouped'>(() => {
+    return (localStorage.getItem('admin_menu_model') as 'classic' | 'grouped') || 'grouped';
+  });
+
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
+    marketing: location.pathname === '/admin/marketing' || location.pathname === '/admin/invitations' || location.pathname === '/admin/sorteios'
+  });
+
+  const handleSetMenuModel = (model: 'classic' | 'grouped') => {
+    setMenuModel(model);
+    localStorage.setItem('admin_menu_model', model);
+  };
+
+  const toggleSubmenu = (key: string) => {
+    setOpenSubmenus(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  React.useEffect(() => {
+    if (location.pathname === '/admin/marketing' || location.pathname === '/admin/invitations' || location.pathname === '/admin/sorteios') {
+      setOpenSubmenus(prev => ({ ...prev, marketing: true }));
+    }
+  }, [location.pathname]);
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Activity, label: 'Saúde do Sistema', path: '/admin/health' },
@@ -64,6 +90,69 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Settings, label: 'Definições', path: '/admin/settings' },
     { icon: BookOpen, label: 'Manual Técnico', path: '/admin/manual-tecnico' },
   ];
+
+  const filterItem = (path: string) => {
+    if (!isModerator) return true;
+    return path === '/admin/ads' || path === '/admin/marketing' || path === '/admin/showcases' || path === '/admin/invitations' || path === '/admin/sorteios';
+  };
+
+  const groupedSections = [
+    {
+      title: 'Principal',
+      items: [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+        { icon: Activity, label: 'Saúde do Sistema', path: '/admin/health' },
+      ]
+    },
+    {
+      title: 'Operações',
+      items: [
+        { icon: ShoppingBag, label: 'Gerir Anúncios', path: '/admin/ads' },
+        { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
+        { icon: Users, label: 'Utilizadores', path: '/admin/users' },
+      ]
+    },
+    {
+      title: 'Marketing & Promoção',
+      items: [
+        {
+          icon: Megaphone,
+          label: 'Marketing da Plataforma',
+          path: '/admin/marketing',
+          isSubmenuParent: true,
+          submenuKey: 'marketing',
+          submenuItems: [
+            { icon: Megaphone, label: 'Campanhas', path: '/admin/marketing' },
+            { icon: QrCode, label: 'Convites', path: '/admin/invitations' },
+            { icon: Gift, label: 'Sorteios & Campanhas', path: '/admin/sorteios' },
+          ]
+        },
+        { icon: Upload, label: 'Importar via IA', path: '/admin/import' },
+      ]
+    },
+    {
+      title: 'Utilitários & Suporte',
+      items: [
+        { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
+        { icon: Camera, label: 'Loja de Fotos', path: '/admin/fotos' },
+        { icon: Settings, label: 'Definições', path: '/admin/settings' },
+        { icon: BookOpen, label: 'Manual Técnico', path: '/admin/manual-tecnico' },
+      ]
+    }
+  ];
+
+  const filteredSections = groupedSections.map(section => {
+    const visibleItems = section.items.map(item => {
+      if (item.isSubmenuParent && item.submenuItems) {
+        const visibleSubitems = item.submenuItems.filter(sub => filterItem(sub.path));
+        if (visibleSubitems.length === 0) return null;
+        return { ...item, submenuItems: visibleSubitems };
+      }
+      return filterItem(item.path) ? item : null;
+    }).filter(Boolean) as typeof section.items;
+
+    return { ...section, items: visibleItems };
+  }).filter(section => section.items.length > 0);
 
   if (loading || !user) {
     return (
@@ -95,7 +184,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full py-6 px-4">
-      <div className="flex items-center gap-3 px-2 mb-10">
+      <div className="flex items-center gap-3 px-2 mb-4 shrink-0">
         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
           <ShoppingBag size={24} />
         </div>
@@ -105,32 +194,145 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1">
-        {menuItems
-          .filter((item) => !isModerator || item.path === '/admin/ads' || item.path === '/admin/marketing' || item.path === '/admin/showcases')
-          .map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all group ${
-                  isActive 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'} />
-                <span className="flex-1">{item.label}</span>
-                {isActive && <ChevronRight size={16} />}
-              </Link>
-            );
-          })}
+      {/* Menu Model Switcher */}
+      <div className="mb-4 px-1 shrink-0">
+        <div className="flex bg-slate-100 p-1 rounded-xl text-[11px] relative border border-slate-200/50">
+          <button
+            onClick={() => handleSetMenuModel('grouped')}
+            className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1 ${
+              menuModel === 'grouped' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full transition-all ${menuModel === 'grouped' ? 'bg-indigo-600' : 'bg-transparent'}`} />
+            Agrupado
+          </button>
+          <button
+            onClick={() => handleSetMenuModel('classic')}
+            className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1 ${
+              menuModel === 'classic' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full transition-all ${menuModel === 'classic' ? 'bg-indigo-600' : 'bg-transparent'}`} />
+            Clássico
+          </button>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
+        {menuModel === 'classic' ? (
+          menuItems
+            .filter((item) => !isModerator || item.path === '/admin/ads' || item.path === '/admin/marketing' || item.path === '/admin/showcases')
+            .map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition-all group ${
+                    isActive 
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'} />
+                  <span className="flex-1">{item.label}</span>
+                  {isActive && <ChevronRight size={16} />}
+                </Link>
+              );
+            })
+        ) : (
+          filteredSections.map((section, idx) => (
+            <div key={idx} className="space-y-1 pt-2 first:pt-0">
+              <h3 className="px-4 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider leading-none mb-1">
+                {section.title}
+              </h3>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  if (item.isSubmenuParent && item.submenuItems) {
+                    const isSubmenuOpen = !!openSubmenus[item.submenuKey || ''];
+                    const isAnyChildActive = item.submenuItems.some(sub => location.pathname === sub.path);
+                    
+                    return (
+                      <div key={item.path} className="space-y-0.5">
+                        <button
+                          onClick={() => toggleSubmenu(item.submenuKey || '')}
+                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl font-bold transition-all group ${
+                            isAnyChildActive 
+                              ? 'bg-indigo-50 text-indigo-700' 
+                              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <item.icon size={20} className={isAnyChildActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-600'} />
+                          <span className="flex-1 text-left">{item.label}</span>
+                          <ChevronRight 
+                            size={14} 
+                            className={`transform transition-transform duration-200 ${
+                              isSubmenuOpen ? 'rotate-90 text-indigo-600' : 'text-slate-400'
+                            }`} 
+                          />
+                        </button>
+                        
+                        <AnimatePresence initial={false}>
+                          {isSubmenuOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.15 }}
+                              className="overflow-hidden pl-4 ml-6 border-l-2 border-slate-100/80 space-y-0.5"
+                            >
+                              {item.submenuItems.map((subItem) => {
+                                const isChildActive = location.pathname === subItem.path;
+                                return (
+                                  <Link
+                                    key={subItem.path}
+                                    to={subItem.path}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                      isChildActive
+                                        ? 'bg-indigo-600 text-white shadow-sm font-bold'
+                                        : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
+                                    }`}
+                                  >
+                                    <subItem.icon size={15} className={isChildActive ? 'text-white' : 'text-slate-400'} />
+                                    <span>{subItem.label}</span>
+                                  </Link>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2 rounded-xl font-bold transition-all group ${
+                        isActive 
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
+                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'} />
+                      <span className="flex-1">{item.label}</span>
+                      {isActive && <ChevronRight size={16} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        )}
       </nav>
 
-      <div className="mt-auto pt-6 border-t border-slate-100">
-        <div className="flex items-center gap-3 px-2 mb-6">
+      <div className="mt-auto pt-4 border-t border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 px-2 mb-4">
           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-bold">
             {user?.email?.[0].toUpperCase()}
           </div>
@@ -141,7 +343,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
         <button 
           onClick={() => navigate('/')}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all group"
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all group"
         >
           <LogOut size={20} className="text-slate-400 group-hover:text-red-600" />
           <span>Sair do Painel</span>
