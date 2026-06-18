@@ -692,8 +692,9 @@ export const manualItems: ManualItem[] = [
     access: 'Público (Qualquer visitante)',
     buttons: ['📱 Instalar Mercado Luso (Menu Mobile)', '📱 Instalar App (Perfil)', '📱 Instalar App (Rodapé)'],
     actions: ['Instalar App nativamente (Android/Chrome)', 'Exibir guia passo a passo ilustrado (iOS/Safari)', 'Armazenar preferência de adiamento (Not Now) por 7 dias no localStorage'],
-    technicalNotes: 'Usa um Service worker de ciclo de ativação imediata (skipWaiting/clients.claim) e cache dinâmico com estratégia Network-First para evitar problemas de asset bloqueado ou travamento de updates na plataforma. Isento de requisitos de firestore.rules.',
+    technicalNotes: 'Usa um Service worker de ciclo de ativação imediata (skipWaiting/clients.claim) e cache dinâmico com estratégia Network-First para evitar problemas de asset bloqueado ou travamento de updates na plataforma. Isento de requisitos de firestore.rules. Ícones PWA derivados diretamente da identidade visual original do Mercado Luso (fundo verde oficial #046a38 e sacola de compras branca), gerados programaticamente em formato PNG real (assinatura binária 89504e470d0a1a0a) para evitar a rejeição do Chrome Android e habilitar o WebAPK nativo.',
     failurePoints: [
+      'Uso de arquivos JPEG renomeados incorretamente como .png causará rejeição silenciosa de geração do WebAPK no Chrome Android.',
       'Bloqueio do prompt nativo se a ligação não for HTTPS (permitido somente em localhost para testes).',
       'Registo do Service Worker ignorado pelo navegador caso já exista uma sessão com service worker travado em cache.'
     ],
