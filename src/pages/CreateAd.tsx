@@ -83,7 +83,9 @@ const CreateAd = () => {
     experienceRequired: '',
     useProfilePhone: true,
     contactPhone: '',
-    isPermanentFeatured: false
+    isPermanentFeatured: false,
+    listingType: 'normal' as 'normal' | 'informativo',
+    targetUrl: ''
   });
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -413,7 +415,9 @@ const CreateAd = () => {
           experienceRequired: data.experienceRequired || '',
           useProfilePhone: data.useProfilePhone !== undefined ? data.useProfilePhone : true,
           contactPhone: data.contactPhone || '',
-          isPermanentFeatured: !!(data as any).isPermanentFeatured
+          isPermanentFeatured: !!(data as any).isPermanentFeatured,
+          listingType: data.listingType || 'normal',
+          targetUrl: data.targetUrl || ''
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
@@ -794,7 +798,9 @@ const CreateAd = () => {
         contractType: isJob ? formData.contractType : '',
         workSchedule: isJob ? formData.workSchedule : '',
         companyName: isJob ? formData.companyName.trim() : '',
-        experienceRequired: isJob ? formData.experienceRequired : ''
+        experienceRequired: isJob ? formData.experienceRequired : '',
+        listingType: isAdmin ? formData.listingType : (originalAd?.listingType || 'normal'),
+        targetUrl: isAdmin ? (formData.listingType === 'informativo' ? formData.targetUrl.trim() : '') : (originalAd?.targetUrl || '')
       };
 
       if (isStaff) {
@@ -1444,6 +1450,39 @@ const CreateAd = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {isAdmin && (
+              <div className="bg-gradient-to-br from-indigo-50/70 to-blue-50/50 p-6 rounded-3xl border-2 border-indigo-100/80 md:col-span-2 space-y-4 shadow-sm">
+                <h4 className="font-bold text-slate-800 flex items-center gap-2 text-xs uppercase tracking-wider">
+                  <span>⚙️ Configurações de Administrador</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Tipo de Anúncio</label>
+                    <select
+                      value={formData.listingType}
+                      onChange={(e) => setFormData({ ...formData, listingType: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl focus:border-indigo-600 outline-none transition-all text-sm"
+                    >
+                      <option value="normal">Anúncio Normal (Abre página de detalhes)</option>
+                      <option value="informativo">Anúncio Informativo (Redireciona para Link Útil)</option>
+                    </select>
+                  </div>
+                  {formData.listingType === 'informativo' && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">URL de Destino (interno. Ex: /links?categoria=imigracao)</label>
+                      <input
+                        type="text"
+                        value={formData.targetUrl}
+                        onChange={(e) => setFormData({ ...formData, targetUrl: e.target.value })}
+                        placeholder="Ex: /links?categoria=imigracao"
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl focus:border-indigo-600 outline-none transition-all text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Título do Anúncio</label>
               <div className="relative">

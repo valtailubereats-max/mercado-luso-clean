@@ -443,7 +443,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
-          navigate(getAdUrl(ad));
+          if (ad.listingType === 'informativo') {
+            navigate(ad.targetUrl || '/links');
+          } else {
+            navigate(getAdUrl(ad));
+          }
         }}
         className={`card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer relative transition-all duration-300 ${
           isFeaturedVariant
@@ -469,6 +473,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 : 'top-3 left-3 text-xs w-7 h-7'
             }`}>
               <span>{isNationalHighlight ? '👑' : '⭐'}</span>
+            </div>
+          )}
+          {ad.listingType === 'informativo' && (
+            <div className="absolute top-2 right-2 z-10 bg-emerald-600 text-white text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-md shadow-md">
+              💡 Guia Útil
             </div>
           )}
           {(ad.status === 'sold' || ad.adStatus === 'sold') && (
@@ -533,10 +542,14 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 <span
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`${getAdUrl(ad)}#localizacao`);
+                    if (ad.listingType === 'informativo') {
+                      navigate(ad.targetUrl || '/links');
+                    } else {
+                      navigate(`${getAdUrl(ad)}#localizacao`);
+                    }
                   }}
                   className="text-indigo-600 font-extrabold cursor-pointer hover:underline transition-colors"
-                  title="Ver localização no anúncio"
+                  title={ad.listingType === 'informativo' ? "Ver links úteis" : "Ver localização no anúncio"}
                 >
                   {ad.city}
                 </span>
@@ -584,7 +597,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 </button>
 
                 {/* WhatsApp ou Contato */}
-                {((getAdPhone() && getAdPhone().trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
+                {ad.listingType !== 'informativo' && ((getAdPhone() && getAdPhone().trim() !== '') || hasSourceUrl) && ad.adStatus !== 'sold' && ad.status !== 'sold' && (
                   <button
                     onClick={handleContactClick}
                     className={`transition-all border shadow-sm cursor-pointer hover:scale-110 active:scale-95 bg-slate-50 border-slate-100 ${
@@ -605,7 +618,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
 
               {/* Preço (Elemento final de maior destaque) */}
               <div className="mt-auto pt-1 flex flex-col items-center justify-center text-center">
-                {hasPrice ? (
+                {ad.listingType === 'informativo' ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 flex items-center gap-1">
+                      💡 Links Úteis
+                    </span>
+                  </div>
+                ) : hasPrice ? (
                   <div className="flex flex-col items-center justify-center">
                     <div className={`font-black text-indigo-600 tracking-tight leading-none ${
                       isFeaturedVariant ? 'text-sm md:text-base' : 'text-base md:text-lg'

@@ -57,6 +57,9 @@ service cloud.firestore {
              data.sellerName is string &&
              data.status in ['pending', 'approved', 'rejected', 'expired', 'archived', 'sold'] &&
              (!('adStatus' in data) || data.adStatus in ['active', 'near_expiration', 'expired', 'archived', 'sold']) &&
+             (!('listingType' in data) || data.listingType in ['normal', 'informativo']) &&
+             (!('listingType' in data) || data.listingType == 'normal' || isAdmin()) &&
+             (!('targetUrl' in data) || data.targetUrl == '' || data.targetUrl == null || isAdmin()) &&
              data.createdAt is timestamp;
     }
 

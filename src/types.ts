@@ -155,6 +155,8 @@ export interface Ad {
   isDuplicate?: boolean;
   duplicateReason?: string;
   duplicateOf?: string;
+  listingType?: 'normal' | 'informativo';
+  targetUrl?: string;
 }
 
 export interface Favorite {
