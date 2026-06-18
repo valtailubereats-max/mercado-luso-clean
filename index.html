@@ -7,7 +7,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
-    <meta name="theme-color" content="#046a38" />
+    <meta name="theme-color" content="#1a73e8" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -16,6 +16,36 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => {
+              console.log('[PWA] Service Worker registrado com sucesso:', reg.scope);
+              
+              // Handle update detection automatically
+              reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                if (installingWorker) {
+                  installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed') {
+                      if (navigator.serviceWorker.controller) {
+                        console.log('[PWA] Nova atualização disponível! Recarregando...');
+                        window.location.reload();
+                      } else {
+                        console.log('[PWA] Aplicativo pronto para uso offline!');
+                      }
+                    }
+                  };
+                }
+              };
+            })
+            .catch((err) => {
+              console.error('[PWA] Falha ao registrar Service Worker:', err);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
 
