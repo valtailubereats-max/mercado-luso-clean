@@ -1,12 +1,12 @@
-const CACHE_NAME = 'mercado-luso-pwa-v1';
+const CACHE_NAME = 'mercado-luso-pwa-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.ico',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png'
+  '/icons/favicon.ico?v=2',
+  '/icons/icon-192.png?v=2',
+  '/icons/icon-512.png?v=2',
+  '/icons/apple-touch-icon.png?v=2'
 ];
 
 // On install, we open the cache and store basic shell assets
