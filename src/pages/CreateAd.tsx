@@ -1269,8 +1269,8 @@ const CreateAd = () => {
                       <img 
                         src={url} 
                         alt={`Preview ${index}`} 
-                        className="w-full h-full object-cover" 
-                        style={index === 0 ? getAdImageStyle(imagePositionX, imagePositionY, imageZoom) : undefined} 
+                        className={formData.listingType === 'informativo' ? "w-full h-full object-contain p-2 bg-slate-50" : "w-full h-full object-cover"} 
+                        style={index === 0 && formData.listingType !== 'informativo' ? getAdImageStyle(imagePositionX, imagePositionY, imageZoom) : undefined} 
                       />
                       {!(isEditLocked && !isAdmin) && (
                         <button
@@ -1365,31 +1365,39 @@ const CreateAd = () => {
                     {/* Como Ficará No Card Preview - Interactive */}
                     <div className="flex flex-col items-center">
                       <div className="text-[10px] font-bold text-indigo-500 uppercase mb-2 tracking-tighter text-center">
-                        Como ficará no Card (Arraste)
+                        {formData.listingType === 'informativo' ? 'Enquadramento Inteiro' : 'Como ficará no Card (Arraste)'}
                       </div>
                       <div 
-                        ref={containerRef}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        onTouchCancel={handleTouchEnd}
-                        className={`w-[170px] h-[170px] sm:w-[180px] sm:h-[180px] bg-slate-200 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-lg relative select-none touch-none group transition-all duration-200 ${
-                          isDraggingImage ? 'cursor-grabbing border-indigo-600 shadow-xl scale-[1.01]' : 'cursor-grab hover:shadow-md hover:border-indigo-400'
+                        ref={formData.listingType === 'informativo' ? undefined : containerRef}
+                        onPointerDown={formData.listingType === 'informativo' ? undefined : handlePointerDown}
+                        onPointerMove={formData.listingType === 'informativo' ? undefined : handlePointerMove}
+                        onPointerUp={formData.listingType === 'informativo' ? undefined : handlePointerUp}
+                        onPointerCancel={formData.listingType === 'informativo' ? undefined : handlePointerUp}
+                        onTouchStart={formData.listingType === 'informativo' ? undefined : handleTouchStart}
+                        onTouchMove={formData.listingType === 'informativo' ? undefined : handleTouchMove}
+                        onTouchEnd={formData.listingType === 'informativo' ? undefined : handleTouchEnd}
+                        onTouchCancel={formData.listingType === 'informativo' ? undefined : handleTouchEnd}
+                        className={`w-[170px] h-[170px] sm:w-[180px] sm:h-[180px] bg-slate-150 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-lg relative select-none touch-none group transition-all duration-200 ${
+                          formData.listingType === 'informativo' ? 'cursor-default p-2 flex items-center justify-center bg-slate-100' : isDraggingImage ? 'cursor-grabbing border-indigo-600 shadow-xl scale-[1.01]' : 'cursor-grab hover:shadow-md hover:border-indigo-400'
                         }`}
                       >
                         <img 
                           src={formData.images[0]} 
                           alt="Ajuste de enquadramento" 
-                          className="w-full h-full object-cover pointer-events-none transition-all duration-75"
-                          style={getAdImageStyle(imagePositionX, imagePositionY, imageZoom)}
+                          className={`w-full h-full pointer-events-none transition-all duration-75 ${
+                            formData.listingType === 'informativo' ? 'object-contain' : 'object-cover'
+                          }`}
+                          style={formData.listingType === 'informativo' ? undefined : getAdImageStyle(imagePositionX, imagePositionY, imageZoom)}
                         />
-                        <div className="absolute top-2 right-2 bg-indigo-600/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2.5 rounded-full pointer-events-none shadow">
-                          Arraste 🖐️
-                        </div>
+                        {formData.listingType === 'informativo' ? (
+                          <div className="absolute top-2 right-2 bg-emerald-600/95 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2.5 rounded-full pointer-events-none shadow">
+                            💻 Completo 💡
+                          </div>
+                        ) : (
+                          <div className="absolute top-2 right-2 bg-indigo-600/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight py-1 px-2.5 rounded-full pointer-events-none shadow">
+                            Arraste 🖐️
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1397,52 +1405,68 @@ const CreateAd = () => {
 
                   {/* Slider Controls Box - Spans 5 cols on large screens */}
                   <div className="lg:col-span-5 space-y-4">
-                    <div className="bg-slate-100/80 border border-slate-200/60 p-4 rounded-2xl space-y-3">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">✨ Instruções de Enquadramento</span>
-                      <ul className="text-xs font-semibold text-slate-600 space-y-2.5">
-                        <li className="flex items-start gap-2">
-                          <span className="text-indigo-600 shrink-0">🖐️</span>
-                          <span><strong>Mover:</strong> Arraste a imagem para cima, baixo, esquerda ou direita.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-indigo-600 shrink-0">🔍</span>
-                          <span><strong>Zoom (PC):</strong> Use a roda de rolagem (scroll) do rato sobre a imagem.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-indigo-650 shrink-0">📱</span>
-                          <span><strong>Zoom (Mobile):</strong> Use um gesto de pinça (pinch) com dois dedos.</span>
-                        </li>
-                      </ul>
-                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-500">
-                        <span>Zoom Atual:</span>
-                        <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-mono">{imageZoom.toFixed(2)}x</span>
+                    {formData.listingType === 'informativo' ? (
+                      <div className="bg-emerald-50/70 border-2 border-emerald-100 p-5 rounded-2xl space-y-3 shadow-sm">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex items-center gap-1">
+                          <span>💡</span> Modo Informativo Ativo
+                        </span>
+                        <p className="text-xs font-semibold text-slate-600 leading-relaxed">
+                          Este anúncio está configurado como <strong>Anúncio Informativo</strong>.
+                        </p>
+                        <p className="text-[11px] font-medium text-slate-500 leading-relaxed">
+                          Neste modo, a imagem principal será exibida integralmente (<strong>contain</strong>) com fundo neutro suave, prevenindo cortes nas bordas seja na Home, listas ou pesquisas. Os controlos manuais de zoom e posicionamento estão desativados pois a imagem inteira é preservada automaticamente.
+                        </p>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="bg-slate-100/80 border border-slate-200/60 p-4 rounded-2xl space-y-3">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">✨ Instruções de Enquadramento</span>
+                          <ul className="text-xs font-semibold text-slate-600 space-y-2.5">
+                            <li className="flex items-start gap-2">
+                              <span className="text-indigo-600 shrink-0">🖐️</span>
+                              <span><strong>Mover:</strong> Arraste a imagem para cima, baixo, esquerda ou direita.</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-indigo-600 shrink-0">🔍</span>
+                              <span><strong>Zoom (PC):</strong> Use a roda de rolagem (scroll) do rato sobre a imagem.</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-indigo-650 shrink-0">📱</span>
+                              <span><strong>Zoom (Mobile):</strong> Use um gesto de pinça (pinch) com dois dedos.</span>
+                            </li>
+                          </ul>
+                          <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-500">
+                            <span>Zoom Atual:</span>
+                            <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-mono">{imageZoom.toFixed(2)}x</span>
+                          </div>
+                        </div>
 
-                    {/* Reset/Center Buttons */}
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImagePositionX(50);
-                          setImagePositionY(50);
-                        }}
-                        className="flex-1 py-1.5 px-3 text-xs font-bold text-indigo-650 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
-                      >
-                        Centralizar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImagePositionX(50);
-                          setImagePositionY(50);
-                          setImageZoom(1);
-                        }}
-                        className="flex-1 py-1.5 px-3 text-xs font-bold text-slate-650 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
-                      >
-                        Repor Ajuste
-                      </button>
-                    </div>
+                        {/* Reset/Center Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImagePositionX(50);
+                              setImagePositionY(50);
+                            }}
+                            className="flex-1 py-1.5 px-3 text-xs font-bold text-indigo-650 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/70 rounded-xl transition-colors cursor-pointer text-center"
+                          >
+                            Centralizar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImagePositionX(50);
+                              setImagePositionY(50);
+                              setImageZoom(1);
+                            }}
+                            className="flex-1 py-1.5 px-3 text-xs font-bold text-slate-650 bg-slate-100 border border-slate-200 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer text-center"
+                          >
+                            Repor Ajuste
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </motion.div>

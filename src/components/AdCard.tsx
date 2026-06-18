@@ -461,7 +461,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
               : ''
         }`}
       >
-        <div className={`relative aspect-square overflow-hidden ${isFeaturedVariant ? 'bg-[#faf5e6]' : 'bg-slate-50'}`}>
+        <div className={`relative aspect-square overflow-hidden transition-colors ${
+          ad.listingType === 'informativo'
+            ? 'bg-slate-100 flex items-center justify-center p-2'
+            : isFeaturedVariant ? 'bg-[#faf5e6]' : 'bg-slate-50'
+        }`}>
           {isAdFeatured && (
             <div className={`absolute z-10 bg-gradient-to-r ${
               isNationalHighlight
@@ -490,9 +494,15 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           <OptimizedImage
             src={ad.imageUrl}
             alt={ad.title}
-            className="w-full h-full object-cover transition-transform duration-500"
+            className={ad.listingType === 'informativo' 
+              ? "w-full h-full object-contain transition-transform duration-500" 
+              : "w-full h-full object-cover transition-transform duration-500"
+            }
             referrerPolicy="no-referrer"
-            style={{
+            style={ad.listingType === 'informativo' ? {
+              objectPosition: 'center',
+              transform: `scale(${isHovered ? 1.03 : 1})`
+            } : {
               objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
                 ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
                 : '50% 50%',
