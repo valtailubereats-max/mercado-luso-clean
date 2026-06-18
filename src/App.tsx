@@ -978,23 +978,132 @@ export default function App() {
                 <Route path="/admin/sorteios" element={<AdminLayout><AdminSorteios /></AdminLayout>} />
               </Routes>
             </main>
-            <footer className="bg-white border-t border-slate-200 py-12 mt-20">
-              <div className="max-w-7xl mx-auto px-4 text-center">
-                <p className="text-sm font-extrabold transition-colors" style={{ color: '#046a38' }}>© 2026 Mercado Luso. Simples, rápido e seguro.</p>
-                <div className="mt-4 flex justify-center gap-6 text-slate-400 text-xs uppercase tracking-widest font-semibold flex-wrap items-center">
-                  <Link to="/faq" className="hover:text-indigo-600">Perguntas Frequentes</Link>
-                  <Link to="/sugestoes" className="hover:text-indigo-600">Sugestões</Link>
-                  <Link to="/precos" className="hover:text-emerald-600 font-bold text-emerald-600">Preços 🏷️</Link>
-                  <Link to="/terms" className="hover:text-indigo-600" style={{ color: '#ff2056' }}>Termos de Uso</Link>
-                  <Link to="/privacy" className="hover:text-indigo-600">Privacidade</Link>
-                  <Link to="/cookies" className="hover:text-indigo-600">Política de Cookies</Link>
-                  <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 transition-colors">Denúncia</Link>
-                  <a href="https://wa.me/4407508309536" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600">Suporte</a>
-                  <PWAInstallButton variant="footer-link" />
-                  <a href="mailto:mercadolusopt@gmail.com" className="hover:text-indigo-600 text-slate-500 transition-colors normal-case flex items-center gap-1 font-semibold">
-                    <span>📧</span> Contacto: mercadolusopt@gmail.com
-                  </a>
+            <footer className="bg-slate-50 border-t border-slate-200 pt-16 pb-12 mt-20 font-sans">
+              <div className="max-w-7xl mx-auto px-6 md:px-8">
+                
+                {/* Main 4-column Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-12 text-left">
+                  
+                  {/* Coluna 1: Mercado Luso Brand */}
+                  <div className="md:col-span-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        🇵🇹 🏢 Mercado Luso 🇬🇧
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-black uppercase tracking-widest text-[#046a38]">
+                        Compre, Venda e Negocie
+                      </p>
+                      <p className="text-xs text-slate-500 leading-relaxed max-w-sm font-semibold">
+                        A plataforma da comunidade lusófona para comprar, vender e promover negócios.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Coluna 2: Informações */}
+                  <div className="md:col-span-2 space-y-4">
+                    <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5 select-none">
+                      📋 Informações
+                    </h4>
+                    <ul className="space-y-3 text-xs font-bold text-slate-600">
+                      <li>
+                        <Link to="/faq" className="hover:text-[#046a38] hover:underline transition-all">Perguntas Frequentes</Link>
+                      </li>
+                      <li>
+                        <Link to="/precos" className="hover:text-[#046a38] hover:underline transition-all font-extrabold flex items-center gap-1">
+                          Preços <span className="text-[10px]">🏷️</span>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/sugestoes" className="hover:text-[#046a38] hover:underline transition-all">Sugestões</Link>
+                      </li>
+                      <li>
+                        <Link to="/empreendedores" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-1.5">
+                          Vitrines Digitais <span className="text-[9px] bg-indigo-50 border border-indigo-150 text-indigo-600 px-1 py-0.5 rounded uppercase tracking-widest">Novo</span>
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Coluna 3: Legal */}
+                  <div className="md:col-span-3 space-y-4">
+                    <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5 select-none">
+                      ⚖️ Legal
+                    </h4>
+                    <ul className="space-y-3 text-xs font-bold text-slate-605">
+                      <li>
+                        <Link to="/terms" className="hover:text-red-500 hover:underline transition-all" style={{ color: '#ff2056' }}>Termos de Uso</Link>
+                      </li>
+                      <li>
+                        <Link to="/privacy" className="hover:text-[#046a38] hover:underline transition-all">Política de Privacidade</Link>
+                      </li>
+                      <li>
+                        <Link to="/cookies" className="hover:text-[#046a38] hover:underline transition-all">Política de Cookies</Link>
+                      </li>
+                      <li>
+                        <Link to="/denuncia" className="text-rose-500 hover:text-rose-600 hover:underline transition-all font-extrabold">Denúncia</Link>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Coluna 4: Suporte e Comunidade */}
+                  <div className="md:col-span-3 space-y-4">
+                    <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5 select-none">
+                      📧 Suporte
+                    </h4>
+                    <ul className="space-y-3.5 text-xs font-bold text-slate-600">
+                      <li>
+                        <a href="mailto:mercadolusopt@gmail.com" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-2 break-all font-semibold text-slate-500">
+                          mercadolusopt@gmail.com
+                        </a>
+                      </li>
+                      <li>
+                        <a 
+                          href="https://wa.me/4407508309536" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100 px-3.5 py-2 rounded-xl transition-all inline-flex items-center gap-1.5 shadow-2xs font-extrabold cursor-pointer"
+                        >
+                          <span>💬</span> Suporte via WhatsApp
+                        </a>
+                      </li>
+                      
+                      {/* Premium PWA Install option */}
+                      <li className="pt-0.5">
+                        <PWAInstallButton variant="footer-link" />
+                      </li>
+
+                      {/* Geographic badges requested by user */}
+                      <li className="pt-2 border-t border-slate-200/50">
+                        <span className="uppercase text-[9px] text-slate-450 tracking-wider font-bold block mb-2 select-none">Comunidade Lusófona</span>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="flex items-center gap-1 bg-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-xl text-[10px] select-none hover:shadow-2xs transition-all pointer-events-none">
+                            🇵🇹 Portugal
+                          </span>
+                          <span className="flex items-center gap-1 bg-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-xl text-[10px] select-none hover:shadow-2xs transition-all pointer-events-none">
+                            🇬🇧 Reino Unido
+                          </span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+
                 </div>
+
+                {/* Sub-footer discrete divider */}
+                <hr className="border-slate-200/60 my-0" />
+
+                {/* Bottom Bar Info */}
+                <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left select-none">
+                  <p className="text-xs font-black transition-colors" style={{ color: '#046a38' }}>
+                    © 2026 Mercado Luso
+                  </p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
+                    Simples, rápido e seguro.
+                  </p>
+                </div>
+
               </div>
             </footer>
           </div>

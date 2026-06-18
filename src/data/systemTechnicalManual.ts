@@ -685,7 +685,7 @@ export const manualItems: ManualItem[] = [
     type: 'Página',
     description: 'Transformação do Mercado Luso num PWA instalável de forma instantânea em dispositivos móveis e desktop, dispensando lojas oficiais como Google Play Store e Apple App Store.',
     route: 'Todas as rotas (Global)',
-    mainFile: 'public/manifest.webmanifest',
+    mainFile: 'public/manifest.json',
     relatedComponents: ['src/hooks/usePWA.ts', 'src/components/PWAInstallButton.tsx', 'public/sw.js'],
     relatedFunctions: ['installApp', 'dismissInstall', 'registerServiceWorker', 'caches.match'],
     firestoreCollections: [],
@@ -698,6 +698,30 @@ export const manualItems: ManualItem[] = [
       'Registo do Service Worker ignorado pelo navegador caso já exista uma sessão com service worker travado em cache.'
     ],
     tags: ['pwa', 'instalação', 'offline', 'safari', 'chrome', 'android', 'iphone', 'service-worker']
+  },
+  {
+    id: 'footer-system',
+    title: 'Rodapé Universal (Footer Structure)',
+    type: 'Página',
+    description: 'Apresentação do rodapé unificado e responsivo do Mercado Luso (vertical em telemóveis e grade de 4 colunas em desktop), organizando e distribuindo os links comerciais, de ajuda judicial, suporte direto e micro-crachás.',
+    route: 'Todas as rotas (Global)',
+    mainFile: 'src/App.tsx',
+    relatedComponents: ['src/components/PWAInstallButton.tsx'],
+    relatedFunctions: [],
+    firestoreCollections: [],
+    access: 'Público (Qualquer visitante)',
+    buttons: ['Suporte via WhatsApp', 'Instalar Mercado Luso (PWA)', 'Vitrines Digitais'],
+    actions: [
+      'Redirecionar para mailto:mercadolusopt@gmail.com para contacto geral por email',
+      'Encaminhar para o WhatsApp em nova aba para suporte direto',
+      'Navegar de forma reativa para as páginas informativas e legais'
+    ],
+    technicalNotes: 'Para adicionar novos links futuramente no rodapé, aceda a src/App.tsx, localize a correspondente coluna de links na marcação JSX do footer e adicione um novo elemento "<li><Link to=\\"/sua-rota\\">Seu Link</Link></li>". Certifique-se de que a nova rota está associada a uma página funcional sob o bloco de rotas principal.',
+    failurePoints: [
+      'Declarar uma rota inexistente na aplicação gerando erro de link quebrado.',
+      'Vazamento ou transbordo visual de itens se forem inseridos demasiados links em ecrãs verticais.'
+    ],
+    tags: ['footer', 'rodapé', 'estrutura', 'suporte', 'legal', 'informações', 'comunidade', 'portugal', 'reino-unido']
   }
 ];
 

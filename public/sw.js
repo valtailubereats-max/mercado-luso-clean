@@ -2,7 +2,7 @@ const CACHE_NAME = 'mercado-luso-pwa-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.webmanifest',
+  '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',
   '/icon-512.png',
