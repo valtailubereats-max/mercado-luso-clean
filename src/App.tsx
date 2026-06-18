@@ -12,6 +12,8 @@ import Login from './pages/Login';
 import Trabalhos from './pages/Trabalhos';
 import Precos from './pages/Precos';
 import Profile from './pages/Profile';
+import Negocio from './pages/Negocio';
+import Campanhas from './pages/Campanhas';
 import CreateAd from './pages/CreateAd';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminImport from './pages/AdminImport';
@@ -444,7 +446,25 @@ const Navbar = () => {
                         className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
                         id="menu-meu-perfil"
                       >
-                        Meu Perfil
+                        👤 Meu Perfil
+                      </Link>
+
+                      <Link
+                        to="/negocio"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-meu-negocio"
+                      >
+                        🏪 Meu Negócio
+                      </Link>
+
+                      <Link
+                        to="/campanhas"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700"
+                        id="menu-minhas-campanhas"
+                      >
+                        🎁 Campanhas
                       </Link>
 
                       <button
@@ -455,7 +475,7 @@ const Navbar = () => {
                         className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700 w-full text-left cursor-pointer outline-none"
                         id="menu-qrcode"
                       >
-                        QR Code
+                        📱 QR Code Rápido
                       </button>
 
                       {isModerator && !isAdmin && (
@@ -693,7 +713,13 @@ const Navbar = () => {
 
                 <div className="border-t border-slate-100 pt-4 space-y-3.5 flex flex-col">
                   <Link to="/profile" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
-                    Meu Perfil
+                    👤 Meu Perfil
+                  </Link>
+                  <Link to="/negocio" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    🏪 Meu Negócio
+                  </Link>
+                  <Link to="/campanhas" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
+                    🎁 Campanhas
                   </Link>
                   <button
                     onClick={() => {
@@ -702,7 +728,7 @@ const Navbar = () => {
                     }}
                     className="text-md font-bold text-slate-700 text-left cursor-pointer outline-none flex items-center gap-2"
                   >
-                    QR Code
+                    📱 QR Code Rápido
                   </button>
                   <Link to="/profile?tab=favorites" onClick={() => setIsOpen(false)} className="text-md font-bold text-slate-700">
                     Favoritos
@@ -916,6 +942,8 @@ export default function App() {
                 <Route path="/precos" element={<Precos />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/negocio" element={<ProtectedRoute><Negocio /></ProtectedRoute>} />
+                <Route path="/campanhas" element={<ProtectedRoute><Campanhas /></ProtectedRoute>} />
                 <Route path="/create-ad" element={<ProtectedRoute><CreateAd /></ProtectedRoute>} />
                 <Route path="/edit-ad/:id" element={<ProtectedRoute><CreateAd /></ProtectedRoute>} />
                 <Route path="/anuncio/:id" element={<AdDetails />} />
