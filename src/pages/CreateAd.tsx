@@ -1046,7 +1046,7 @@ const CreateAd = () => {
         const { title, description, price, city, country, category, images } = result.data;
         
         const isOlxPortugal = importUrl.toLowerCase().includes('olx.pt');
-        const isGumtreeUk = importUrl.toLowerCase().includes('gumtree.com');
+        const isGumtreeUk = importUrl.toLowerCase().includes('gumtree.com') || importUrl.toLowerCase().includes('gumtree.co.uk');
         
         // Match category case-insensitively. If no correspondence, set to empty string for manual selection
         const matchedCategory = categories.find(
@@ -1226,7 +1226,7 @@ const CreateAd = () => {
               <div className="text-xs sm:text-sm text-slate-600">
                 {formData.sourceUrl.toLowerCase().includes('olx.pt') ? (
                   'Este anúncio foi importado da OLX. O botão de contato direcionará para o anúncio original.'
-                ) : formData.sourceUrl.toLowerCase().includes('gumtree.com') ? (
+                ) : (formData.sourceUrl.toLowerCase().includes('gumtree.com') || formData.sourceUrl.toLowerCase().includes('gumtree.co.uk')) ? (
                   'Este anúncio foi importado do Gumtree Reino Unido. O botão de contato direcionará para o anúncio original.'
                 ) : (
                   'Este anúncio foi importado de um link externo. O botão de contato direcionará para o anúncio original.'

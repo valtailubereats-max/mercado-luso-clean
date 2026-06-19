@@ -224,7 +224,7 @@ export default async function handler(req: any, res: any) {
 
     const lowerUrl = url.toLowerCase();
     const isOlx = lowerUrl.includes('olx.pt');
-    const isGumtree = lowerUrl.includes('gumtree.com');
+    const isGumtree = lowerUrl.includes('gumtree.com') || lowerUrl.includes('gumtree.co.uk');
     const isTestUrl = lowerUrl.includes('teste.mercadoluso.com') || lowerUrl.includes('teste.mercadoluso');
 
     if (!isOlx && !isGumtree && !isTestUrl) {
@@ -501,7 +501,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (isGumtree) {
-      const ebayImgMatches = responseText.match(/https?:\/\/(?:i\.ebayimg\.com|img\.gumtree\.com)[^\s"';,>]+/gi) || [];
+      const ebayImgMatches = responseText.match(/https?:\/\/(?:i\.ebayimg\.com|img\.gumtree\.com|img\.gumtree\.co\.uk)[^\s"';,>]+/gi) || [];
       for (const mUrl of ebayImgMatches) {
         images.push(mUrl);
       }
