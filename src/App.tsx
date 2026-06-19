@@ -559,6 +559,8 @@ const Navbar = () => {
                         <span>🔗 Links Úteis</span>
                       </Link>
 
+                      <PWAInstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
+
                       <div className="border-t border-slate-100 my-2" />
 
                       <button
@@ -658,6 +660,8 @@ const Navbar = () => {
                         >
                           <span>🔗 Links Úteis</span>
                         </Link>
+
+                        <PWAInstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
                       </motion.div>
                     )}
                   </AnimatePresence>

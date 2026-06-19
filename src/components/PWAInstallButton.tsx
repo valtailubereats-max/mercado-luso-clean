@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePWA } from '../hooks/usePWA';
-import { Share, PlusSquare, X } from 'lucide-react';
+import { Share, PlusSquare, X, Monitor, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface PWAInstallButtonProps {
-  variant?: 'button' | 'menu-item' | 'footer-link';
+  variant?: 'button' | 'menu-item' | 'dropdown-item' | 'footer-link';
   onClickAction?: () => void;
 }
 
@@ -13,36 +13,38 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   onClickAction
 }) => {
   const { 
-    isInstallable,
     isInstalled,
-    shouldShowInstall,
+    isInstallable,
     isIOS,
     showIOSInstructions,
     setShowIOSInstructions,
-    installApp,
-    dismissInstall
+    installApp
   } = usePWA();
 
-  // If already installed or browser doesn't support installable features, don't show
-  if (isInstalled || !isInstallable) {
+  const [showGenericInstructions, setShowGenericInstructions] = useState(false);
+
+  // Showing the option only when NOT installed (not in standalone/PWA mode)
+  if (isInstalled) {
     return null;
   }
 
   const handleInstallClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const success = await installApp();
-    if (success && onClickAction) {
-      onClickAction();
-    }
-  };
-
-  const handleDismiss = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dismissInstall();
+    
+    // Close parent menus if needed
     if (onClickAction) {
       onClickAction();
+    }
+
+    if (isIOS) {
+      setShowIOSInstructions(true);
+    } else {
+      const success = await installApp();
+      // If native promo flow wasn't active or didn't trigger, show the manual fallback instructions
+      if (!success && !isInstallable) {
+        setShowGenericInstructions(true);
+      }
     }
   };
 
@@ -66,20 +68,17 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             >
               📱 Instalar App
             </button>
-            <button
-              onClick={handleDismiss}
-              title="Agora não"
-              className="p-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100/50 rounded-xl transition-all cursor-pointer flex items-center justify-center"
-            >
-              <X size={16} />
-            </button>
           </div>
         </div>
 
-        {/* iOS Step-by-Step Instructions Modal */}
         <IOSInstructionsDialog 
           isOpen={showIOSInstructions} 
           onClose={() => setShowIOSInstructions(false)} 
+        />
+
+        <GenericInstructionsDialog 
+          isOpen={showGenericInstructions} 
+          onClose={() => setShowGenericInstructions(false)} 
         />
       </>
     );
@@ -91,20 +90,49 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       <>
         <button
           onClick={handleInstallClick}
-          className="text-lg font-black text-emerald-700 text-left flex items-center gap-2 w-full hover:bg-emerald-50 p-2 rounded-xl transition-colors"
+          className="text-lg font-black text-emerald-700 text-left flex items-center gap-2 w-full hover:bg-emerald-50 p-2 rounded-xl transition-colors cursor-pointer"
         >
-          <span>📱 Instalar Mercado Luso</span>
+          <span>📱 Instalar App</span>
         </button>
 
         <IOSInstructionsDialog 
           isOpen={showIOSInstructions} 
           onClose={() => setShowIOSInstructions(false)} 
         />
+
+        <GenericInstructionsDialog 
+          isOpen={showGenericInstructions} 
+          onClose={() => setShowGenericInstructions(false)} 
+        />
       </>
     );
   }
 
-  // 3. Render for Footer
+  // 3. Render for Dropdown Menu Items (Desktop Menu)
+  if (variant === 'dropdown-item') {
+    return (
+      <>
+        <button
+          onClick={handleInstallClick}
+          className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-50 text-emerald-600 transition-colors text-sm font-black w-full text-left cursor-pointer outline-none"
+        >
+          <span>📱 Instalar App</span>
+        </button>
+
+        <IOSInstructionsDialog 
+          isOpen={showIOSInstructions} 
+          onClose={() => setShowIOSInstructions(false)} 
+        />
+
+        <GenericInstructionsDialog 
+          isOpen={showGenericInstructions} 
+          onClose={() => setShowGenericInstructions(false)} 
+        />
+      </>
+    );
+  }
+
+  // 4. Render for Footer
   if (variant === 'footer-link') {
     return (
       <>
@@ -118,6 +146,11 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         <IOSInstructionsDialog 
           isOpen={showIOSInstructions} 
           onClose={() => setShowIOSInstructions(false)} 
+        />
+
+        <GenericInstructionsDialog 
+          isOpen={showGenericInstructions} 
+          onClose={() => setShowGenericInstructions(false)} 
         />
       </>
     );
@@ -136,7 +169,7 @@ const IOSInstructionsDialog: React.FC<IOSInstructionsDialogProps> = ({ isOpen, o
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-150 flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -158,13 +191,13 @@ const IOSInstructionsDialog: React.FC<IOSInstructionsDialogProps> = ({ isOpen, o
               <div className="flex items-center gap-2">
                 <span className="text-2xl">📱</span>
                 <div>
-                  <h3 className="font-extrabold text-base text-slate-900">Instalar no iPhone</h3>
+                  <h3 className="font-brand font-black text-base text-slate-900">Instalar no iPhone</h3>
                   <p className="text-xs text-slate-500 font-medium">Siga estes simples passos no Safari</p>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -177,7 +210,7 @@ const IOSInstructionsDialog: React.FC<IOSInstructionsDialogProps> = ({ isOpen, o
                 <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black flex items-center justify-center border border-emerald-100">
                   1
                 </div>
-                <div className="text-sm font-medium text-slate-700 pt-0.5">
+                <div className="text-sm font-medium text-slate-700 pt-0.5 leading-relaxed">
                   Toque no botão de <strong>Partilhar</strong> <span className="inline-flex"><Share size={15} className="text-indigo-600 mx-1 pb-0.5 inline" /></span> no painel inferior do Safari.
                 </div>
               </div>
@@ -187,7 +220,7 @@ const IOSInstructionsDialog: React.FC<IOSInstructionsDialogProps> = ({ isOpen, o
                 <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black flex items-center justify-center border border-emerald-100">
                   2
                 </div>
-                <div className="text-sm font-medium text-slate-700 pt-0.5">
+                <div className="text-sm font-medium text-slate-700 pt-0.5 leading-relaxed">
                   Role a lista para baixo e toque em <strong>"Adicionar ao Ecrã Principal"</strong> <span className="inline-flex"><PlusSquare size={15} className="text-indigo-600 mx-1 pb-0.5 inline" /></span>.
                 </div>
               </div>
@@ -197,8 +230,101 @@ const IOSInstructionsDialog: React.FC<IOSInstructionsDialogProps> = ({ isOpen, o
                 <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black flex items-center justify-center border border-emerald-100">
                   3
                 </div>
-                <div className="text-sm font-medium text-slate-700 pt-0.5">
+                <div className="text-sm font-medium text-slate-700 pt-0.5 leading-relaxed">
                   Toque em <strong>"Adicionar"</strong> no canto superior direito para confirmar.
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 bg-[#046a38] text-white hover:bg-[#03522b] font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Entendido
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+/* --- SUBCOMPONENT: Generic/Android Fallback Instructions Dialog --- */
+interface GenericInstructionsDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const GenericInstructionsDialog: React.FC<GenericInstructionsDialogProps> = ({ isOpen, onClose }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-150 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+
+          {/* Modal Container */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative bg-white w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl border border-slate-100 p-6 z-10 text-slate-900"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-5">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">⚡</span>
+                <div>
+                  <h3 className="font-brand font-black text-base text-slate-900">Como Instalar</h3>
+                  <p className="text-xs text-slate-500 font-medium">Instale no seu dispositivo Android ou Desktop</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Steps Container */}
+            <div className="space-y-4">
+              {/* Step 1 */}
+              <div className="flex gap-3.5 items-start">
+                <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black flex items-center justify-center border border-emerald-100">
+                  1
+                </div>
+                <div className="text-sm font-medium text-slate-700 pt-0.5 leading-relaxed">
+                  Abra o menu de opções do seu navegador (toque nos três pontos <strong>⋮</strong> no canto de cima ou de baixo).
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3.5 items-start">
+                <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black flex items-center justify-center border border-emerald-100">
+                  2
+                </div>
+                <div className="text-sm font-medium text-slate-700 pt-0.5 leading-relaxed">
+                  Selecione <strong>"Instalar aplicação"</strong> ou <strong>"Adicionar ao ecrã inicial"</strong>.
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3.5 items-start">
+                <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black flex items-center justify-center border border-emerald-100">
+                  3
+                </div>
+                <div className="text-sm font-medium text-slate-700 pt-0.5 leading-relaxed">
+                  Confirme a instalação para ter o Mercado Luso como App autónoma e rápida!
                 </div>
               </div>
             </div>

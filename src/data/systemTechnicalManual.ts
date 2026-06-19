@@ -690,8 +690,13 @@ export const manualItems: ManualItem[] = [
     relatedFunctions: ['installApp', 'dismissInstall', 'registerServiceWorker', 'caches.match'],
     firestoreCollections: [],
     access: 'Público (Qualquer visitante)',
-    buttons: ['📱 Instalar Mercado Luso (Menu Mobile)', '📱 Instalar App (Perfil)', '📱 Instalar App (Rodapé)'],
-    actions: ['Instalar App nativamente (Android/Chrome)', 'Exibir guia passo a passo ilustrado (iOS/Safari)', 'Armazenar preferência de adiamento (Not Now) por 7 dias no localStorage'],
+    buttons: ['"📱 Instalar App" (Dropdown Contas Desktop)', '"📱 Instalar App" (Dropdown Visitantes Desktop)', '"📱 Instalar App" (Menu Mobile)', '"📱 Instalar App" (Perfil e Rodapé)'],
+    actions: [
+      'Executar as regras de exibição recomendadas: Ocultar automaticamente se em standalone mode (window.matchMedia e navigator.standalone), senão exibir a opção.',
+      'No Android/Chromium, o clique despoleta imediatamente o prompt de instalação nativo capturado por beforeinstallprompt.',
+      'No iPhone (Safari iOS), o clique exibe o modal elegante de instruções passo-a-passo (Toque em Partilhar, selecione Adicionar ao Ecrã Principal, confirme).',
+      'Em navegadores normais/desktop onde o prompt automático não está ativo, exibe um modal flutuante com passos manuais alternativos.'
+    ],
     technicalNotes: 'Usa um Service worker de ciclo de ativação imediata (skipWaiting/clients.claim) e cache dinâmico com estratégia Network-First para evitar problemas de asset bloqueado ou travamento de updates na plataforma. Isento de requisitos de firestore.rules. Ícones PWA derivados diretamente da identidade visual original do Mercado Luso (fundo verde oficial #046a38 e sacola de compras branca), gerados programaticamente em formato PNG real (assinatura binária 89504e470d0a1a0a) para evitar a rejeição do Chrome Android e habilitar o WebAPK nativo.',
     failurePoints: [
       'Uso de arquivos JPEG renomeados incorretamente como .png causará rejeição silenciosa de geração do WebAPK no Chrome Android.',
@@ -910,11 +915,11 @@ export const technicalFlows: TechnicalFlow[] = [
     id: 'flow-instalacao-pwa',
     title: 'Fluxo de Instalação do PWA (Android / iPhone)',
     description: 'Processo robusto e discreto para permitir instalação nativa sem as lojas de aplicativos convencionais.',
-    startPoint: 'Utilizador clica em qualquer botão "📱 Instalar Mercado Luso" (Perfil, Menu ou Rodapé) no telemóvel',
-    buttonsInvolved: ['📱 Instalar App', 'Ok, Entendido', 'Agora não'],
-    pagesInvolved: ['Profile.tsx', 'Home.tsx', 'Todas'],
-    mainFiles: ['src/hooks/usePWA.ts', 'src/components/PWAInstallButton.tsx', 'public/sw.js'],
+    startPoint: 'Utilizador clica em "📱 Instalar App" de forma voluntária no menu principal (dropdown), mobile menu ou rodapé',
+    buttonsInvolved: ['📱 Instalar App', 'Entendido'],
+    pagesInvolved: ['Todas (PWA global via Navbar, Dropdowns e Rodapé)'],
+    mainFiles: ['src/hooks/usePWA.ts', 'src/components/PWAInstallButton.tsx', 'public/sw.js', 'src/App.tsx'],
     firestoreCollections: [],
-    expectedResult: 'No Android/Chrome, abre-se o prompt nativo do sistema para adicionar ao ecrã inicial. No iOS/Safari, exibe-se um modal dinâmico que ilustra as etapas: Partilhar -> Adicionar ao Ecrã Principal. Em caso de recusa, oculta o banner por 7 dias.'
+    expectedResult: 'No Android/Chrome, abre-se o prompt nativo do sistema para adicionar ao ecrã inicial. No iOS/Safari, exibe-se um modal dinâmico que ilustra as etapas: Partilhar -> Adicionar ao Ecrã Principal. Em navegadores normais/desktop onde o prompt não está ativo de imediato, exibe instruções passo-a-passo manuais.'
   }
 ];
