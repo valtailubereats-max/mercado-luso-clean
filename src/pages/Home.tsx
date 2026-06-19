@@ -537,6 +537,7 @@ const Home = () => {
         console.log(`[Cache HIT] Recuperou anúncios gerais da sessão (${country}). Total:`, adsFromCache.length);
         setAds(adsFromCache);
         setLoading(false);
+        setIsFetchingMore(false);
         fetchedAdsCountry.current = country;
         fetchedLimit.current = dbLimit;
         inFlightAdsCountry.current = null;

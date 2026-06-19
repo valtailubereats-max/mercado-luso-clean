@@ -393,7 +393,7 @@ const Navbar = () => {
                         onClick={() => setShowUserDropdown(false)}
                         className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
                       >
-                        🧭 Explorar
+                        🧭 Home
                       </Link>
                       {(settings?.enableFotosFeature !== false || isAdmin || isModerator) && (
                         <Link
@@ -592,7 +592,7 @@ const Navbar = () => {
                           onClick={() => setShowUserDropdown(false)}
                           className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
                         >
-                          🧭 Explorar
+                          🧭 Home
                         </Link>
                         {(settings?.enableFotosFeature !== false || isAdmin || isModerator) && (
                           <Link
@@ -688,7 +688,7 @@ const Navbar = () => {
         {isOpen && (
           <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="md:hidden bg-white border-t border-slate-100 overflow-hidden shadow-inner">
             <div className="px-4 py-6 space-y-4 flex flex-col">
-              <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Explorar</Link>
+              <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Home</Link>
               {(settings?.enableFotosFeature !== false || isAdmin || isModerator) && (
                 <Link to="/fotos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-705 text-slate-700">Fotos</Link>
               )}

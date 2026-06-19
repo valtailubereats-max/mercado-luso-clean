@@ -1580,7 +1580,7 @@ const Profile = () => {
                 onClick={() => navigate('/')}
                 className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer shadow-md shadow-indigo-100"
               >
-                Explorar Anúncios
+                Ver Anúncios
               </button>
             </div>
           ) : (
@@ -1610,7 +1610,7 @@ const Profile = () => {
                 onClick={() => navigate('/')}
                 className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer shadow-md shadow-indigo-100"
               >
-                Explorar Anúncios
+                Ver Anúncios
               </button>
             </div>
           ) : (

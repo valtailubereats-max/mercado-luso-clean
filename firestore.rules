@@ -67,7 +67,7 @@ service cloud.firestore {
       let isFeaturedAd = data.get('isFeatured', false) == true || data.get('plan', 'free') in ['featured', 'highlight', 'local', 'national', 'intermediate', 'premium'];
       let imagesList = data.get('images', []);
       return imagesList is list &&
-             (isFeaturedAd ? (imagesList.size() <= 4) : (imagesList.size() <= 2));
+             (isFeaturedAd ? (imagesList.size() <= 10) : (imagesList.size() <= 6));
     }
 
     function isValidSettings(data) {
@@ -276,13 +276,15 @@ service cloud.firestore {
       allow list: if isAdmin() || isModerator();
 
       allow create: if isAuthenticated() &&
-                    isValidAd(request.resource.data) &&
-                    isValidAdImagesAndPlan(request.resource.data) &&
-                    request.resource.data.status == 'pending' &&
                     (
-                      request.resource.data.category != 'Trabalho/Empregos' ||
                       isAdmin() ||
-                      isModerator()
+                      isModerator() ||
+                      (
+                        isValidAd(request.resource.data) &&
+                        isValidAdImagesAndPlan(request.resource.data) &&
+                        request.resource.data.status == 'pending' &&
+                        request.resource.data.category != 'Trabalho/Empregos'
+                      )
                     );
 
       allow update: if (

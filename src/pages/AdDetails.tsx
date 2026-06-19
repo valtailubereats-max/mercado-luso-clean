@@ -486,7 +486,7 @@ const AdDetails = () => {
           to="/"
           className="inline-flex items-center justify-center bg-indigo-600 font-bold text-white px-6 py-3 rounded-2xl shadow-md hover:bg-indigo-700 transition"
         >
-          Voltar para Explorar
+          Voltar para a Home
         </Link>
       </div>
     );
@@ -695,7 +695,7 @@ const AdDetails = () => {
             
             {/* Categoria & Visualizações / Tempo */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
-              <span className="bg-indigo-55 text-indigo-600 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-indigo-100">
+              <span className="bg-indigo-50 text-indigo-600 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-indigo-100">
                 {ad.category}
               </span>
               <div className="flex items-center gap-3 text-slate-400 text-xs font-semibold">
@@ -796,12 +796,12 @@ const AdDetails = () => {
 
               {/* Bloco da Vitrine Digital do Vendedor se estiver ativa */}
               {showcaseActive && (
-                <div className="bg-indigo-50/70 border border-indigo-150 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-in">
+                <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-in">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl">🏪</span>
                     <div>
                       <span className="font-extrabold text-indigo-950 text-sm block">Este vendedor possui uma Vitrine Digital.</span>
-                      <span className="text-[10px] text-indigo-650 font-bold block">Conheça todos os seus produtos, marcas e serviços especiais.</span>
+                      <span className="text-[10px] text-indigo-600 font-bold block">Conheça todos os seus produtos, marcas e serviços especiais.</span>
                     </div>
                   </div>
                   <Link
@@ -866,7 +866,7 @@ const AdDetails = () => {
                 <div className="pt-3 border-t border-slate-200/60 font-sans">
                   <button
                     onClick={() => setShowReviewsSection(!showReviewsSection)}
-                    className="flex items-center justify-between w-full text-xs font-bold text-indigo-505 uppercase tracking-widest"
+                    className="flex items-center justify-between w-full text-xs font-bold text-indigo-600 uppercase tracking-widest"
                   >
                     <span>Avaliações do Vendedor ({sellerReviews.length})</span>
                     <span className="text-slate-400 text-[10px] uppercase font-bold">{showReviewsSection ? 'Recolher' : 'Expandir'}</span>
@@ -1070,7 +1070,7 @@ const AdDetails = () => {
           <div className="bg-slate-50 rounded-2xl p-3 sm:p-4 border border-slate-100 space-y-3">
             <div className="flex items-center justify-between gap-2 border-b border-slate-200/50 pb-2.5">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-9 h-9 bg-indigo-605/10 bg-indigo-50 text-indigo-700 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
+                <div className="w-9 h-9 bg-indigo-600/10 bg-indigo-50 text-indigo-700 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
                   {(hasSourceUrl ? 'Parceiro' : ad.sellerName).slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1092,7 +1092,7 @@ const AdDetails = () => {
                         );
                       })}
                     </div>
-                    <span className="text-[9px] text-slate-550 font-bold ml-1">
+                    <span className="text-[9px] text-slate-500 font-bold ml-1">
                       ({sellerProfile?.ratingCount || 0} avs.)
                     </span>
                   </div>
@@ -1112,12 +1112,12 @@ const AdDetails = () => {
 
             {/* Vitrine Digital Link */}
             {showcaseActive && (
-              <div className="bg-indigo-50/70 border border-indigo-150 rounded-xl p-2.5 flex items-center justify-between gap-2">
+              <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-lg">🏪</span>
                   <div className="min-w-0">
                     <span className="font-extrabold text-indigo-950 text-[11px] block whitespace-nowrap overflow-hidden text-ellipsis">Vitrine Digital Ativa</span>
-                    <span className="text-[9px] text-indigo-650 font-semibold block whitespace-nowrap overflow-hidden text-ellipsis">Ver todos os produtos</span>
+                    <span className="text-[9px] text-indigo-600 font-semibold block whitespace-nowrap overflow-hidden text-ellipsis">Ver todos os produtos</span>
                   </div>
                 </div>
                 <Link
@@ -1153,11 +1153,11 @@ const AdDetails = () => {
                   onClick={handleShare}
                   className={`flex items-center justify-center gap-1 border px-2 py-2 rounded-lg font-bold text-[9px] transition-all truncate ${
                     shareCopied 
-                      ? 'bg-emerald-55 border-emerald-200 text-emerald-605' 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
                       : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                   }`}
                 >
-                  <Share2 size={13} className={shareCopied ? 'text-emerald-550' : ''} />
+                  <Share2 size={13} className={shareCopied ? 'text-emerald-500' : ''} />
                   <span>{shareCopied ? 'Copiado!' : 'Partilhar'}</span>
                 </button>
 
@@ -1212,7 +1212,7 @@ const AdDetails = () => {
             </div>
           )}
 
-          <div className="flex items-start gap-1.5 text-slate-505 bg-amber-50/20 border border-amber-100/60 rounded-xl p-2.5 text-[10px] font-sans">
+          <div className="flex items-start gap-1.5 text-slate-500 bg-amber-50/20 border border-amber-100/60 rounded-xl p-2.5 text-[10px] font-sans">
             <span className="text-amber-500 text-xs leading-none mt-0.5">⚠️</span>
             <p className="leading-relaxed text-amber-900">
               A localização real baseia-se na cidade informada pelo anunciante e serve estritamente como ponto de referência aproximado.
@@ -1228,7 +1228,7 @@ const AdDetails = () => {
             </div>
             <div>
               <h2 className="text-sm font-black text-slate-900 leading-none">⭐️ Avaliações do Vendedor</h2>
-              <p className="text-[9px] text-slate-405 font-bold uppercase tracking-wider mt-1 font-sans">Feedback real de outros clientes</p>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1 font-sans">Feedback real de outros clientes</p>
             </div>
           </div>
 
@@ -1257,7 +1257,7 @@ const AdDetails = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-5 bg-slate-50/50 rounded-xl border border-dashed border-slate-150 p-3.5">
+            <div className="text-center py-5 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 p-3.5">
               <span className="text-lg block mb-1">💬</span>
               <h4 className="text-xs font-bold text-slate-800">Sem avaliações ainda</h4>
               <p className="text-[9px] text-slate-400 mt-0.5 leading-normal">
@@ -1391,7 +1391,7 @@ const AdDetails = () => {
             >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-black text-slate-900">Denunciar Anúncio</h3>
-                <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 bg-slate-50 rounded-full border border-slate-150">
+                <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 bg-slate-50 rounded-full border border-slate-200">
                   <X size={20} />
                 </button>
               </div>
