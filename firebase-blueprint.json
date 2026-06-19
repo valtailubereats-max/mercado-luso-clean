@@ -338,6 +338,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["giveawayId", "userId", "channel", "createdAt"]
+    },
+    "DrawHistory": {
+      "title": "DrawHistory",
+      "description": "Historical records of performed giveaway draws",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "giveawayId": { "type": "string" },
+        "giveawayTitle": { "type": "string" },
+        "drawNumber": { "type": "number" },
+        "prizeImage": { "type": "string" },
+        "country": { "type": "string" },
+        "winners": { "type": "array" },
+        "drawnAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["giveawayId", "giveawayTitle", "drawnAt", "winners"]
     }
   },
   "firestore": {
@@ -420,6 +437,10 @@
     "/shares/{shareId}": {
       "schema": "GiveawayShare",
       "description": "User share tracks"
+    },
+    "/draw_history/{drawId}": {
+      "schema": "DrawHistory",
+      "description": "Historical log of conducted lottery drawings"
     }
   }
 }

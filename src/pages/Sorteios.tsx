@@ -307,7 +307,16 @@ export default function Sorteios() {
                   {/* Body Info */}
                   <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {g.drawNumber !== undefined && (
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                            g.drawNumber === 0 
+                              ? 'bg-rose-100 text-rose-800 animate-pulse border border-rose-200' 
+                              : 'bg-indigo-50 text-indigo-700'
+                          }`}>
+                            {g.drawNumber === 0 ? '🎁 Edição #0 (Exemplo Fictício)' : `Sorteio #${g.drawNumber}`}
+                          </span>
+                        )}
                         <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Prémio</span>
                         <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md">
                           {g.winnersCount} {g.winnersCount === 1 ? 'Vencedor' : 'Vencedores'}

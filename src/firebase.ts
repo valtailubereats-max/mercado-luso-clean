@@ -57,9 +57,10 @@ if (typeof window !== 'undefined') {
 // Configura as buscas para tentarem ler primeiro do Servidor e apenas do Cache como Fallback (Offline) para garantir dados sempre atualizados em tempo real estando online
 export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'unknown'): Promise<QuerySnapshot> {
   try {
-    const snap = await getDocsFromServer(q);
+    const snap = await withTimeout(getDocsFromServer(q), 4000);
     return snap;
   } catch (err) {
+    console.warn(`[Firestore Status] Servidor inacessível ou lento para obter docs (${pathLabel}). Recorrendo ao cache local...`, err);
     try {
       const snap = await getDocsFromCache(q);
       return snap;
@@ -72,9 +73,10 @@ export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'un
 
 export async function getDocWithCacheFallback(docRef: DocumentReference, pathLabel: string = 'unknown'): Promise<DocumentSnapshot> {
   try {
-    const snap = await getDocFromServer(docRef);
+    const snap = await withTimeout(getDocFromServer(docRef), 4000);
     return snap;
   } catch (err) {
+    console.warn(`[Firestore Status] Servidor inacessível ou lento para obter documento (${pathLabel}). Recorrendo ao cache local...`, err);
     try {
       const snap = await getDocFromCache(docRef);
       return snap;

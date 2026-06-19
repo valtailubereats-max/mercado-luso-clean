@@ -378,6 +378,7 @@ export interface Giveaway {
   endDate: string; // ISO-8601 string or date input
   rules: string;
   winnersCount: number;
+  drawNumber?: number;
   status: 'Ativo' | 'Encerrado' | 'Finalizado';
   createdAt: any; // Firestore Timestamp
   createdBy: string;

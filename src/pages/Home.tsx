@@ -11,7 +11,8 @@ import {
   getLastFetchTime, 
   getCachedFeaturedAds, 
   setCachedFeaturedAds, 
-  getLastFeaturedFetchTime 
+  getLastFeaturedFetchTime,
+  clearHomeCache
 } from '../utils/cache';
 import AdCard from '../components/AdCard';
 import { Search, Tag, MapPin, ShoppingBag, ArrowRight, AlertCircle, RefreshCcw, ArrowUp, Store } from 'lucide-react';
@@ -98,6 +99,7 @@ const Home = () => {
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [reloadCounter, setReloadCounter] = useState(0);
   const [category, setCategory] = useState('Todas');
   const [city, setCity] = useState('Todas');
   
@@ -152,6 +154,8 @@ const Home = () => {
   // Estados de paginação de 30 em 30 itens
   const [limitAmount, setLimitAmount] = useState(PAGE_SIZE);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [dbLimit, setDbLimit] = useState(48);
+  const [allDbAdsFetched, setAllDbAdsFetched] = useState(false);
 
   // State to pause marquee on hover
   const [isHovered, setIsHovered] = useState(false);
@@ -184,6 +188,7 @@ const Home = () => {
   // Controle de requisições de anúncios gerais
   const inFlightAdsCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
   const fetchedAdsCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
+  const fetchedLimit = useRef<number>(48);
 
   // Controle de requisições de anúncios destacados
   const inFlightFeaturedCountry = useRef<'Portugal' | 'Reino Unido' | null>(null);
@@ -270,6 +275,8 @@ const Home = () => {
   // Resetar paginação ao alterar qualquer filtro principal
   useEffect(() => {
     setLimitAmount(PAGE_SIZE);
+    setDbLimit(48);
+    setAllDbAdsFetched(false);
   }, [country, category, city, searchTerm]);
 
   // Buscar total de utilizadores no banco de dados se permitido/configurado
@@ -505,16 +512,18 @@ const Home = () => {
       return;
     }
 
-    // Se já foi carregado com sucesso para este país, evitamos chamar novamente
-    if (fetchedAdsCountry.current === country) {
-      console.log(`[ADS] Já carregado com sucesso para o país: ${country}`);
+    // Se já foi carregado com sucesso para este país E com o mesmo limite, evitamos chamar novamente
+    if (fetchedAdsCountry.current === country && fetchedLimit.current === dbLimit) {
+      console.log(`[ADS] Já carregado com sucesso para o país: ${country} com limite ${dbLimit}`);
       return;
     }
 
     // Se já existe uma requisição em andamento para este mesmo país, não iniciamos outra
     if (inFlightAdsCountry.current === country) {
-      console.log(`[ADS] Fetch em andamento para o país: ${country}`);
-      return;
+      if (fetchedLimit.current === dbLimit) {
+        console.log(`[ADS] Fetch em andamento para o país: ${country}`);
+        return;
+      }
     }
     inFlightAdsCountry.current = country;
 
@@ -524,24 +533,33 @@ const Home = () => {
       const now = Date.now();
       const adsFromCache = getCachedAds(country);
       const lastFetch = getLastFetchTime(country);
-      if (adsFromCache && adsFromCache.length > 0 && (now - lastFetch < 5 * 60 * 1000)) {
+      if (adsFromCache && adsFromCache.length >= dbLimit && (now - lastFetch < 5 * 60 * 1000)) {
         console.log(`[Cache HIT] Recuperou anúncios gerais da sessão (${country}). Total:`, adsFromCache.length);
         setAds(adsFromCache);
         setLoading(false);
         fetchedAdsCountry.current = country;
+        fetchedLimit.current = dbLimit;
         inFlightAdsCountry.current = null;
         return;
       }
-      setLoading(true);
+
+      const isLoadMore = dbLimit > 48 || ads.length > 0;
+      if (!isLoadMore) {
+        setLoading(true);
+      } else {
+        setIsFetchingMore(true);
+      }
       setErrorMsg(null);
 
-      // Delay visual rápido e subtil de carregamento inicial
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Delay visual rápido e subtil de carregamento inicial apenas se não for load-more
+      if (!isLoadMore) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
       if (!active) return;
 
       try {
         let snapshot;
-        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a 48 documentos (otimização de leituras)
+        // Primeira tentativa: Buscar anúncios ordenados pela criação (createdAt desc), limitando a dbLimit documentos (otimização de leituras)
         try {
           const q = query(
             collection(db, 'ads'),
@@ -549,18 +567,18 @@ const Home = () => {
             where('country', '==', country),
             // @ts-ignore
             orderBy('createdAt', 'desc'),
-            limit(48)
+            limit(dbLimit)
           );
-          snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-ordered`), 20000);
+          snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-ordered-${dbLimit}`), 20000);
         } catch (idxErr) {
           console.warn("[Home] Query ordenada falhou (falta de índice composto), recorrendo a query plana e ordenação em memória:", idxErr);
           const q = query(
             collection(db, 'ads'),
             where('status', '==', 'approved'),
             where('country', '==', country),
-            limit(48)
+            limit(dbLimit)
           );
-          snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-flat`), 20000);
+          snapshot = await withTimeout(getDocsWithCacheFallback(q, `home/approved-ads-${country}-flat-${dbLimit}`), 20000);
         }
 
         if (!active) return;
@@ -575,9 +593,16 @@ const Home = () => {
           return (timeB || 0) - (timeA || 0);
         });
 
+        if (adsData.length < dbLimit) {
+          setAllDbAdsFetched(true);
+        } else {
+          setAllDbAdsFetched(false);
+        }
+
         setCachedAds(adsData, country);
         setAds(adsData);
         fetchedAdsCountry.current = country;
+        fetchedLimit.current = dbLimit;
       } catch (err: any) {
         console.error("[Home] Erro ao carregar anúncios do Firestore:", err);
         if (active) setErrorMsg("Erro ao carregar anúncios.");
@@ -586,6 +611,7 @@ const Home = () => {
       } finally {
         if (active) {
           setLoading(false);
+          setIsFetchingMore(false);
           inFlightAdsCountry.current = null;
         }
       }
@@ -599,16 +625,21 @@ const Home = () => {
         inFlightAdsCountry.current = null;
       }
     };
-  }, [country, authLoading]); // Recarrega sempre que mudar de país de forma altamente otimizada, ou depende de país e estado de auth
+  }, [country, authLoading, reloadCounter, dbLimit]); // Recarrega sempre que mudar de país ou com dbLimit
 
   const handleLoadMore = () => {
     if (isFetchingMore) return;
-    setIsFetchingMore(true);
-    // Simula delay de carregamento estético rápido para transição suave de paginação local
-    setTimeout(() => {
-      setLimitAmount(prev => prev + PAGE_SIZE);
-      setIsFetchingMore(false);
-    }, 450);
+    
+    // Incrementa o limitAmount de anúncios mostrados na tela
+    const nextLimitAmount = limitAmount + PAGE_SIZE;
+    setLimitAmount(nextLimitAmount);
+    
+    // Se não tivermos anúncios suficientes carregados offline no estado ads
+    // E soubermos que ainda existem anúncios a buscar no Firestore
+    if (nextLimitAmount > ads.length && !allDbAdsFetched) {
+      setIsFetchingMore(true);
+      setDbLimit(prev => prev + 48);
+    }
   };
 
   const selectableCitiesOnHome = useMemo(() => {
@@ -1229,6 +1260,26 @@ const Home = () => {
             {[...Array(5)].map((_, i) => (
               <div key={i} className="bg-slate-100 rounded-3xl h-64 animate-pulse" />
             ))}
+          </div>
+        ) : errorMsg ? (
+          <div className="text-center py-16 bg-white rounded-[3rem] border border-red-100 shadow-md max-w-md mx-auto p-8 flex flex-col items-center">
+            <span className="text-4xl">⚠️</span>
+            <h3 className="text-lg font-extrabold text-slate-800 mt-3">Problema de Ligação ao Banco de Dados</h3>
+            <p className="text-slate-500 text-sm mt-1.5 leading-relaxed">
+              O servidor do banco de dados está temporariamente sob sobrecarga ou em standby. Deseja tentar estabelecer ligação novamente?
+            </p>
+            <button
+              onClick={() => {
+                setErrorMsg(null);
+                setLoading(true);
+                clearHomeCache();
+                setReloadCounter(prev => prev + 1);
+              }}
+              className="mt-5 px-6 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition active:scale-95 shadow-md shadow-slate-900/10 cursor-pointer flex items-center gap-2"
+            >
+              <RefreshCcw size={14} />
+              Tentar Novamente
+            </button>
           </div>
         ) : filteredAds.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">

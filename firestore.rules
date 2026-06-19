@@ -457,6 +457,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /draw_history/{drawId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /system_health_alerts/{alertId} {
       allow read, write: if isAdmin() || isModerator();
     }

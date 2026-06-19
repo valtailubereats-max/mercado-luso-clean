@@ -35,9 +35,10 @@ import {
   PlusCircle,
   HelpCircle
 } from 'lucide-react';
-import { db } from '../firebase';
+import { db, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { Giveaway, GiveawayParticipation, GiveawayWinner } from '../types';
+import LotteryGlobeModal from '../components/LotteryGlobeModal';
 
 // Preset prize photos for admin convenience
 const PRIZE_PRESETS = [
@@ -61,7 +62,9 @@ export default function AdminSorteios() {
 
   // Search and Filter
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'Ativo' | 'Encerrado' | 'Finalizado'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Ativo' | 'Encerrado' | 'Finalizado' | 'Historico'>('all');
+  const [historyList, setHistoryList] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Form Drawer Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -74,6 +77,7 @@ export default function AdminSorteios() {
   const [formEndDate, setFormEndDate] = useState('');
   const [formRules, setFormRules] = useState('');
   const [formWinnersCount, setFormWinnersCount] = useState<number>(1);
+  const [formDrawNumber, setFormDrawNumber] = useState<number>(0);
   const [formStatus, setFormStatus] = useState<'Ativo' | 'Encerrado' | 'Finalizado'>('Ativo');
   const [saving, setSaving] = useState(false);
 
@@ -87,15 +91,147 @@ export default function AdminSorteios() {
   const [drawing, setDrawing] = useState(false);
   const [drawnWinners, setDrawnWinners] = useState<GiveawayWinner[]>([]);
 
+  // Globo de Sorteios Interativo
+  const [isGlobeOpen, setIsGlobeOpen] = useState(false);
+  const [globeGiveaway, setGlobeGiveaway] = useState<Giveaway | null>(null);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      // 1. Tentar ler do Firebase Firestore primeiro
+      const snap = await getDocsWithCacheFallback(collection(db, 'draw_history'), 'draw_history');
+      const list: any[] = [];
+      snap.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      list.sort((a: any, b: any) => {
+        const tA = a.drawnAt?.seconds || new Date(a.drawnAt).getTime() / 1000 || 0;
+        const tB = b.drawnAt?.seconds || new Date(b.drawnAt).getTime() / 1000 || 0;
+        return tB - tA;
+      });
+      setHistoryList(list);
+      // Guardar segurança no Local Storage
+      localStorage.setItem('ml_draw_history', JSON.stringify(list));
+    } catch (err) {
+      console.warn('Firebase draw history fetch read restricted (e.g., custom database rules latency). Loading from offline fallback:', err);
+      // 2. Fallback resiliente ao Local Storage para assegurar persistência impecável
+      try {
+        const localData = localStorage.getItem('ml_draw_history');
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          setHistoryList(parsed);
+        }
+      } catch (localErr) {
+        console.error('Error reading localStorage backup draw history:', localErr);
+      }
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleGlobeDrawComplete = async (giveaway: Giveaway, winners: GiveawayWinner[]) => {
+    try {
+      // Atualizar Giveaway no Firebase
+      const updatedGiveaway = {
+        ...giveaway,
+        status: 'Finalizado' as const,
+        winners: winners
+      };
+      await setDoc(doc(db, 'giveaways', giveaway.id), updatedGiveaway);
+
+      const newHistoryItem = {
+        giveawayId: giveaway.id,
+        giveawayTitle: giveaway.title,
+        drawNumber: giveaway.drawNumber ?? 1,
+        prizeImage: giveaway.prizeImage ?? '',
+        country: giveaway.country ?? 'Ambos',
+        winners: winners.map((w, idx) => ({
+          name: w.name,
+          email: w.email,
+          status: w.status ?? 'Pendente',
+          place: idx + 1
+        })),
+        drawnAt: new Date().toISOString()
+      };
+
+      // 1. Guardar no Local Storage para visualização imediata ultrarrápida
+      try {
+        const localData = localStorage.getItem('ml_draw_history');
+        const currentLocalList = localData ? JSON.parse(localData) : [];
+        const updatedLocalList = [{ id: `local-${Date.now()}`, ...newHistoryItem }, ...currentLocalList];
+        localStorage.setItem('ml_draw_history', JSON.stringify(updatedLocalList));
+        setHistoryList(updatedLocalList);
+      } catch (localErr) {
+        console.warn('Erro ao guardar histórico localmente:', localErr);
+      }
+
+      // 2. Guardar no Firebase Firestore para sincronização na nuvem
+      try {
+        await addDoc(collection(db, 'draw_history'), {
+          ...newHistoryItem,
+          drawnAt: new Date() // Como timestamp real do Firebase
+        });
+      } catch (histErr) {
+        console.warn('Sorteio gravou localmente com sucesso! Erro secundário ao guardar a cópia no Firebase (Sincronização pendente):', histErr);
+      }
+
+      fetchGiveaways();
+      // Recarregar histórico de forma limpa (tenta Firebase e cai no local se pendente)
+      fetchHistory();
+    } catch (err) {
+      console.error('Erro ao guardar os ganhadores sorteados pelo Globo interativo:', err);
+      throw err;
+    }
+  };
+
+  const formatDrawnAt = (drawnAt: any) => {
+    if (!drawnAt) return '-';
+    if (typeof drawnAt.toDate === 'function') {
+      const d = drawnAt.toDate();
+      return formatDate(d);
+    }
+    if (drawnAt.seconds) {
+      const d = new Date(drawnAt.seconds * 1000);
+      return formatDate(d);
+    }
+    const d = new Date(drawnAt);
+    return isNaN(d.getTime()) ? '-' : formatDate(d);
+  };
+
+  const handleDeleteHistoryItem = async (histId: string) => {
+    if (!window.confirm("Deseja mesmo eliminar este sorteio do histórico permanentemente?")) return;
+    
+    // 1. Remover do Firebase (se não for temporário ID local)
+    try {
+      if (!histId.toString().startsWith('local-')) {
+        await deleteDoc(doc(db, 'draw_history', histId));
+      }
+    } catch (err) {
+      console.warn("Erro ao eliminar do Firebase, procedendo exclusão local garantida:", err);
+    }
+
+    // 2. Remover do estado e do local storage imediatamente
+    try {
+      const updatedList = historyList.filter(item => item.id !== histId);
+      setHistoryList(updatedList);
+      localStorage.setItem('ml_draw_history', JSON.stringify(updatedList));
+      alert("Sorteio removido do histórico com sucesso!");
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao sincronizar remoção local.");
+    }
+  };
+
   useEffect(() => {
     fetchGiveaways();
+    fetchHistory();
   }, []);
 
   const fetchGiveaways = async () => {
     setLoading(true);
     setError(null);
     try {
-      const snap = await getDocs(collection(db, 'giveaways'));
+      const snap = await getDocsWithCacheFallback(collection(db, 'giveaways'), 'giveaways');
       const list: Giveaway[] = [];
       snap.forEach(docSnap => {
         list.push({ id: docSnap.id, ...docSnap.data() } as any);
@@ -131,7 +267,7 @@ export default function AdminSorteios() {
       setWinnersCount(winnersTotal);
 
       // Pull total participations to calculate exact distinct count
-      const partSnap = await getDocs(collection(db, 'participations'));
+      const partSnap = await getDocsWithCacheFallback(collection(db, 'participations'), 'participations');
       setTotalParticipants(partSnap.size);
 
     } catch (err: any) {
@@ -158,6 +294,8 @@ export default function AdminSorteios() {
     setFormEndDate(nextWeek.toISOString().split('T')[0]);
     setFormRules('1. Estar registado na plataforma Mercado Luso.\n2. Clicar em "Participar" durante o período ativo do sorteio.\n3. O sorteio é aberto para residentes selecionados no país correspondente.\n4. O vencedor será contactado por email.');
     setFormWinnersCount(1);
+    // Default sequential draw number based on existing list (starts at 0 when there are none, serving as our demo)
+    setFormDrawNumber(giveaways.length);
     setFormStatus('Ativo');
     setIsFormOpen(true);
   };
@@ -172,6 +310,7 @@ export default function AdminSorteios() {
     setFormEndDate(g.endDate);
     setFormRules(g.rules);
     setFormWinnersCount(g.winnersCount);
+    setFormDrawNumber(g.drawNumber !== undefined ? g.drawNumber : 1);
     setFormStatus(g.status);
     setIsFormOpen(true);
   };
@@ -196,6 +335,7 @@ export default function AdminSorteios() {
         endDate: formEndDate,
         rules: formRules,
         winnersCount: Number(formWinnersCount),
+        drawNumber: Number(formDrawNumber),
         status: formStatus,
         createdAt: editingId ? (giveaways.find(x => x.id === editingId)?.createdAt || Timestamp.now()) : Timestamp.now(),
         createdBy: user?.uid || 'admin'
@@ -230,7 +370,7 @@ export default function AdminSorteios() {
       
       // Clean up participations associated with this giveaway
       const partQuery = query(collection(db, 'participations'), where('giveawayId', '==', id));
-      const partSnap = await getDocs(partQuery);
+      const partSnap = await getDocsWithCacheFallback(partQuery, 'participations-delete');
       for (const pDoc of partSnap.docs) {
         await deleteDoc(doc(db, 'participations', pDoc.id));
       }
@@ -249,7 +389,7 @@ export default function AdminSorteios() {
     setCurrentParticipants([]);
     try {
       const q = query(collection(db, 'participations'), where('giveawayId', '==', g.id));
-      const snap = await getDocs(q);
+      const snap = await getDocsWithCacheFallback(q, 'view-participations');
       const list: GiveawayParticipation[] = [];
       snap.forEach(d => {
         list.push(d.data() as GiveawayParticipation);
@@ -279,7 +419,7 @@ export default function AdminSorteios() {
     setDrawnWinners([]);
     try {
       const q = query(collection(db, 'participations'), where('giveawayId', '==', g.id));
-      const snap = await getDocs(q);
+      const snap = await getDocsWithCacheFallback(q, 'draw-winners-participations');
       const list: GiveawayParticipation[] = [];
       snap.forEach(d => {
         list.push(d.data() as GiveawayParticipation);
@@ -401,6 +541,10 @@ export default function AdminSorteios() {
     return matchesSearch && matchesStatus;
   });
 
+  const filteredHistory = historyList.filter(hist => {
+    return (hist.giveawayTitle || '').toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   return (
     <div className="space-y-8 pb-20 px-1">
       {/* Title Header */}
@@ -500,7 +644,7 @@ export default function AdminSorteios() {
 
           {/* Status Tabs */}
           <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto overflow-x-auto shrink-0">
-            {(['all', 'Ativo', 'Encerrado', 'Finalizado'] as const).map((tab) => (
+            {(['all', 'Ativo', 'Encerrado', 'Finalizado', 'Historico'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setStatusFilter(tab)}
@@ -510,14 +654,88 @@ export default function AdminSorteios() {
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                {tab === 'all' ? 'Tudo' : tab}
+                {tab === 'all' ? 'Tudo' : tab === 'Historico' ? 'Histórico 🕒' : tab}
               </button>
             ))}
           </div>
         </div>
 
         {/* List Content */}
-        {loading ? (
+        {statusFilter === 'Historico' ? (
+          loadingHistory ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-3">
+              <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+              <p className="text-slate-400 text-sm font-bold">A carregar histórico do Firebase...</p>
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="py-16 text-center">
+              <Clock className="mx-auto text-slate-300 mb-3" size={40} />
+              <p className="text-slate-800 font-bold">Nenhum histórico registado</p>
+              <p className="text-slate-400 text-xs mt-1">Os sorteios realizados através do Globo aparecerão instantaneamente aqui.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-slate-150 rounded-2xl animate-fade-in">
+              <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Sorteio / Prémio</th>
+                    <th className="px-6 py-4">Ganhadores Sorteados</th>
+                    <th className="px-6 py-4 text-center">País</th>
+                    <th className="px-6 py-4">Data do Sorteio</th>
+                    <th className="px-6 py-4 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-150 bg-white text-slate-700">
+                  {filteredHistory.map((hist, idx) => (
+                    <tr key={hist.id || idx} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={hist.prizeImage || 'https://images.unsplash.com/photo-1543083503-4c92557ff24b?w=500&auto=format&fit=crop&q=80'} 
+                            alt={hist.giveawayTitle} 
+                            className="w-10 h-10 rounded-xl object-cover border border-slate-150 shrink-0" 
+                          />
+                          <div>
+                            <p className="font-extrabold text-slate-900">{hist.giveawayTitle}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Sorteio #{hist.drawNumber}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 max-w-xs md:max-w-md">
+                        <div className="flex flex-col gap-1.5">
+                          {hist.winners && hist.winners.map((win: any, winIdx: number) => (
+                            <div key={winIdx} className="flex items-center gap-1.5 text-xs text-slate-800">
+                              <span className="text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200/50 px-1.5 py-0.5 rounded shrink-0">
+                                {win.place || (winIdx + 1)}º lugar
+                              </span>
+                              <span className="font-extrabold truncate text-slate-900">{win.name}</span>
+                              <span className="text-[10.5px] text-slate-400 shrink-0">({win.email})</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center text-lg">
+                        {hist.country === 'Portugal' ? '🇵🇹' : hist.country === 'Reino Unido' ? '🇬🇧' : '🌍'}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 font-bold text-xs">
+                        {formatDrawnAt(hist.drawnAt)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => handleDeleteHistoryItem(hist.id)}
+                          className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition cursor-pointer"
+                          title="Eliminar do histórico local/Firebase"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3">
             <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
             <p className="text-slate-400 text-sm font-bold">A construir painel de Sorteios...</p>
@@ -561,6 +779,15 @@ export default function AdminSorteios() {
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   {/* Title & info */}
                   <div className="space-y-1">
+                    <div className="mb-1.5">
+                      <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-md ${
+                        g.drawNumber === 0 
+                          ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                          : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                      }`}>
+                        {g.drawNumber !== undefined ? (g.drawNumber === 0 ? '🎁 Edição #0 (Demo)' : `Sorteio #${g.drawNumber}`) : 'Sorteio'}
+                      </span>
+                    </div>
                     <h3 className="text-lg font-black text-slate-930 tracking-tight leading-snug">{g.title}</h3>
                     <p className="text-slate-500 text-xs line-clamp-2">{g.description}</p>
                   </div>
@@ -613,7 +840,10 @@ export default function AdminSorteios() {
 
                       {g.status !== 'Finalizado' ? (
                         <button
-                          onClick={() => handleDrawWinners(g)}
+                          onClick={() => {
+                            setGlobeGiveaway(g);
+                            setIsGlobeOpen(true);
+                          }}
                           className="px-3.5 py-1.5 text-xs font-black bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 flex items-center gap-1 animate-pulse"
                         >
                           <Trophy size={12} />
@@ -761,18 +991,34 @@ export default function AdminSorteios() {
                   </div>
 
                   {/* Country Filter */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-600 uppercase block">País Elegível</label>
+                    <select
+                      value={formCountry}
+                      onChange={(e) => setFormCountry(e.target.value as any)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Portugal">🇵🇹 Portugal</option>
+                      <option value="Reino Unido">🇬🇧 Reino Unido</option>
+                      <option value="Ambos">🌍 Ambos (Portugal & UK)</option>
+                    </select>
+                  </div>
+
+                  {/* Sorteio Number & Winners Count */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-600 uppercase block">País Elegível</label>
-                      <select
-                        value={formCountry}
-                        onChange={(e) => setFormCountry(e.target.value as any)}
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="Portugal">🇵🇹 Portugal</option>
-                        <option value="Reino Unido">🇬🇧 Reino Unido</option>
-                        <option value="Ambos">🌍 Ambos (Portugal & UK)</option>
-                      </select>
+                      <label className="text-xs font-bold text-slate-600 uppercase block">Número do Sorteio</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formDrawNumber}
+                        onChange={(e) => setFormDrawNumber(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-extrabold text-indigo-700"
+                        required
+                      />
+                      <span className="text-[10px] text-slate-400 block font-semibold leading-tight mt-1">
+                        Use <strong className="text-rose-500 font-black">0</strong> para Demonstração Fictícia.
+                      </span>
                     </div>
 
                     <div className="space-y-1">
@@ -1015,6 +1261,20 @@ export default function AdminSorteios() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Globo de Sorteios Interativo */}
+      {isGlobeOpen && globeGiveaway && (
+        <LotteryGlobeModal
+          giveaway={globeGiveaway}
+          onClose={() => {
+            setIsGlobeOpen(false);
+            setGlobeGiveaway(null);
+          }}
+          onDrawComplete={async (winners) => {
+            await handleGlobeDrawComplete(globeGiveaway, winners);
+          }}
+        />
+      )}
     </div>
   );
 }

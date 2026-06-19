@@ -538,7 +538,8 @@ const AdDetails = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* DESKTOP LAYOUT (Excellent for large devices) */}
+      <div className="hidden lg:grid lg:grid-cols-12 gap-8">
         {/* LADO ESQUERDO: Imagens e Galeria */}
         <div className="lg:col-span-7 space-y-4">
           <div className="relative aspect-[4/3] md:aspect-[16/10] bg-slate-950 rounded-3xl overflow-hidden shadow-lg group touch-none flex items-center justify-center">
@@ -646,15 +647,15 @@ const AdDetails = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 font-sans">
-              <div className="space-y-1">
-                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Cidade</span>
-                <span className="text-lg font-extrabold text-slate-900">{ad.city || 'Não informada'}</span>
+            <div className="flex flex-row items-center justify-between gap-4 bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100 font-sans">
+              <div className="space-y-0.5">
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider text-left">Cidade</span>
+                <span className="text-sm sm:text-lg font-extrabold text-slate-900 block text-left">{ad.city || 'Não informada'}</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5 text-right">
                 <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">País</span>
-                <span className="text-lg font-extrabold text-slate-900">
-                  {ad.country === 'Reino Unido' ? '🇬🇧 Reino Unido' : '🇵🇹 Portugal'}
+                <span className="text-sm sm:text-lg font-extrabold text-slate-900 block">
+                  {ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}
                 </span>
               </div>
             </div>
@@ -694,7 +695,7 @@ const AdDetails = () => {
             
             {/* Categoria & Visualizações / Tempo */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
-              <span className="bg-indigo-50 text-indigo-600 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-indigo-100">
+              <span className="bg-indigo-55 text-indigo-600 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-indigo-100">
                 {ad.category}
               </span>
               <div className="flex items-center gap-3 text-slate-400 text-xs font-semibold">
@@ -865,7 +866,7 @@ const AdDetails = () => {
                 <div className="pt-3 border-t border-slate-200/60 font-sans">
                   <button
                     onClick={() => setShowReviewsSection(!showReviewsSection)}
-                    className="flex items-center justify-between w-full text-xs font-bold text-indigo-500 uppercase tracking-widest"
+                    className="flex items-center justify-between w-full text-xs font-bold text-indigo-505 uppercase tracking-widest"
                   >
                     <span>Avaliações do Vendedor ({sellerReviews.length})</span>
                     <span className="text-slate-400 text-[10px] uppercase font-bold">{showReviewsSection ? 'Recolher' : 'Expandir'}</span>
@@ -909,6 +910,364 @@ const AdDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* MOBILE OPTIMIZED LAYOUT (3 compact sequence card sections on phones) */}
+      <div className="block lg:hidden space-y-5">
+        
+        {/* CAROUSEL FLOW */}
+        <div className="space-y-3">
+          <div className="relative aspect-[4/3] bg-slate-950 rounded-2xl overflow-hidden shadow-md group touch-none flex items-center justify-center">
+            <div 
+              className="absolute inset-0 bg-cover bg-center blur-2xl opacity-25 select-none pointer-events-none scale-110"
+              style={{ backgroundImage: `url(${images[currentImageIndex]})` }}
+            />
+            <img
+              src={images[currentImageIndex]}
+              alt={ad.title}
+              className="w-full h-full object-cover relative z-10 cursor-zoom-in"
+              onClick={() => setShowFullImage(true)}
+              referrerPolicy="no-referrer"
+              style={currentImageIndex === 0 ? {
+                objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
+                  ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
+                  : '50% 50%',
+                transform: `scale(${ad.imageZoom || 1}) translate(${
+                  ad.imageZoom && ad.imageZoom > 1
+                    ? ((ad.imagePositionX || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                    : 0
+                }%, ${
+                  ad.imageZoom && ad.imageZoom > 1
+                    ? ((ad.imagePositionY || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                    : 0
+                }%)`
+              } : undefined}
+            />
+
+            {/* Favorito Button */}
+            <button
+              onClick={handleToggleFavorite}
+              className={`absolute top-4 right-4 p-2.5 rounded-full z-20 backdrop-blur-md transition-all shadow-md ${
+                isFavorite ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-white/90 text-slate-400 hover:text-red-500 hover:bg-white'
+              }`}
+            >
+              <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+            </button>
+
+            {/* Carousel Buttons */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/95 backdrop-blur-md rounded-full text-slate-900 shadow-md z-20"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/95 backdrop-blur-md rounded-full text-slate-900 shadow-md z-20"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Thumbnails list */}
+          {images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto py-1 scrollbar-none">
+              {images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentImageIndex(i)}
+                  className={`w-14 h-11 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                    currentImageIndex === i ? 'border-indigo-600 scale-95 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img 
+                    src={img} 
+                    alt={`Miniatura ${i}`} 
+                    className="w-full h-full object-cover"
+                    style={i === 0 ? {
+                      objectPosition: ad.imagePositionX !== undefined && ad.imagePositionY !== undefined
+                        ? `${ad.imagePositionX}% ${ad.imagePositionY}%`
+                        : '50% 50%',
+                      transform: `scale(${ad.imageZoom || 1}) translate(${
+                        ad.imageZoom && ad.imageZoom > 1
+                          ? ((ad.imagePositionX || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                          : 0
+                      }%, ${
+                        ad.imageZoom && ad.imageZoom > 1
+                          ? ((ad.imagePositionY || 50) - 50) * (ad.imageZoom - 1) / ad.imageZoom
+                          : 0
+                      }%)`
+                    } : undefined}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SECTION CARD 1: Descrição com valor, cidade e país + Dados e CTAs */}
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-lg space-y-4 text-left">
+          
+          {/* Categoria, views & time */}
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100/70 pb-2.5">
+            <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100">
+              {ad.category}
+            </span>
+            <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+              <span className="flex items-center gap-1">
+                <Eye size={12} /> {ad.views || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock size={12} /> {timeStr}
+              </span>
+            </div>
+          </div>
+
+          {/* Title, Country/City, Price */}
+          <div className="space-y-1.5">
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
+              {ad.title}
+            </h1>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1 text-slate-500 font-bold text-xs truncate">
+                <MapPin size={13} className="text-indigo-600 shrink-0" />
+                <span className="truncate">{ad.city}, {ad.country || 'Portugal'}</span>
+              </div>
+              {hasPrice ? (
+                <div className="text-lg sm:text-xl font-black text-indigo-600 bg-indigo-50/50 py-0.5 px-2.5 rounded-lg border border-indigo-100/30 flex-shrink-0">
+                  {formatPrice(ad.price, ad.country)}
+                </div>
+              ) : (
+                <span className="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-100 flex-shrink-0">
+                  Sob Consulta
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Descrição detalhada compacta */}
+          <div className="space-y-1">
+            <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Descrição detalhada</h3>
+            <p className="text-slate-650 text-xs sm:text-sm leading-relaxed whitespace-pre-line break-words bg-slate-50/40 p-3 rounded-xl border border-slate-50">
+              {normalizedDescription.length > 250 && !descriptionExpanded
+                ? `${normalizedDescription.substring(0, 250).trim()}...`
+                : normalizedDescription}
+            </p>
+            {normalizedDescription.length > 250 && (
+              <button
+                onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+              >
+                {descriptionExpanded ? 'Ver Menor' : 'Ler mais completo'}
+              </button>
+            )}
+          </div>
+
+          {/* Cartão do Vendedor Compacto */}
+          <div className="bg-slate-50 rounded-2xl p-3 sm:p-4 border border-slate-100 space-y-3">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200/50 pb-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 bg-indigo-605/10 bg-indigo-50 text-indigo-700 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
+                  {(hasSourceUrl ? 'Parceiro' : ad.sellerName).slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm leading-tight flex items-center gap-1 truncate">
+                    {hasSourceUrl ? 'Parceiro' : ad.sellerName}
+                    <Award size={11} className="text-indigo-500 shrink-0" />
+                  </h4>
+                  <div className="flex items-center gap-0.5 mt-0.5" title={`${sellerProfile?.ratingAverage || 0} / 5`}>
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const ratingVal = sellerProfile?.ratingAverage || 0;
+                        const isFilled = star <= Math.round(ratingVal);
+                        return (
+                          <Star
+                            key={star}
+                            size={9}
+                            className={isFilled ? "text-amber-400 fill-amber-400" : "text-slate-200"}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className="text-[9px] text-slate-550 font-bold ml-1">
+                      ({sellerProfile?.ratingCount || 0} avs.)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Avaliar button */}
+              {user && user.uid !== ad.sellerId && (
+                <button
+                  onClick={() => setShowReviewModal(true)}
+                  className="text-[9px] font-black bg-indigo-50 text-indigo-600 py-1 px-2.5 rounded-lg border border-indigo-100 shrink-0 text-center hover:bg-indigo-100/70"
+                >
+                  Avaliar
+                </button>
+              )}
+            </div>
+
+            {/* Vitrine Digital Link */}
+            {showcaseActive && (
+              <div className="bg-indigo-50/70 border border-indigo-150 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-lg">🏪</span>
+                  <div className="min-w-0">
+                    <span className="font-extrabold text-indigo-950 text-[11px] block whitespace-nowrap overflow-hidden text-ellipsis">Vitrine Digital Ativa</span>
+                    <span className="text-[9px] text-indigo-650 font-semibold block whitespace-nowrap overflow-hidden text-ellipsis">Ver todos os produtos</span>
+                  </div>
+                </div>
+                <Link
+                  to={`/empreendedores/${showcaseSlug}`}
+                  className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black rounded-lg transition-all shadow-sm shrink-0 whitespace-nowrap"
+                >
+                  Visitar
+                </Link>
+              </div>
+            )}
+
+            {/* CTAs */}
+            <div className="flex flex-col gap-2 pt-1">
+              {ad.adStatus === 'sold' || ad.status === 'sold' ? (
+                <div className="flex items-center justify-center gap-1 bg-slate-100 text-slate-500 py-2.5 px-4 rounded-xl font-black text-xs border border-slate-200">
+                  <ShoppingBag size={14} className="text-slate-400" />
+                  <span>Anúncio Vendido</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleContactClick}
+                  className={`flex items-center justify-center gap-1.5 ${
+                    hasSourceUrl ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-500 hover:bg-emerald-600'
+                  } text-white py-2.5 px-4 rounded-xl font-black text-xs transition-all shadow-md active:scale-[0.98] w-full text-center`}
+                >
+                  {hasSourceUrl ? <ExternalLink size={14} /> : <MessageCircle size={14} />}
+                  <span>{hasSourceUrl ? 'Contato' : 'Contactar via WhatsApp'}</span>
+                </button>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleShare}
+                  className={`flex items-center justify-center gap-1 border px-2 py-2 rounded-lg font-bold text-[9px] transition-all truncate ${
+                    shareCopied 
+                      ? 'bg-emerald-55 border-emerald-200 text-emerald-605' 
+                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <Share2 size={13} className={shareCopied ? 'text-emerald-550' : ''} />
+                  <span>{shareCopied ? 'Copiado!' : 'Partilhar'}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className="flex items-center justify-center gap-1 border border-rose-100 hover:border-rose-200 text-rose-500 bg-rose-50/50 hover:bg-rose-50 py-2 px-2 rounded-lg font-bold text-[9px] transition"
+                >
+                  <ShieldAlert size={13} /> Denunciar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION CARD 2: Localização aproximada */}
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-lg space-y-3.5 text-left">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+            <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+              <MapPin size={14} />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-slate-900 leading-none">📍 Localização Aproximada</h2>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1 font-sans">Região de referência do anúncio</p>
+            </div>
+          </div>
+
+          <div className="flex flex-row items-center justify-between gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100 font-sans">
+            <div className="space-y-0.5">
+              <span className="block text-[8px] text-slate-400 uppercase font-black tracking-wider text-left">Cidade</span>
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 block text-left truncate">{ad.city || 'Não informada'}</span>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <span className="block text-[8px] text-slate-400 uppercase font-black tracking-wider">País</span>
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 block truncate">
+                {ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}
+              </span>
+            </div>
+          </div>
+
+          {ad.city && ad.city.trim() !== '' && ad.city.toLowerCase() !== 'todas' && (
+            <div className="w-full h-40 rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 relative">
+              <iframe
+                title={`Mapa de ${ad.city}`}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.city + ', ' + ad.country)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+              />
+            </div>
+          )}
+
+          <div className="flex items-start gap-1.5 text-slate-505 bg-amber-50/20 border border-amber-100/60 rounded-xl p-2.5 text-[10px] font-sans">
+            <span className="text-amber-500 text-xs leading-none mt-0.5">⚠️</span>
+            <p className="leading-relaxed text-amber-900">
+              A localização real baseia-se na cidade informada pelo anunciante e serve estritamente como ponto de referência aproximado.
+            </p>
+          </div>
+        </div>
+
+        {/* SECTION CARD 3: Avaliações do Vendedor (Feedback) */}
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-lg space-y-3.5 text-left">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+            <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+              <Star size={14} className="text-amber-500" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-slate-900 leading-none">⭐️ Avaliações do Vendedor</h2>
+              <p className="text-[9px] text-slate-405 font-bold uppercase tracking-wider mt-1 font-sans">Feedback real de outros clientes</p>
+            </div>
+          </div>
+
+          {sellerReviews.length > 0 ? (
+            <div className="space-y-2.5 max-h-60 overflow-y-auto pr-0.5 scrollbar-none">
+              {sellerReviews.map((rev) => (
+                <div key={rev.id} className="bg-slate-50/60 p-2.5 rounded-xl border border-slate-100 text-xs shadow-sm">
+                  <div className="flex justify-between items-start mb-1 gap-1.5">
+                    <span className="font-extrabold text-slate-800 text-[11px] truncate">{rev.buyerName}</span>
+                    <div className="flex gap-0.5 shrink-0">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} size={9} className={`${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-100'}`} />
+                      ))}
+                    </div>
+                  </div>
+                  {rev.comment ? (
+                    <p className="text-slate-600 text-[11px] italic leading-relaxed">"{rev.comment}"</p>
+                  ) : (
+                    <p className="text-slate-400 text-[10px] italic">Classificou sem comentário escrito.</p>
+                  )}
+                  <div className="text-[8px] text-slate-400 mt-2 flex justify-between items-center">
+                    <span className="font-semibold text-emerald-600">{rev.success ? '✓ Negócio Correto' : 'ℹ Incompleto'}</span>
+                    <span>{rev.createdAt?.toDate ? formatDistanceToNow(rev.createdAt.toDate(), { addSuffix: true, locale: pt }) : 'Recentemente'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-5 bg-slate-50/50 rounded-xl border border-dashed border-slate-150 p-3.5">
+              <span className="text-lg block mb-1">💬</span>
+              <h4 className="text-xs font-bold text-slate-800">Sem avaliações ainda</h4>
+              <p className="text-[9px] text-slate-400 mt-0.5 leading-normal">
+                Faça negócio em segurança com o vendedor e seja o primeiro comprador a partilhar feedback!
+              </p>
+            </div>
+          )}
+        </div>
+
+      </div> {/* closes block lg:hidden */}
 
       {/* Review Modal para deixar novas review*/}
       {showReviewModal && (

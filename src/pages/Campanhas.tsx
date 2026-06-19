@@ -42,7 +42,7 @@ const Campanhas = () => {
       try {
         const q = query(
           collection(db, 'ads'),
-          where('userId', '==', user.uid)
+          where('sellerId', '==', user.uid)
         );
         const snap = await getDocs(q);
         const approvedCount = snap.docs.filter((doc) => doc.data().status === 'approved').length;
