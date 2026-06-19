@@ -768,7 +768,49 @@ const Home = () => {
     });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
-    return result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    return result.sort((a, b) => {
+      // Prioridade:
+      // 1. Premium Nacional Pago (plan == 'national' ou featuredLevel == 'national')
+      // 2. Premium Local Pago (plan == 'local' ou featuredLevel == 'local' mas não solidário)
+      // 3. Doação Solidária (categoria '💚 Doações & Solidariedade' ou donationBoost, donationBadge, featuredReason == 'donation')
+      // 4. Anúncio normal
+      const getPriority = (ad: any) => {
+        const isFeatured = ad.isFeatured && ad.featuredUntil && (
+          ad.isPermanentFeatured || (
+            ad.featuredUntil.seconds 
+              ? ad.featuredUntil.toDate() > new Date() 
+              : new Date(ad.featuredUntil) > new Date()
+          )
+        );
+
+        if (isFeatured) {
+          const isNational = ad.featuredLevel === 'national' || ad.plan === 'national' || !ad.featuredLevel;
+          if (isNational) return 4; // Top 1: Premium Nacional Pago
+          
+          const isDonation = ad.category === '💚 Doações & Solidariedade' || ad.donationBoost === true || ad.featuredReason === 'donation';
+          if (isDonation) return 2; // Top 3: Doação Solidária
+          
+          return 3; // Top 2: Premium Local Pago
+        }
+        
+        if (ad.category === '💚 Doações & Solidariedade' || ad.donationBoost === true) {
+          return 2; // Top 3: Doação Solidária
+        }
+        
+        return 1; // Top 4: Anúncios normais
+      };
+
+      const pA = getPriority(a);
+      const pB = getPriority(b);
+      
+      if (pA !== pB) {
+        return pB - pA; // maior prioridade primeiro
+      }
+
+      const timeA = a.createdAt?.seconds ? a.createdAt.seconds : (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+      const timeB = b.createdAt?.seconds ? b.createdAt.seconds : (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+      return timeB - timeA;
+    });
   }, [ads, searchTerm, category, city, country]);
 
   // Contagem calculada de anúncios aprovados em tempo real de acordo com as diretrizes de contexto de país e expiração de anúncios

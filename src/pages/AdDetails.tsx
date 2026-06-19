@@ -719,7 +719,11 @@ const AdDetails = () => {
                   <MapPin size={16} className="text-indigo-600" />
                   <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}, {ad.country || 'Portugal'}</span>
                 </div>
-                {hasPrice ? (
+                {ad.category === '💚 Doações & Solidariedade' ? (
+                  <div className="text-3.5xl font-black text-emerald-600 bg-emerald-50 py-1.5 px-4 rounded-2xl border border-emerald-200 flex items-center justify-center animate-pulse">
+                    Grátis 💚
+                  </div>
+                ) : hasPrice ? (
                   <div className="text-3.5xl font-black text-indigo-600 bg-indigo-50/50 py-1.5 px-4 rounded-2xl border border-indigo-100/50 flex items-center justify-center">
                     {formatPrice(ad.price, ad.country)}
                   </div>
@@ -1037,7 +1041,11 @@ const AdDetails = () => {
                 <MapPin size={13} className="text-indigo-600 shrink-0" />
                 <span className="truncate">{ad.city}, {ad.country || 'Portugal'}</span>
               </div>
-              {hasPrice ? (
+              {ad.category === '💚 Doações & Solidariedade' ? (
+                <div className="text-lg sm:text-xl font-black text-emerald-600 bg-emerald-50 py-0.5 px-2.5 rounded-lg border border-emerald-200 flex-shrink-0">
+                  Grátis 💚
+                </div>
+              ) : hasPrice ? (
                 <div className="text-lg sm:text-xl font-black text-indigo-600 bg-indigo-50/50 py-0.5 px-2.5 rounded-lg border border-indigo-100/30 flex-shrink-0">
                   {formatPrice(ad.price, ad.country)}
                 </div>

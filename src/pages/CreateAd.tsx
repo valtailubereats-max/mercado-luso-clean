@@ -770,7 +770,7 @@ const CreateAd = () => {
         id: adId,
         title: formData.title,
         description: formData.description,
-        price: (formData.category === 'Imigração' || isJob) ? 0 : (formData.price ? parseFloat(formData.price) : 0),
+        price: (formData.category === 'Imigração' || isJob || formData.category === '💚 Doações & Solidariedade') ? 0 : (formData.price ? parseFloat(formData.price) : 0),
         imageUrl: formData.images[0] || '', // Primary image
         images: formData.images,
         city: formData.city,
@@ -783,7 +783,7 @@ const CreateAd = () => {
         sellerName: id && originalAd ? originalAd.sellerName : profile.name,
         status: isAdmin && id ? (originalAd?.status || 'pending') : 'pending',
         adStatus: id && originalAd ? originalAd.adStatus : 'active',
-        plan: formData.plan,
+        plan: formData.category === '💚 Doações & Solidariedade' ? 'local' : formData.plan,
         expirationDate: expirationDate,
         userNotified: isAdmin && id ? true : false,
         createdAt: id && originalAd ? originalAd.createdAt : serverTimestamp(),
@@ -802,6 +802,18 @@ const CreateAd = () => {
         listingType: isAdmin ? formData.listingType : (originalAd?.listingType || 'normal'),
         targetUrl: isAdmin ? (formData.listingType === 'informativo' ? formData.targetUrl.trim() : '') : (originalAd?.targetUrl || '')
       };
+
+      if (formData.category === '💚 Doações & Solidariedade') {
+        const thirtyDaysOut = new Date();
+        thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+        adData.isFeatured = true;
+        adData.featuredUntil = thirtyDaysOut;
+        adData.featuredLevel = "local";
+        adData.featuredReason = "donation";
+        adData.donationBoost = true;
+        adData.donationBadge = true;
+        adData.featuredActivatedAt = new Date();
+      }
 
       if (isStaff) {
         adData.isPermanentFeatured = !!formData.isPermanentFeatured;
@@ -918,7 +930,7 @@ const CreateAd = () => {
       }
 
       // Se não houver duplicado local, prosseguir normalmente para salvar ou cobrar destaque
-      if (isPaidDestaque && !alreadyHasThisDestaque && !isPromoActive && !formData.isPermanentFeatured) {
+      if (isPaidDestaque && !alreadyHasThisDestaque && !isPromoActive && !formData.isPermanentFeatured && formData.category !== '💚 Doações & Solidariedade') {
         setPendingAdData(adData);
         setShowPaymentModal(true);
         setLoading(false);
@@ -1528,7 +1540,15 @@ const CreateAd = () => {
               <select
                 value={formData.category}
                 disabled={!isAdmin && isEditLocked}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) => {
+                  const cat = e.target.value;
+                  const updatedData = { ...formData, category: cat };
+                  if (cat === '💚 Doações & Solidariedade') {
+                    updatedData.plan = 'local';
+                    updatedData.price = '0';
+                  }
+                  setFormData(updatedData);
+                }}
                 className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="">Seleccione uma categoria...</option>
@@ -1543,6 +1563,17 @@ const CreateAd = () => {
                   .map((c, index) => <option key={`category-${c}-${index}`} value={c}>{c}</option>)}
               </select>
             </div>
+
+            {formData.category === '💚 Doações & Solidariedade' && (
+              <div className="col-span-1 md:col-span-3 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200/85 rounded-3xl shadow-sm text-left animate-pulse">
+                <p className="text-sm text-emerald-800 font-extrabold flex items-center gap-1.5">
+                  <span>💚</span> Obrigado pela sua generosidade!
+                </p>
+                <p className="text-xs text-emerald-700/95 mt-1.5 leading-relaxed font-semibold">
+                  O Mercado Luso valoriza membros que ajudam a comunidade. Por este motivo, anúncios de Doação recebem benefícios especiais de visibilidade local para ajudar quem mais precisa.
+                </p>
+              </div>
+            )}
 
             {formData.category === 'Imigração' ? (
               <>
@@ -1683,6 +1714,15 @@ const CreateAd = () => {
                   />
                 </div>
               </>
+            ) : formData.category === '💚 Doações & Solidariedade' ? (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                  Preço
+                </label>
+                <div className="w-full px-4 py-4 bg-emerald-50 border-2 border-emerald-150 text-emerald-800 rounded-2xl font-extrabold flex items-center gap-2 select-none">
+                  <span>💚 Grátis (Artigo para Doação Solidária)</span>
+                </div>
+              </div>
             ) : (
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">
@@ -1855,160 +1895,203 @@ const CreateAd = () => {
               )}
 
               <label className="text-sm font-bold text-slate-700 uppercase tracking-wider block">Tipo de Anúncio & Destaque</label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-4">
-                
-                {/* Plano Gratuito (Normal) */}
-                <button
-                  type="button"
-                  disabled={!isAdmin && isEditLocked}
-                  onClick={() => setFormData({ ...formData, plan: 'free' })}
-                  className={`p-5 rounded-3xl border-2 text-left transition-all ${
-                    formData.plan === 'free' 
-                      ? 'border-indigo-600 bg-indigo-50/50 ring-4 ring-indigo-100' 
-                      : 'border-slate-100 bg-slate-50 hover:border-slate-300'
-                  } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-extrabold text-slate-900 text-sm">Anúncio Normal</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Vendas e transações pontuais grátis</p>
-                    </div>
-                    <span className="text-[9px] font-black bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                      Grátis
-                    </span>
+              {formData.category === '💚 Doações & Solidariedade' ? (
+                <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-400 shadow-md relative overflow-hidden text-left col-span-1 md:col-span-3">
+                  <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-xl uppercase tracking-wider animate-pulse flex items-center gap-1">
+                    <span>Benefício Solidário Ativo</span> <span>💚</span>
                   </div>
                   
-                  <ul className="text-[11px] text-slate-600 space-y-1 my-3">
-                    <li className="flex items-center gap-1">✅ Até 2 fotos</li>
-                    <li className="flex items-center gap-1">✅ Listagens normais</li>
-                    <li className="flex items-center gap-1">✅ Pesquisa e favoritos</li>
-                  </ul>
+                  <h3 className="text-base font-black text-emerald-950 flex items-center gap-2 mb-3">
+                    <span>🎉</span> Benefícios do seu anúncio solidário
+                  </h3>
 
-                  <div className="mt-3 pt-3 border-t border-slate-200/50" onClick={(e) => e.stopPropagation()}>
-                    <label className="text-[9px] uppercase font-black tracking-wider text-slate-400 block mb-1">Duração do Anúncio</label>
-                    <select
-                      value={formData.duration}
-                      disabled={!isAdmin && isEditLocked}
-                      onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0, plan: 'free' })}
-                      className="w-full p-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold outline-none cursor-pointer disabled:opacity-50"
-                    >
-                      <option value={15}>15 Dias</option>
-                      <option value={30}>30 Dias</option>
-                    </select>
-                  </div>
-                </button>
-
-                {/* ⭐ Destaque Local */}
-                <button
-                  type="button"
-                  disabled={!isAdmin && isEditLocked}
-                  onClick={() => setFormData({ ...formData, plan: 'local' })}
-                  className={`p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
-                    formData.plan === 'local' || formData.plan === 'highlight'
-                      ? 'border-amber-400 bg-amber-50/20 ring-4 ring-amber-100' 
-                      : 'border-slate-100 bg-slate-50 hover:border-slate-300'
-                  } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shrink-0 animate-pulse">
-                    Local ⭐
-                  </div>
-                  
-                  <div className="flex justify-between items-start mb-2 mt-2">
-                    <div>
-                      <p className="font-extrabold text-slate-900 text-sm">Destaque Local</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Destaque na sua cidade</p>
-                      {isPromoActive && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1.5 text-[9px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">
-                            🎁 Gratuito no Lançamento
-                          </span>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-emerald-800 font-semibold mb-5">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-black">✅</span> <span>Destaque Local Gratuito</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-black">✅</span> <span>Maior visibilidade na sua cidade</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-black">✅</span> <span>Selo Solidário destacado no anúncio</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-black">✅</span> <span>100% Grátis (Sem taxa de publicação ou destaque)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-black">✅</span> <span>Validade do Destaque: 30 dias de destaque gratuito</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  <ul className="text-[11px] text-slate-600 space-y-1 my-3">
-                    <li className="flex items-center gap-1">🌟 <strong>Até 4 fotos</strong></li>
-                    <li className="flex items-center gap-1">🌟 Destaque local</li>
-                    <li className="flex items-center gap-1">🌟 Carrossel local</li>
-                    <li className="flex items-center gap-1">🌟 Etiqueta ⭐</li>
-                  </ul>
 
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 p-2 bg-white/50 rounded-xl border border-dashed border-amber-200">
-                    <div className="flex justify-between items-center text-[10px]">
-                      <span className="font-bold text-amber-800">Duração:</span>
-                      <span className="font-extrabold text-slate-930">30 Dias</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px]">
-                      <span className="font-bold text-amber-800">Investimento:</span>
-                      <span className="font-black text-amber-600 flex flex-col items-end">
-                        <span className={isPromoActive ? "line-through text-slate-400 font-bold" : ""}>
-                          {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
-                        </span>
-                        {isPromoActive && (
-                          <span className="text-emerald-600 font-black text-[9px]">Grátis 🎁</span>
-                        )}
+                  <div className="p-4 bg-emerald-600 text-white border border-emerald-500 rounded-2xl text-xs space-y-1.5 font-sans">
+                    <p className="font-extrabold flex items-center gap-1.5 text-white tracking-wide">
+                      <span>⚠️</span> AVISO IMPORTANTE
+                    </p>
+                    <p className="leading-relaxed font-semibold opacity-95">
+                      Este anúncio é estritamente destinado a doações e itens 100% gratuitos. Qualquer tentativa de venda camuflada, publicidade enganosa, cobranças por fora ou abuso desta categoria resultará no banimento imediato e permanente da sua conta Mercado Luso. Encorajamos a denúncia de quaisquer irregularidades à moderação.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-4">
+                  
+                  {/* Plano Gratuito (Normal) */}
+                  <button
+                    type="button"
+                    disabled={!isAdmin && isEditLocked}
+                    onClick={() => setFormData({ ...formData, plan: 'free' })}
+                    className={`p-5 rounded-3xl border-2 text-left transition-all ${
+                      formData.plan === 'free' 
+                        ? 'border-indigo-600 bg-indigo-50/50 ring-4 ring-indigo-100' 
+                        : 'border-slate-100 bg-slate-50 hover:border-slate-300'
+                    } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">Anúncio Normal</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Vendas e transações pontuais grátis</p>
+                      </div>
+                      <span className="text-[9px] font-black bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                        Grátis
                       </span>
                     </div>
-                  </div>
-                </button>
+                    
+                    <ul className="text-[11px] text-slate-600 space-y-1 my-3">
+                      <li className="flex items-center gap-1">✅ Até 2 fotos</li>
+                      <li className="flex items-center gap-1">✅ Listagens normais</li>
+                      <li className="flex items-center gap-1">✅ Pesquisa e favoritos</li>
+                    </ul>
 
-                {/* ⭐⭐⭐ Destaque Nacional */}
-                <button
-                  type="button"
-                  disabled={!isAdmin && isEditLocked}
-                  onClick={() => setFormData({ ...formData, plan: 'national' })}
-                  className={`p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
-                    formData.plan === 'national' 
-                      ? 'border-indigo-500 bg-indigo-50/20 ring-4 ring-indigo-100' 
-                      : 'border-slate-100 bg-slate-50 hover:border-slate-300'
-                  } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-600 to-indigo-500 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shrink-0 animate-pulse">
-                    Nacional ⭐⭐⭐
-                  </div>
-                  
-                  <div className="flex justify-between items-start mb-2 mt-2">
-                    <div>
-                      <p className="font-extrabold text-slate-900 text-sm">Destaque Nacional</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Visibilidade em todo o país</p>
-                      {isPromoActive && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1.5 text-[9px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">
-                            🎁 Gratuito no Lançamento
-                          </span>
-                        </div>
-                      )}
+                    <div className="mt-3 pt-3 border-t border-slate-200/50" onClick={(e) => e.stopPropagation()}>
+                      <label className="text-[9px] uppercase font-black tracking-wider text-slate-400 block mb-1">Duração do Anúncio</label>
+                      <select
+                        value={formData.duration}
+                        disabled={!isAdmin && isEditLocked}
+                        onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0, plan: 'free' })}
+                        className="w-full p-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold outline-none cursor-pointer disabled:opacity-50"
+                      >
+                        <option value={15}>15 Dias</option>
+                        <option value={30}>30 Dias</option>
+                      </select>
                     </div>
-                  </div>
-                  
-                  <ul className="text-[11px] text-slate-600 space-y-1 my-3">
-                    <li className="flex items-center gap-1 font-semibold text-indigo-900">🚀 Prioridade Máxima</li>
-                    <li className="flex items-center gap-1">🌟 <strong>Até 6 fotos</strong></li>
-                    <li className="flex items-center gap-1">🌟 Todas as cidades</li>
-                    <li className="flex items-center gap-1">🌟 Etiqueta ⭐⭐⭐</li>
-                  </ul>
+                  </button>
 
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 p-2 bg-indigo-50/50 rounded-xl border border-dashed border-indigo-200">
-                    <div className="flex justify-between items-center text-[10px]">
-                      <span className="font-bold text-indigo-700">Duração:</span>
-                      <span className="font-extrabold text-slate-930">30 Dias</span>
+                  {/* ⭐ Destaque Local */}
+                  <button
+                    type="button"
+                    disabled={!isAdmin && isEditLocked}
+                    onClick={() => setFormData({ ...formData, plan: 'local' })}
+                    className={`p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
+                      formData.plan === 'local' || formData.plan === 'highlight'
+                        ? 'border-amber-400 bg-amber-50/20 ring-4 ring-amber-100' 
+                        : 'border-slate-100 bg-slate-50 hover:border-slate-300'
+                    } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shrink-0 animate-pulse">
+                      Local ⭐
                     </div>
-                    <div className="flex justify-between items-center text-[10px]">
-                      <span className="font-bold text-indigo-700">Investimento:</span>
-                      <span className="font-black text-indigo-600 flex flex-col items-end">
-                        <span className={isPromoActive ? "line-through text-slate-400 font-bold" : ""}>
-                          {formData.country === 'Reino Unido' ? '£7.99' : '€7.99'}
-                        </span>
+                    
+                    <div className="flex justify-between items-start mb-2 mt-2">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">Destaque Local</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Destaque na sua cidade</p>
                         {isPromoActive && (
-                          <span className="text-emerald-600 font-black text-[9px]">Grátis 🎁</span>
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[9px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">
+                              🎁 Gratuito no Lançamento
+                            </span>
+                          </div>
                         )}
-                      </span>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                    
+                    <ul className="text-[11px] text-slate-600 space-y-1 my-3">
+                      <li className="flex items-center gap-1">🌟 <strong>Até 4 fotos</strong></li>
+                      <li className="flex items-center gap-1">🌟 Destaque local</li>
+                      <li className="flex items-center gap-1">🌟 Carrossel local</li>
+                      <li className="flex items-center gap-1">🌟 Etiqueta ⭐</li>
+                    </ul>
 
-              </div>
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 p-2 bg-white/50 rounded-xl border border-dashed border-amber-200">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-amber-800">Duração:</span>
+                        <span className="font-extrabold text-slate-930">30 Dias</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-amber-800">Investimento:</span>
+                        <span className="font-black text-amber-600 flex flex-col items-end">
+                          <span className={isPromoActive ? "line-through text-slate-400 font-bold" : ""}>
+                            {formData.country === 'Reino Unido' ? '£4.99' : '€4.99'}
+                          </span>
+                          {isPromoActive && (
+                            <span className="text-emerald-600 font-black text-[9px]">Grátis 🎁</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* ⭐⭐⭐ Destaque Nacional */}
+                  <button
+                    type="button"
+                    disabled={!isAdmin && isEditLocked}
+                    onClick={() => setFormData({ ...formData, plan: 'national' })}
+                    className={`p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${
+                      formData.plan === 'national' 
+                        ? 'border-indigo-500 bg-indigo-50/20 ring-4 ring-indigo-100' 
+                        : 'border-slate-100 bg-slate-50 hover:border-slate-300'
+                    } ${(!isAdmin && isEditLocked) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-600 to-indigo-500 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shrink-0 animate-pulse">
+                      Nacional ⭐⭐⭐
+                    </div>
+                    
+                    <div className="flex justify-between items-start mb-2 mt-2">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">Destaque Nacional</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Visibilidade em todo o país</p>
+                        {isPromoActive && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[9px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg border border-emerald-100">
+                              🎁 Gratuito no Lançamento
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <ul className="text-[11px] text-slate-600 space-y-1 my-3">
+                      <li className="flex items-center gap-1 font-semibold text-indigo-900">🚀 Prioridade Máxima</li>
+                      <li className="flex items-center gap-1">🌟 <strong>Até 6 fotos</strong></li>
+                      <li className="flex items-center gap-1">🌟 Todas as cidades</li>
+                      <li className="flex items-center gap-1">🌟 Etiqueta ⭐⭐⭐</li>
+                    </ul>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 p-2 bg-indigo-50/50 rounded-xl border border-dashed border-indigo-200">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-indigo-700">Duração:</span>
+                        <span className="font-extrabold text-slate-930">30 Dias</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-indigo-700">Investimento:</span>
+                        <span className="font-black text-indigo-600 flex flex-col items-end">
+                          <span className={isPromoActive ? "line-through text-slate-400 font-bold" : ""}>
+                            {formData.country === 'Reino Unido' ? '£7.99' : '€7.99'}
+                          </span>
+                          {isPromoActive && (
+                            <span className="text-emerald-600 font-black text-[9px]">Grátis 🎁</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+
+                </div>
+              )}
             </div>
 
             <div className="space-y-2 md:col-span-2">

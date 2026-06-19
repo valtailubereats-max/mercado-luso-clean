@@ -440,13 +440,17 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         }}
         className={`card-flutuante overflow-hidden group flex flex-col h-full cursor-pointer relative transition-all duration-300 ${
           isFeaturedVariant
-            ? isNationalHighlight
-              ? '!bg-gradient-to-br !from-[#f5f8ff] !to-[#eef2ff] !border-indigo-200 shadow-lg shadow-indigo-100/40 hover:!border-indigo-400 hover:shadow-xl hover:shadow-indigo-100/60'
-              : '!bg-gradient-to-br !from-[#fffdf4] !to-[#faf5e6] !border-amber-200/80 shadow-lg shadow-amber-100/40 hover:!border-amber-300 hover:shadow-xl hover:shadow-amber-100/60'
+            ? (ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation')
+              ? '!bg-gradient-to-br !from-[#f0fdf4] !to-[#dcfce7]/60 !border-emerald-200 shadow-lg shadow-emerald-100/40 hover:!border-emerald-400 hover:shadow-xl hover:shadow-emerald-100/60'
+              : isNationalHighlight
+                ? '!bg-gradient-to-br !from-[#f5f8ff] !to-[#eef2ff] !border-indigo-200 shadow-lg shadow-indigo-100/40 hover:!border-indigo-400 hover:shadow-xl hover:shadow-indigo-100/60'
+                : '!bg-gradient-to-br !from-[#fffdf4] !to-[#faf5e6] !border-amber-200/80 shadow-lg shadow-amber-100/40 hover:!border-amber-300 hover:shadow-xl hover:shadow-amber-100/60'
             : isAdFeatured 
-              ? isNationalHighlight
-                ? 'ring-2 ring-indigo-500 border border-indigo-400 shadow-md shadow-indigo-100/50 scale-[1.01]'
-                : 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
+              ? (ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation')
+                ? 'ring-2 ring-emerald-500 border border-emerald-450 shadow-md shadow-emerald-100/50 scale-[1.01]'
+                : isNationalHighlight
+                  ? 'ring-2 ring-indigo-500 border border-indigo-400 shadow-md shadow-indigo-100/50 scale-[1.01]'
+                  : 'ring-2 ring-amber-400 border border-amber-300 shadow-md shadow-amber-100/50 scale-[1.01]' 
               : ''
         }`}
       >
@@ -457,15 +461,17 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
         }`}>
           {isAdFeatured && (
             <div className={`absolute z-10 bg-gradient-to-r ${
-              isNationalHighlight
-                ? 'from-indigo-600 to-indigo-500 text-white font-sans'
-                : 'from-amber-500 to-yellow-400 text-white font-sans'
+              (ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation')
+                ? 'from-emerald-600 to-emerald-500 text-white font-sans'
+                : isNationalHighlight
+                  ? 'from-indigo-600 to-indigo-500 text-white font-sans'
+                  : 'from-amber-500 to-yellow-400 text-white font-sans'
             } font-black rounded-full shadow-md flex items-center justify-center ${
               isFeaturedVariant 
                 ? 'top-2 left-2 text-[10px] w-6 h-6' 
                 : 'top-3 left-3 text-xs w-7 h-7'
             }`}>
-              <span>{isNationalHighlight ? '👑' : '⭐'}</span>
+              <span>{(ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation') ? '💚' : isNationalHighlight ? '👑' : '⭐'}</span>
             </div>
           )}
           {ad.listingType === 'informativo' && (
@@ -623,6 +629,12 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                       💡 Links Úteis
                     </span>
                   </div>
+                ) : (ad.category === '💚 Doações & Solidariedade' || ad.donationBadge) ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-xs font-black text-emerald-700 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-150 flex items-center gap-1">
+                      Grátis 💚
+                    </span>
+                  </div>
                 ) : hasPrice ? (
                   <div className="flex flex-col items-center justify-center">
                     <div className={`font-black text-indigo-600 tracking-tight leading-none ${
@@ -738,12 +750,14 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                   <div className="mb-3 flex flex-wrap gap-2">
                     {isAdFeatured && (
                       <span className={`${
-                        isNationalHighlight
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-amber-500 text-white'
+                        (ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation')
+                          ? 'bg-emerald-600 text-white'
+                          : isNationalHighlight
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-amber-500 text-white'
                       } text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse`}>
-                        <span>{isNationalHighlight ? '👑' : '⭐'}</span>
-                        <span>{isNationalHighlight ? 'Destaque Nacional' : 'Destaque Local'}</span>
+                        <span>{(ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation') ? '💚' : isNationalHighlight ? '👑' : '⭐'}</span>
+                        <span>{(ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation') ? 'Doação' : isNationalHighlight ? 'Destaque Nacional' : 'Destaque Local'}</span>
                       </span>
                     )}
                     <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100">
@@ -764,7 +778,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                     </div>
                     {ad.category !== 'Imigração' && (
                       <div className="text-2xl md:text-3xl font-black text-indigo-600 flex items-center justify-center">
-                        {formatPrice(ad.price, ad.country)}
+                        {ad.category === '💚 Doações & Solidariedade' ? (
+                          <span className="text-emerald-600 font-extrabold flex items-center gap-1.5">Grátis 💚</span>
+                        ) : (
+                          formatPrice(ad.price, ad.country)
+                        )}
                       </div>
                     )}
                   </div>

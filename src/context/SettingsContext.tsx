@@ -114,6 +114,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }
 
+  if (!categories.includes('💚 Doações & Solidariedade')) {
+    const othersIndex = categories.indexOf('Outros');
+    if (othersIndex !== -1) {
+      const copy = [...categories];
+      copy.splice(othersIndex, 0, '💚 Doações & Solidariedade');
+      categories = copy;
+    } else {
+      categories = [...categories, '💚 Doações & Solidariedade'];
+    }
+  }
+
   return (
     <SettingsContext.Provider value={{ settings, categories, loading }}>
       {children}

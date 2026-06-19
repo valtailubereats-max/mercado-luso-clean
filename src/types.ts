@@ -213,6 +213,7 @@ export const CATEGORIES = [
   'Bebés e Crianças',
   'Imigração',
   'Trabalho/Empregos',
+  '💚 Doações & Solidariedade',
   'Outros'
 ];
 
