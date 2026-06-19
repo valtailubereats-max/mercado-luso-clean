@@ -14,6 +14,7 @@ import { doc, updateDoc, increment, setDoc, deleteDoc, collection, query, where,
 import { db, getDocWithCacheFallback, getDocsWithCacheFallback } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { triggerShare } from '../utils/shareUtils';
 
 interface AdCardProps {
   ad: Ad;
@@ -185,30 +186,18 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
     }
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
+  const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const url = `${window.location.origin}${getAdUrl(ad)}`;
-    const priceText = hasPrice ? ` - ${formatPrice(ad.price, ad.country)}` : '';
-    const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-
-    try {
-      const opened = window.open(whatsappUrl, '_blank');
-      if (!opened) {
-        await navigator.clipboard.writeText(url);
-        alert('Link copiado para a área de transferência! (O WhatsApp não pôde ser aberto automaticamente)');
-      }
-    } catch (err) {
-      console.error('Erro ao abrir o WhatsApp:', err);
-      try {
-        await navigator.clipboard.writeText(url);
-        alert('Link copiado para a área de transferência com sucesso!');
-      } catch (clipErr) {
-        console.error('Erro de cópia alternativa:', clipErr);
-      }
-    }
+    triggerShare({
+      type: 'anuncio',
+      title: ad.title,
+      price: ad.price,
+      country: ad.country,
+      city: ad.city,
+      url: `${window.location.origin}${getAdUrl(ad)}`
+    });
   };
 
   const getAdPhone = () => {

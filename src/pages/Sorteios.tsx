@@ -27,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { Giveaway, GiveawayParticipation } from '../types';
+import { triggerShare } from '../utils/shareUtils';
 
 export default function Sorteios() {
   const { user, loading: authLoading } = useAuth();
@@ -46,6 +47,28 @@ export default function Sorteios() {
   useEffect(() => {
     fetchData();
   }, [user]);
+
+  // Synchronize with global navbar share clicks
+  useEffect(() => {
+    const handleGlobalShareRequest = (e: Event) => {
+      const activeGiveaway = giveaways.find(g => g.status === 'Ativo');
+      if (!activeGiveaway) return;
+      const customEvent = e as CustomEvent<{ onHandled: () => void }>;
+      if (customEvent.detail && typeof customEvent.detail.onHandled === 'function') {
+        customEvent.detail.onHandled();
+      }
+      triggerShare({
+        type: 'sorteio',
+        title: activeGiveaway.title,
+        prize: activeGiveaway.prize,
+        url: `${window.location.origin}/sorteios`
+      });
+    };
+    window.addEventListener('request-share-current-page', handleGlobalShareRequest);
+    return () => {
+      window.removeEventListener('request-share-current-page', handleGlobalShareRequest);
+    };
+  }, [giveaways]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -128,15 +151,17 @@ export default function Sorteios() {
     try {
       // 1. Prepare share window link and text
       const shareUrl = `${window.location.origin}/sorteios`;
-      const text = `Habilita-te a ganhar este prémio fantástico ("${g.title}") no Mercado Luso! Sorteio gratuito. Participa aqui: `;
+      const text = `🍀 Sorteio: *${g.title}*\n\n`;
       let finalUrl = '';
 
       if (channel === 'whatsapp') {
-        finalUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + shareUrl)}`;
+        finalUrl = `https://wa.me/?text=${encodeURIComponent(text + 'Participe gratuitamente aqui: ' + shareUrl)}`;
       } else if (channel === 'facebook') {
         finalUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+      } else if (channel === 'telegram') {
+        finalUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text + 'Participe gratuitamente e garanta a sua chance!')}`;
       } else if (channel === 'twitter') {
-        finalUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+        finalUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text + 'Participe gratuitamente aqui: ')}&url=${encodeURIComponent(shareUrl)}`;
       }
 
       if (finalUrl) {
@@ -415,10 +440,10 @@ export default function Sorteios() {
                                     <span>👥 Facebook</span>
                                   </button>
                                   <button
-                                    onClick={() => handleShareAndRegister(g, 'twitter')}
-                                    className="py-2.5 px-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition flex items-center justify-center gap-1.5"
+                                    onClick={() => handleShareAndRegister(g, 'telegram')}
+                                    className="py-2.5 px-3 bg-sky-500 text-white rounded-xl text-xs font-bold hover:bg-sky-600 transition flex items-center justify-center gap-1.5"
                                   >
-                                    <span>🐦 Twitter / X</span>
+                                    <span>✈️ Telegram</span>
                                   </button>
                                   <button
                                     onClick={() => handleShareAndRegister(g, 'copylink')}

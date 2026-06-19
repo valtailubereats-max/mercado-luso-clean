@@ -50,6 +50,8 @@ import Links from './pages/Links';
 import Sorteios from './pages/Sorteios';
 import AdminSorteios from './pages/AdminSorteios';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ShareModal } from './components/ShareModal';
+import { triggerShare } from './utils/shareUtils';
 
 import { Ad } from './types';
 import { formatDistanceToNow } from 'date-fns';
@@ -80,6 +82,7 @@ const Navbar = () => {
   };
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
   const [adminNotificationCount, setAdminNotificationCount] = React.useState(0);
   const [adminPendingAds, setAdminPendingAds] = React.useState<any[]>([]);
@@ -248,32 +251,41 @@ const Navbar = () => {
   };
 
   const handleShare = async () => {
-    const officialUrl = 'https://www.mercado-luso.com';
-    const shareData = {
-      title: 'Mercado Luso',
-      text: 'Confira o Mercado Luso - Compre e venda em Portugal de forma simples e segura!',
-      url: officialUrl,
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          try {
-            await navigator.clipboard.writeText(officialUrl);
-            alert('Link copiado com sucesso.');
-          } catch (clipErr) {
-            console.error('Failed to copy fallback:', clipErr);
-          }
+    let wasHandled = false;
+    
+    // Dispatch custom event to see if the active page wants to provide custom data
+    const requestEvent = new CustomEvent('request-share-current-page', {
+      detail: {
+        onHandled: () => {
+          wasHandled = true;
         }
       }
+    });
+    window.dispatchEvent(requestEvent);
+
+    // Give synchronous listeners a chance to respond immediately
+    if (wasHandled) {
+      return;
+    }
+
+    // Default fallbacks based on the route path
+    const path = location.pathname;
+    if (path === '/links') {
+      triggerShare({
+        type: 'links',
+        title: 'Links Úteis - Guia de Integração Lusa',
+        description: 'Uma coleção oficial de portais governamentais, redes profissionais e recursos públicos selecionados para apoiar a nossa comunidade lusa.',
+        url: `${window.location.origin}/links`
+      });
+    } else if (path === '/sorteios') {
+      triggerShare({
+        type: 'sorteio',
+        title: 'Sorteios Mercado Luso',
+        prize: 'Prémios especiais para a Comunidade de Língua Portuguesa',
+        url: `${window.location.origin}/sorteios`
+      });
     } else {
-      try {
-        await navigator.clipboard.writeText(officialUrl);
-        alert('Link copiado com sucesso.');
-      } catch (err) {
-        console.error('Clipboard copy failed:', err);
-      }
+      triggerShare({ type: 'home' });
     }
   };
 
@@ -933,6 +945,7 @@ export default function App() {
             <ScrollToTop />
             <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
             <Navbar />
+            <ShareModal />
 
             <main ref={mainRef} className="max-w-7xl mx-auto px-1.5 xs:px-2 sm:px-6 lg:px-8 py-4 sm:py-8 cursor-grab active:cursor-grabbing">
               <Routes>

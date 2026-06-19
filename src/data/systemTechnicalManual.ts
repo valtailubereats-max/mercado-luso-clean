@@ -723,6 +723,31 @@ export const manualItems: ManualItem[] = [
       'Vazamento ou transbordo visual de itens se forem inseridos demasiados links em ecrãs verticais.'
     ],
     tags: ['footer', 'rodapé', 'estrutura', 'suporte', 'legal', 'informações', 'comunidade', 'portugal', 'reino-unido']
+  },
+  {
+    id: 'partilha-dinamica',
+    title: 'Sistema de Partilha Dinâmica e Coesiva',
+    type: 'Fluxo',
+    description: 'Motor unificado de partilha institucional que adapta as informações partilhadas de acordo com o contexto lido da página atual. Centraliza a formatação e visualização dinâmica para canais de redes sociais e garante suporte total a toda a comunidade lusófona mundial.',
+    route: 'Global (Controlado via triggerShare e ShareModal)',
+    mainFile: 'src/utils/shareUtils.ts',
+    relatedComponents: ['src/components/ShareModal.tsx', 'src/App.tsx', 'src/pages/AdDetails.tsx', 'src/pages/EmpreendedorDetalhes.tsx', 'src/pages/Sorteios.tsx'],
+    relatedFunctions: ['triggerShare', 'generateShareText', 'request-share-current-page'],
+    firestoreCollections: ['shares'],
+    access: 'Público (Qualquer utilizador)',
+    buttons: ['Partilhar (Navbar)', 'Partilhar Anúncio (AdCard / AdDetails)', 'Partilhar Vitrine (EmpreendedorDetalhes)', 'Partilhar Sorteio (Sorteios)'],
+    actions: [
+      'Geração de textos de partilha dinâmicos com base nos dados do anúncio, vitrine ou sorteio ativo.',
+      'Sincronização global de eventos para identificar se uma página aberta quer injetar dados customizados no botão de partilha do menu principal.',
+      'Abertura de URLs externas parametrizadas para WhatsApp, Telegram, Facebook e cópia alternativa para área de transferência.'
+    ],
+    technicalNotes: 'A mensagem padrão institucional removedora de referências exclusivas a Portugal é centralizada em shareUtils.ts. As páginas dinamizáveis subscrevem o evento customizado "request-share-current-page" para responder em milissegundos com as variáveis ativas.',
+    failurePoints: [
+      'Incompatibilidade do navigator.share em navegadores legados (mitigado pelo modal de partilha nativo e fallback de cópia automático).',
+      'Problemas de codificação (URI encode) em caracteres especiais dos títulos ao partilhar via WhatsApp/Telegram.',
+      'Tentativa de partilhar conteúdo prematuro ou nulo caso os dados do anúncio ou vitrine ainda estejam em carregamento.'
+    ],
+    tags: ['partilha', 'whatsapp', 'telegram', 'facebook', 'modal', 'dinâmico', 'copiar link']
   }
 ];
 

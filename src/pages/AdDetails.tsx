@@ -17,6 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import ReviewModal from '../components/ReviewModal';
 import { normalizeDescription } from '../utils/textFormatter';
+import { triggerShare } from '../utils/shareUtils';
 
 const AdDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -402,31 +403,31 @@ const AdDetails = () => {
     }
   };
 
-  const handleShare = async () => {
+  useEffect(() => {
+    const handleGlobalShareRequest = (e: Event) => {
+      if (!ad) return;
+      const customEvent = e as CustomEvent<{ onHandled: () => void }>;
+      if (customEvent.detail && typeof customEvent.detail.onHandled === 'function') {
+        customEvent.detail.onHandled();
+      }
+      handleShare();
+    };
+    window.addEventListener('request-share-current-page', handleGlobalShareRequest);
+    return () => {
+      window.removeEventListener('request-share-current-page', handleGlobalShareRequest);
+    };
+  }, [ad]);
+
+  const handleShare = () => {
     if (!ad) return;
-
-    const url = `${window.location.origin}${getAdUrl(ad)}`;
-    const priceText = hasPrice ? ` - ${formatPrice(ad.price, ad.country)}` : '';
-    const shareText = `${url}\n\nVeja este anúncio no Mercado Luso: ${ad.title}${priceText} em ${ad.city}`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-
-    try {
-      const opened = window.open(whatsappUrl, '_blank');
-      if (!opened) {
-        await navigator.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2500);
-      }
-    } catch (err) {
-      console.error('Erro ao abrir o WhatsApp:', err);
-      try {
-        await navigator.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2500);
-      } catch (clipErr) {
-        console.error('Erro de cópia alternativa:', clipErr);
-      }
-    }
+    triggerShare({
+      type: 'anuncio',
+      title: ad.title,
+      price: ad.price,
+      country: ad.country,
+      city: ad.city,
+      url: `${window.location.origin}${getAdUrl(ad)}`
+    });
   };
 
   const handleReportSubmit = async (e: React.FormEvent) => {

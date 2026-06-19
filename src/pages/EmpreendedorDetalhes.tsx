@@ -24,6 +24,7 @@ import {
   incrementWhatsappClick, 
   incrementProductView 
 } from '../services/showcaseStatsService';
+import { triggerShare } from '../utils/shareUtils';
 
 const PageProductCard = ({ p, profile }: { p: any; profile: any; key?: any }) => {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -159,14 +160,29 @@ const EmpreendedorDetalhes = () => {
     fetchShowcaseDetail();
   }, [slug]);
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    } catch (e) {
-      console.error(e);
-    }
+  useEffect(() => {
+    const handleGlobalShareRequest = (e: Event) => {
+      if (!profile) return;
+      const customEvent = e as CustomEvent<{ onHandled: () => void }>;
+      if (customEvent.detail && typeof customEvent.detail.onHandled === 'function') {
+        customEvent.detail.onHandled();
+      }
+      handleCopyLink();
+    };
+    window.addEventListener('request-share-current-page', handleGlobalShareRequest);
+    return () => {
+      window.removeEventListener('request-share-current-page', handleGlobalShareRequest);
+    };
+  }, [profile]);
+
+  const handleCopyLink = () => {
+    if (!profile) return;
+    triggerShare({
+      type: 'vitrine',
+      title: profile.showcaseName || profile.name,
+      description: profile.showcaseDescription || profile.bio || '',
+      url: window.location.href
+    });
   };
 
   if (loading) {
