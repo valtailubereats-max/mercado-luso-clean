@@ -551,6 +551,8 @@ const Navbar = () => {
 
                       <div className="border-t border-slate-100 my-2" />
 
+                      <InstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
+
                       <Link
                         to="/links"
                         onClick={() => setShowUserDropdown(false)}
@@ -559,8 +561,6 @@ const Navbar = () => {
                       >
                         <span>🔗 Links Úteis</span>
                       </Link>
-
-                      <InstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
 
                       <div className="border-t border-slate-100 my-2" />
 
@@ -713,8 +713,6 @@ const Navbar = () => {
               <Link to="/trabalhos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Trabalhos</Link>
               <Link to="/precos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Preços</Link>
               
-              <InstallButton variant="menu-item" onClickAction={() => setIsOpen(false)} />
-              
               {user ? <>
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setIsOpen(false)} className="text-lg font-medium text-slate-700 flex items-center gap-2">
@@ -762,6 +760,8 @@ const Navbar = () => {
                   
                   <div className="border-t border-slate-100 pt-4" />
                   
+                  <InstallButton variant="menu-item" onClickAction={() => setIsOpen(false)} />
+                  
                   <Link to="/links" onClick={() => setIsOpen(false)} className="text-md font-black text-emerald-600 flex items-center gap-1">
                     🔗 Links Úteis
                   </Link>
@@ -773,7 +773,10 @@ const Navbar = () => {
                   </button>
                 </div>
               </> : (
-                <Link to="/login" onClick={() => setIsOpen(false)} className="text-lg font-black text-indigo-600">Entrar</Link>
+                <div className="pt-4 border-t border-slate-100 flex flex-col gap-4">
+                  <InstallButton variant="menu-item" onClickAction={() => setIsOpen(false)} />
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="text-lg font-black text-indigo-600">Entrar</Link>
+                </div>
               )}
             </div>
           </motion.div>
