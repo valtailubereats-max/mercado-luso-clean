@@ -927,7 +927,7 @@ const Home = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onFocus={handleSearchFocus}
                   placeholder="✨ O que procura hoje? Digite aqui..."
-                  className={`w-full ${blurClass} rounded-full py-3 sm:py-3.5 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-sm sm:text-base focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
+                  className={`w-full ${blurClass} rounded-full py-2.5 sm:py-3 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-base sm:text-lg focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
                   style={{
                     backgroundColor: customBg || 'rgba(15,23,42,0.3)',
                     borderColor: customBorder || 'rgba(255,255,255,0.2)',
