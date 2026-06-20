@@ -1,0 +1,301 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Share, PlusSquare, X, Smartphone, HelpCircle, Laptop } from 'lucide-react';
+
+interface InstallButtonProps {
+  variant?: 'button' | 'menu-item' | 'dropdown-item' | 'footer-link';
+  onClickAction?: () => void;
+}
+
+export const InstallButton: React.FC<InstallButtonProps> = ({
+  variant = 'button',
+  onClickAction
+}) => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
+
+  useEffect(() => {
+    // 1. Check if already installed
+    const checkStandalone = () => {
+      const isStandalone = 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        (window.navigator as any).standalone === true;
+      setIsInstalled(isStandalone);
+    };
+
+    checkStandalone();
+
+    // 2. iOS detection
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /ipad|iphone|ipod/.test(userAgent) && !(window as any).MSStream;
+    setIsIOS(isIosDevice);
+
+    // 3. Before Install Prompt listener
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+      console.log('[PWA] beforeinstallprompt captured inside InstallButton.tsx.');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // 4. App Installed listener
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+      console.log('[PWA] Application installed.');
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (onClickAction) {
+      onClickAction();
+    }
+
+    // Always show the manual instructions modal first
+    setShowManualModal(true);
+  };
+
+  const triggerNativeInstall = async () => {
+    if (!deferredPrompt) return;
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`[PWA] Install outcome: ${outcome}`);
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+        setShowManualModal(false);
+      }
+    } catch (err) {
+      console.error('[PWA] Error starting trigger prompt:', err);
+    }
+  };
+
+  if (isInstalled) {
+    return null;
+  }
+
+  const renderManualModal = () => (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setShowManualModal(false)}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        id="install-modal-backdrop"
+      />
+
+      {/* Modal Body */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        className="relative bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl border border-slate-100 p-5 z-10 text-slate-800"
+        id="install-modal-content"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4 pb-2.5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-lg shrink-0">
+              💡
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-900">Como Instalar a App</h3>
+              <p className="text-[9px] text-slate-500 font-bold tracking-wide uppercase">Instruções rápidas</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowManualModal(false)}
+            className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            id="close-manual-modal"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Instructions Sections */}
+        <div className="space-y-4">
+          {isIOS ? (
+            <div className="p-3 bg-amber-50/60 rounded-2xl border border-amber-100 space-y-2">
+              <h4 className="font-extrabold text-emerald-800 text-[11px] uppercase tracking-wider flex items-center gap-1">
+                <Smartphone size={12} className="text-emerald-700" />
+                Safari no iOS (iPhone / iPad)
+              </h4>
+              <div className="space-y-2.5 text-xs text-slate-700 font-bold leading-relaxed">
+                <div className="flex gap-2 items-start">
+                  <span className="w-4 h-4 rounded-full bg-[#046a38] text-white flex items-center justify-center text-[9px] shrink-0 font-black">1</span>
+                  <span>Toque no botão de <strong>Partilhar</strong> <span className="inline-flex"><Share size={11} className="text-indigo-600 inline pb-0.5 mx-0.5" /></span> no Safari.</span>
+                </div>
+                <div className="flex gap-2 items-start">
+                  <span className="w-4 h-4 rounded-full bg-[#046a38] text-white flex items-center justify-center text-[9px] shrink-0 font-black">2</span>
+                  <span>Selecione <strong>Adicionar ao Ecrã Principal</strong> <span className="inline-flex"><PlusSquare size={11} className="text-indigo-650 inline pb-0.5" /></span>.</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* General Mobile Chrome/Android */}
+              <div className="p-3 bg-emerald-50/35 rounded-2xl border border-emerald-100/50 space-y-2">
+                <h4 className="font-extrabold text-[#03522b] text-[11px] uppercase tracking-wider flex items-center gap-1">
+                  <Smartphone size={12} />
+                  Dispositivo Móvel (Android / Chrome)
+                </h4>
+                <div className="space-y-2 text-xs text-slate-700 font-bold leading-relaxed">
+                  <div className="flex gap-2 items-start">
+                    <span className="w-4 h-4 rounded-full bg-[#046a38] text-white flex items-center justify-center text-[9px] shrink-0 font-black">1</span>
+                    <span>Toque no menu <strong>⋮</strong> do navegador na barra superior.</span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <span className="w-4 h-4 rounded-full bg-[#046a38] text-white flex items-center justify-center text-[9px] shrink-0 font-black">2</span>
+                    <span>Selecione <strong>Adicionar ao ecrã inicial</strong> ou <strong>Instalar</strong>.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* PC Desktop Option */}
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <h4 className="font-extrabold text-[#03522b] text-[11px] uppercase tracking-wider flex items-center gap-1">
+                  <Laptop size={12} />
+                  Computador (Chrome / Edge)
+                </h4>
+                <div className="space-y-2 text-xs text-slate-700 font-bold leading-relaxed">
+                  <div className="flex gap-2 items-start">
+                    <span className="w-4 h-4 rounded-full bg-[#046a38] text-white flex items-center justify-center text-[9px] shrink-0 font-black">1</span>
+                    <span>Clique no ícone de instalação ⊕ (canto direito do campo de endereço URL).</span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <span className="w-4 h-4 rounded-full bg-[#046a38] text-white flex items-center justify-center text-[9px] shrink-0 font-black">2</span>
+                    <span>Ou aceda ao menu <strong>⋮</strong> e escolha <strong>Instalar a App</strong>.</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer CTA */}
+        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          {(!isIOS && deferredPrompt) && (
+            <button
+              type="button"
+              onClick={triggerNativeInstall}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1"
+            >
+              🚀 Instalar Agora
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowManualModal(false)}
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+            id="manual-modal-confirm-button"
+          >
+            Entendido
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+
+  // Return custom render per variant
+  if (variant === 'button') {
+    return (
+      <>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-emerald-50/70 p-4 rounded-3xl border border-emerald-100 hover:border-emerald-200 transition-all text-left">
+          <div className="flex-1">
+            <h4 className="text-sm font-black text-emerald-950 flex items-center gap-2">
+              📱 Instalar Mercado Luso no Telemóvel
+            </h4>
+            <p className="text-xs text-emerald-800 mt-1">
+              Aceda ao Mercado Luso diretamente do seu ecrã principal como uma App nativa, de forma rápida, leve e sem necessitar de Play Store ou App Store.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleInstallClick}
+              className="px-4 py-2 bg-[#046a38] text-white hover:bg-[#03522b] text-xs font-black rounded-xl shadow-md cursor-pointer transition-colors text-center whitespace-nowrap flex items-center justify-center gap-1.5"
+            >
+              📱 Instalar App
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {showManualModal && renderManualModal()}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  if (variant === 'menu-item') {
+    return (
+      <>
+        <button
+          onClick={handleInstallClick}
+          className="text-lg font-black text-emerald-700 text-left flex items-center gap-2 w-full hover:bg-emerald-50 p-2 rounded-xl transition-colors cursor-pointer"
+        >
+          <span>📲 Instalar de Graça</span>
+        </button>
+
+        <AnimatePresence>
+          {showManualModal && renderManualModal()}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  if (variant === 'dropdown-item') {
+    return (
+      <>
+        <button
+          onClick={handleInstallClick}
+          className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-50 text-emerald-600 transition-colors text-sm font-black w-full text-left cursor-pointer outline-none"
+        >
+          <span>📲 Instalar Aplicativo</span>
+        </button>
+
+        <AnimatePresence>
+          {showManualModal && renderManualModal()}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  if (variant === 'footer-link') {
+    return (
+      <>
+        <button
+          onClick={handleInstallClick}
+          className="hover:text-[#046a38] active:text-[#046a38] transition-colors gap-1 text-slate-400 text-xs uppercase tracking-widest font-black flex items-center cursor-pointer"
+        >
+          <span>📲 Instalar</span>
+        </button>
+
+        <AnimatePresence>
+          {showManualModal && renderManualModal()}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  return null;
+};

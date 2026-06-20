@@ -41,6 +41,7 @@ import VitrineComercial from './pages/VitrineComercial';
 import Convite from './pages/Convite';
 import AdminInvitations from './pages/AdminInvitations';
 import { PWAInstallButton } from './components/PWAInstallButton';
+import { InstallButton } from './components/InstallButton';
 import AdminManualTecnico from './pages/AdminManualTecnico';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import AdminLayout from './components/AdminLayout';
@@ -559,7 +560,7 @@ const Navbar = () => {
                         <span>🔗 Links Úteis</span>
                       </Link>
 
-                      <PWAInstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
+                      <InstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
 
                       <div className="border-t border-slate-100 my-2" />
 
@@ -661,7 +662,7 @@ const Navbar = () => {
                           <span>🔗 Links Úteis</span>
                         </Link>
 
-                        <PWAInstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
+                        <InstallButton variant="dropdown-item" onClickAction={() => setShowUserDropdown(false)} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -712,7 +713,7 @@ const Navbar = () => {
               <Link to="/trabalhos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Trabalhos</Link>
               <Link to="/precos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Preços</Link>
               
-              <PWAInstallButton variant="menu-item" onClickAction={() => setIsOpen(false)} />
+              <InstallButton variant="menu-item" onClickAction={() => setIsOpen(false)} />
               
               {user ? <>
                 {isAdmin && (
@@ -1088,7 +1089,7 @@ export default function App() {
                       
                       {/* Premium PWA Install option */}
                       <li className="pt-0.5">
-                        <PWAInstallButton variant="footer-link" />
+                        <InstallButton variant="footer-link" />
                       </li>
 
                       {/* Geographic badges requested by user */}

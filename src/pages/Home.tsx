@@ -1159,7 +1159,6 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
-
       {/* ✨ ANÚNCIOS EM DESTAQUE */}
       {filteredFeaturedAds.length > 0 && (
         <section className="space-y-1 pt-0 pb-1.5 md:space-y-1.5 md:pb-2">
