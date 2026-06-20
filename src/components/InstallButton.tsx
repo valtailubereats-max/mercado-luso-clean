@@ -16,13 +16,15 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showAlreadyInstalledModal, setShowAlreadyInstalledModal] = useState(false);
 
   useEffect(() => {
     // 1. Check if already installed
     const checkStandalone = () => {
       const isStandalone = 
         window.matchMedia('(display-mode: standalone)').matches || 
-        (window.navigator as any).standalone === true;
+        (window.navigator as any).standalone === true ||
+        localStorage.getItem('pwa-installed') === 'true';
       setIsInstalled(isStandalone);
     };
 
@@ -48,6 +50,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
+      localStorage.setItem('pwa-installed', 'true');
       console.log('[PWA] Application installed.');
     };
 
@@ -67,6 +70,21 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
       onClickAction();
     }
 
+    const isStandalone = 
+      window.matchMedia('(display-mode: standalone)').matches || 
+      (window.navigator as any).standalone === true ||
+      localStorage.getItem('pwa-installed') === 'true';
+
+    if (isInstalled || isStandalone) {
+      setShowAlreadyInstalledModal(true);
+      try {
+        alert("O Mercado Luso já está instalado no seu dispositivo! Pode aceder diretamente a partir do seu ecrã principal.");
+      } catch (err) {
+        console.warn("Standard alert was blocked or disabled inside iframe:", err);
+      }
+      return;
+    }
+
     // Always show the manual instructions modal first
     setShowManualModal(true);
   };
@@ -82,15 +100,59 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
         setIsInstallable(false);
         setDeferredPrompt(null);
         setShowManualModal(false);
+        localStorage.setItem('pwa-installed', 'true');
       }
     } catch (err) {
       console.error('[PWA] Error starting trigger prompt:', err);
     }
   };
 
-  if (isInstalled) {
-    return null;
-  }
+  const renderAlreadyInstalledModal = () => (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setShowAlreadyInstalledModal(false)}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        id="already-installed-modal-backdrop"
+      />
+
+      {/* Modal Body */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        className="relative bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl border border-slate-100 p-6 z-10 text-slate-800 text-center"
+        id="already-installed-modal-content"
+      >
+        {/* Confetti / Success emoji */}
+        <div className="mx-auto w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl mb-4 shadow-inner">
+          🎉
+        </div>
+
+        <h3 className="font-black text-lg text-slate-900 mb-2">
+          Já está Instalado!
+        </h3>
+        
+        <p className="text-sm font-medium text-slate-600 leading-relaxed mb-6">
+          O <strong>Mercado Luso</strong> já se encontra instalado no seu dispositivo. Pode aceder de forma rápida e direta através do ecrã principal ou do menu de aplicações!
+        </p>
+
+        {/* Footer */}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAlreadyInstalledModal(false)}
+            className="w-full py-3 bg-[#046a38] hover:bg-[#03522b] text-white font-black text-sm rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+          >
+            Excelente!
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
 
   const renderManualModal = () => (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
@@ -241,6 +303,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
 
         <AnimatePresence>
           {showManualModal && renderManualModal()}
+          {showAlreadyInstalledModal && renderAlreadyInstalledModal()}
         </AnimatePresence>
       </>
     );
@@ -258,6 +321,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
 
         <AnimatePresence>
           {showManualModal && renderManualModal()}
+          {showAlreadyInstalledModal && renderAlreadyInstalledModal()}
         </AnimatePresence>
       </>
     );
@@ -275,6 +339,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
 
         <AnimatePresence>
           {showManualModal && renderManualModal()}
+          {showAlreadyInstalledModal && renderAlreadyInstalledModal()}
         </AnimatePresence>
       </>
     );
@@ -292,6 +357,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
 
         <AnimatePresence>
           {showManualModal && renderManualModal()}
+          {showAlreadyInstalledModal && renderAlreadyInstalledModal()}
         </AnimatePresence>
       </>
     );
