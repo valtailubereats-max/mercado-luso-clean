@@ -632,7 +632,7 @@ const AdminAds = () => {
 
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-sm sm:text-base font-black text-indigo-600">
-                      {formatPrice(ad.price, ad.country)}
+                      {ad.category === '💚 Doações & Solidariedade' ? 'Grátis 💚' : formatPrice(ad.price, ad.country)}
                     </span>
                     <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
                       • Vendedor: <span className="text-slate-600 font-semibold">{ad.sellerName || 'ValtailAdmin'}</span>
@@ -863,7 +863,7 @@ const AdminAds = () => {
                       {/* Price Column */}
                       {isColVisible('preco') && (
                         <td className="py-3 px-4 border-none text-indigo-650 font-black whitespace-nowrap">
-                          {formatPrice(ad.price, ad.country)}
+                          {ad.category === '💚 Doações & Solidariedade' ? 'Grátis 💚' : formatPrice(ad.price, ad.country)}
                         </td>
                       )}
 
@@ -1055,7 +1055,7 @@ const AdminAds = () => {
                       {ad.title}
                     </h4>
                     <p className="text-[10px] text-slate-500 mt-0.5">
-                      {countryIcon} {ad.city} • <span className="font-extrabold text-indigo-600">{formatPrice(ad.price, ad.country)}</span>
+                      {countryIcon} {ad.city} • <span className="font-extrabold text-indigo-600">{ad.category === '💚 Doações & Solidariedade' ? 'Grátis 💚' : formatPrice(ad.price, ad.country)}</span>
                     </p>
                     <div className="flex gap-1 mt-1">
                       <span className={`inline-block text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
@@ -1340,7 +1340,9 @@ const AdminAds = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50">
                     <p className="text-[10px] font-black uppercase text-indigo-600 tracking-wider">Preço</p>
-                    <p className="text-2xl font-black text-slate-950 mt-1">{formatPrice(selectedAd.price, selectedAd.country)}</p>
+                    <p className="text-2xl font-black text-slate-950 mt-1">
+                      {selectedAd.category === '💚 Doações & Solidariedade' ? 'Grátis 💚' : formatPrice(selectedAd.price, selectedAd.country)}
+                    </p>
                   </div>
 
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">

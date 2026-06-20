@@ -753,6 +753,26 @@ export const manualItems: ManualItem[] = [
       'Tentativa de partilhar conteúdo prematuro ou nulo caso os dados do anúncio ou vitrine ainda estejam em carregamento.'
     ],
     tags: ['partilha', 'whatsapp', 'telegram', 'facebook', 'modal', 'dinâmico', 'copiar link']
+  },
+  {
+    id: 'doacoes-solidariedade',
+    title: '💚 Doações & Solidariedade',
+    type: 'Anúncios',
+    description: 'Categoria benéfica solidária especial do Mercado Luso. Anúncios nesta categoria têm preço fixado em 0 (Grátis), são isentos de taxas e cobres de destaque pago, e recebem destaque local gratuito de 30 dias automaticamente para ampliar a visibilidade dos bens essenciais doados à comunidade.',
+    route: '/create-ad, /anuncio/:id',
+    mainFile: 'src/pages/CreateAd.tsx',
+    relatedComponents: ['src/components/AdCard.tsx', 'src/pages/AdDetails.tsx'],
+    relatedFunctions: ['handleSubmitAd', 'formatPrice'],
+    firestoreCollections: ['ads'],
+    access: 'Utilizador Autenticado para criar, Público para visualizar',
+    buttons: ['Preço Grátis Coagido', 'Destaque de Doação Solidária Coagido'],
+    actions: ['Ativar flags de destaque automático ("donationBoost", "donationBadge")', 'Garantir bypass de pagamentos', 'Injetar preço grátis de forma forçada nas visualizações'],
+    technicalNotes: 'Na criação de anúncios, selecionar esta categoria força o plano como "local" e o preço como "0", além de renderizar um aviso de consentimento e termos éticos solidários contra vendas camufladas. O documento adData é marcado com "isFeatured: true", "featuredLevel: local", "featuredReason: donation", e "donationBadge: true".',
+    failurePoints: [
+      'Utilizador tentar burlar as regras tentando publicar anúncios comerciais disfarçados de doação (mitigado pelo aviso jurídico no editor e moderação por admin antes da publicação).',
+      'Problemas visuais em listagens históricas ou faturas.'
+    ],
+    tags: ['doação', 'solidariedade', 'grátis', 'benefício', 'destaque local', 'ajuda']
   }
 ];
 
@@ -921,5 +941,16 @@ export const technicalFlows: TechnicalFlow[] = [
     mainFiles: ['src/hooks/usePWA.ts', 'src/components/PWAInstallButton.tsx', 'public/sw.js', 'src/App.tsx'],
     firestoreCollections: [],
     expectedResult: 'No Android/Chrome, abre-se o prompt nativo do sistema para adicionar ao ecrã inicial. No iOS/Safari, exibe-se um modal dinâmico que ilustra as etapas: Partilhar -> Adicionar ao Ecrã Principal. Em navegadores normais/desktop onde o prompt não está ativo de imediato, exibe instruções passo-a-passo manuais.'
+  },
+  {
+    id: 'flow-doacoes-solidariedade',
+    title: 'Fluxo de Anúncio de Doações & Solidariedade',
+    description: 'Processo completo de criação, destaque automático e exibição de artigos benevolentes e doações gratuitas.',
+    startPoint: 'Aceder a funcionalidade "Criar Anúncio" no cabeçalho e selecionar a categoria "💚 Doações & Solidariedade"',
+    buttonsInvolved: ['Criar Anúncio', 'Preenchimento do Form', 'Publicar Anúncio'],
+    pagesInvolved: ['CreateAd.tsx', 'AdDetails.tsx', 'Home.tsx'],
+    mainFiles: ['src/pages/CreateAd.tsx', 'src/components/AdCard.tsx', 'src/pages/AdDetails.tsx'],
+    firestoreCollections: ['ads'],
+    expectedResult: 'O anúncio é registado de forma 100% gratuita, as chaves "isFeatured" e "donationBadge" são auto-sinalizadas como verdadeiras, bypassando qualquer modal de cobrança e usufruindo de 30 dias de destaque local automático na página principal com estilização verde e selo solidário.'
   }
 ];

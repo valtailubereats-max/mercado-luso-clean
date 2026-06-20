@@ -1337,7 +1337,11 @@ const Profile = () => {
                         </button>
                       </div>
                     </div>
-                    <p className="text-indigo-600 font-bold mt-1">{formatPrice(ad.price, ad.country)}</p>
+                    {ad.category === '💚 Doações & Solidariedade' ? (
+                      <p className="text-emerald-600 font-extrabold mt-1">Grátis 💚</p>
+                    ) : (
+                      <p className="text-indigo-600 font-bold mt-1">{formatPrice(ad.price, ad.country)}</p>
+                    )}
                     <div className="mt-2 flex flex-wrap gap-2">
                       {isAdFeatured && (
                         <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 shadow-sm animate-pulse">
@@ -1650,7 +1654,7 @@ const Profile = () => {
                       
                       {ad.price !== undefined && (
                         <p className="font-extrabold text-[#006600] text-xl">
-                          {formatPrice(ad.price, ad.country || 'Portugal')}
+                          {ad.category === '💚 Doações & Solidariedade' ? 'Grátis 💚' : formatPrice(ad.price, ad.country || 'Portugal')}
                         </p>
                       )}
 
