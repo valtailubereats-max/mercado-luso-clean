@@ -62,13 +62,23 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
     };
   }, []);
 
-  const handleInstallClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  const handleCloseAlreadyInstalled = () => {
+    setShowAlreadyInstalledModal(false);
     if (onClickAction) {
       onClickAction();
     }
+  };
+
+  const handleCloseManual = () => {
+    setShowManualModal(false);
+    if (onClickAction) {
+      onClickAction();
+    }
+  };
+
+  const handleInstallClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
 
     const isStandalone = 
       window.matchMedia('(display-mode: standalone)').matches || 
@@ -77,16 +87,16 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
 
     if (isInstalled || isStandalone) {
       setShowAlreadyInstalledModal(true);
-      try {
-        alert("O Mercado Luso já está instalado no seu dispositivo! Pode aceder diretamente a partir do seu ecrã principal.");
-      } catch (err) {
-        console.warn("Standard alert was blocked or disabled inside iframe:", err);
-      }
       return;
     }
 
-    // Always show the manual instructions modal first
-    setShowManualModal(true);
+    // Android/Chrome/Desktop Chrome/Edge: If native install is available, trigger directly and instantly!
+    if (deferredPrompt) {
+      triggerNativeInstall();
+    } else {
+      // If we are on Safari/iOS or other non-Chrome browsers, show the manual instruction dialog
+      setShowManualModal(true);
+    }
   };
 
   const triggerNativeInstall = async () => {
@@ -102,6 +112,9 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
         setShowManualModal(false);
         localStorage.setItem('pwa-installed', 'true');
       }
+      if (onClickAction) {
+        onClickAction();
+      }
     } catch (err) {
       console.error('[PWA] Error starting trigger prompt:', err);
     }
@@ -114,7 +127,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={() => setShowAlreadyInstalledModal(false)}
+        onClick={handleCloseAlreadyInstalled}
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
         id="already-installed-modal-backdrop"
       />
@@ -144,7 +157,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => setShowAlreadyInstalledModal(false)}
+            onClick={handleCloseAlreadyInstalled}
             className="w-full py-3 bg-[#046a38] hover:bg-[#03522b] text-white font-black text-sm rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
           >
             Excelente!
@@ -161,7 +174,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={() => setShowManualModal(false)}
+        onClick={handleCloseManual}
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
         id="install-modal-backdrop"
       />
@@ -186,7 +199,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
             </div>
           </div>
           <button
-            onClick={() => setShowManualModal(false)}
+            onClick={handleCloseManual}
             className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             id="close-manual-modal"
           >
@@ -267,7 +280,7 @@ export const InstallButton: React.FC<InstallButtonProps> = ({
           )}
           <button
             type="button"
-            onClick={() => setShowManualModal(false)}
+            onClick={handleCloseManual}
             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
             id="manual-modal-confirm-button"
           >

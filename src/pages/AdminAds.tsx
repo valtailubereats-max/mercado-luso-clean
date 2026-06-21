@@ -372,11 +372,11 @@ const AdminAds = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Total', value: stats.total, color: 'bg-slate-100 text-slate-600' },
-          { label: 'Pendentes', value: stats.pending, color: 'bg-amber-50 text-amber-600' },
+          { label: 'Pendentes', value: stats.pending, color: stats.pending > 0 ? 'animate-pending-highlight text-amber-950 border-amber-300' : 'bg-amber-50 text-amber-600' },
           { label: 'Aprovados', value: stats.approved, color: 'bg-emerald-50 text-emerald-600' },
           { label: 'Expirados', value: stats.expired, color: 'bg-red-50 text-red-600' },
         ].map((stat, idx) => (
-          <div key={idx} className={`p-4 rounded-2xl border border-slate-100 shadow-sm ${stat.color}`}>
+          <div key={idx} className={`p-4 rounded-2xl border border-slate-100 shadow-sm transition-all ${stat.color}`}>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{stat.label}</p>
             <p className="text-2xl font-black mt-1">{stat.value}</p>
           </div>

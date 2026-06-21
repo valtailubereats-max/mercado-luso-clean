@@ -718,7 +718,7 @@ export const manualItems: ManualItem[] = [
     access: 'Público (Qualquer visitante)',
     buttons: ['Suporte via WhatsApp', 'Instalar Mercado Luso (PWA)', 'Vitrines Digitais'],
     actions: [
-      'Redirecionar para mailto:mercadolusopt@gmail.com para contacto geral por email',
+      'Redirecionar para mailto:contato@mercado-luso.com para contacto geral por email',
       'Encaminhar para o WhatsApp em nova aba para suporte direto',
       'Navegar de forma reativa para as páginas informativas e legais'
     ],
@@ -773,6 +773,30 @@ export const manualItems: ManualItem[] = [
       'Problemas visuais em listagens históricas ou faturas.'
     ],
     tags: ['doação', 'solidariedade', 'grátis', 'benefício', 'destaque local', 'ajuda']
+  },
+  {
+    id: 'configuracao-arquitetura-email',
+    title: 'Arquitetura e Configurações de E-mail',
+    type: 'Admin',
+    description: 'Registo detalhado da arquitetura de comunicação por e-mail no Mercado Luso. Define o e-mail oficial de contacto público exibido aos utilizadores e as diferenças funcionais em relação aos canais técnicos automatizados de envio do sistema.',
+    route: 'Global (Todas as notificações e páginas de suporte)',
+    mainFile: 'api/email/send.ts',
+    relatedComponents: ['src/App.tsx', 'src/pages/FAQ.tsx'],
+    relatedFunctions: ['sendEmailGeneric', 'renderEmail'],
+    firestoreCollections: ['system_health_events'],
+    access: 'Público para envio de alertas, Restrito para credenciais SMTP/API privadas',
+    buttons: ['Enviar E-mail (FAQ / Suporte)'],
+    actions: [
+      'Exibir o e-mail oficial contato@mercado-luso.com em canais e páginas públicas de suporte.',
+      'Utilizar credenciais SMTP ou serviços serverless (Resend/SendGrid) do lado do servidor para enviar notificações automatizadas.',
+      'Registrar falhas de entrega ou de envio de forma resiliente para monitorização de saúde.'
+    ],
+    technicalNotes: '1. E-mail de Contacto Oficial Público:\nDeve ser estritamente contato@mercado-luso.com para todas as interações e suporte visíveis ao utilizador (no rodapé, páginas de FAQ, políticas ou termos de utilização, etc.).\n\n2. E-mail Técnico de Envio (Remetente / API):\nPara as notificações automáticas e comunicações eletrónicas geradas pelo sistema (como aprovação/rejeição de anúncios), o remetente oficial técnico utilizado é no-reply@mercadoluso.com (configurável através da variável de ambiente process.env.EMAIL_FROM).\n\n3. Segurança de Credenciais SMTP/API:\nAs chaves secretas de envio de email (como RESEND_API_KEY ou SENDGRID_API_KEY) são guardadas exclusivamente do lado do servidor e geridas pelas definições do ambiente. O frontend faz chamadas para o endpoint proxy seguro /api/email/send sem nunca expor qualquer segredo ao browser.',
+    failurePoints: [
+      'Ausência de credenciais válidas do fornecedor de e-mails (Resend ou SendGrid) despoletando falhas registadas no monitor de saúde.',
+      'Bloqueio ou atraso na entrega devido a reputação IP ou falta de DNS SPF/DKIM do domínio mercado-luso.com.'
+    ],
+    tags: ['email', 'suporte', 'comunicação', 'contacto', 'resend', 'sendgrid', 'arquitetura', 'segurança']
   }
 ];
 

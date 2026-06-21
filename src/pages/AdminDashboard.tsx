@@ -613,7 +613,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Anúncios Pendentes */}
-            <div className={`p-5 rounded-2.5xl border flex flex-col justify-between transition-all ${realtimeStats.pendingAds > 0 ? 'bg-amber-50/40 border-amber-200 text-amber-950' : 'bg-slate-50/40 border-slate-200 text-slate-500 hover:border-slate-350'}`}>
+            <div className={`p-5 rounded-2.5xl border flex flex-col justify-between transition-all ${realtimeStats.pendingAds > 0 ? 'animate-pending-highlight text-amber-950' : 'bg-slate-50/40 border-slate-200 text-slate-500 hover:border-slate-350'}`}>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${realtimeStats.pendingAds > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
                 <Clock size={18} />
               </div>

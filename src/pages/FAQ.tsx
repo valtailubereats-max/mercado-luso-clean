@@ -46,7 +46,7 @@ const FAQ = () => {
     },
     {
       question: 'Como entro em contacto com o suporte?',
-      answer: 'Pode falar connosco diretamente em tempo real utilizando o link do "Suporte" via WhatsApp no rodapé ou enviando um correio eletrónico para mercadolusopt@gmail.com. Estamos sempre disponíveis para o ajudar com qualquer dúvida!'
+      answer: 'Pode falar connosco diretamente em tempo real utilizando o link do "Suporte" via WhatsApp no rodapé ou enviando um correio eletrónico para contato@mercado-luso.com. Estamos sempre disponíveis para o ajudar com qualquer dúvida!'
     }
   ];
 
@@ -151,7 +151,7 @@ const FAQ = () => {
               <MessageCircle size={16} /> Suporte WhatsApp
             </a>
             <a
-              href="mailto:mercadolusopt@gmail.com"
+              href="mailto:contato@mercado-luso.com"
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 shadow-sm transition-all uppercase tracking-wider cursor-pointer"
               id="faq-email-support-link"
             >

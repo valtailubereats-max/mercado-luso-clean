@@ -1075,8 +1075,8 @@ export default function App() {
                     </h4>
                     <ul className="space-y-3.5 text-xs font-bold text-slate-600">
                       <li>
-                        <a href="mailto:mercadolusopt@gmail.com" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-2 break-all font-semibold text-slate-500">
-                          mercadolusopt@gmail.com
+                        <a href="mailto:contato@mercado-luso.com" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-2 break-all font-semibold text-slate-500">
+                          contato@mercado-luso.com
                         </a>
                       </li>
                       <li>
