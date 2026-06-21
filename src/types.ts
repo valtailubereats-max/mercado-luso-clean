@@ -384,6 +384,8 @@ export interface Giveaway {
   createdAt: any; // Firestore Timestamp
   createdBy: string;
   winners?: GiveawayWinner[];
+  videoUrl?: string;
+  videoBase64?: string;
 }
 
 export interface GiveawayParticipation {

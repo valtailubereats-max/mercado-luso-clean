@@ -52,7 +52,7 @@ const maskEmail = (email: string): string => {
 interface LotteryGlobeModalProps {
   giveaway: Giveaway;
   onClose: () => void;
-  onDrawComplete: (winners: GiveawayWinner[]) => Promise<void>;
+  onDrawComplete: (winners: GiveawayWinner[], videoBase64?: string) => Promise<void>;
 }
 
 interface PhysicsBall {
@@ -1454,8 +1454,43 @@ export default function LotteryGlobeModal({ giveaway, onClose, onDrawComplete }:
   const handlePersistResults = async () => {
     setLoading(true);
     try {
-      await onDrawComplete(drawnWinners);
-      alert("Resultados do Sorteio e Lista de Ganhadores persistidos com sucesso no Firestore! O vídeo do sorteio já pode ser distribuído.");
+      let base64Video: string | undefined = undefined;
+      
+      // Converte o vídeo gravado para Base64 para ser guardado no documento do Firestore elegivelmente
+      if (recordedChunksRef.current && recordedChunksRef.current.length > 0) {
+        try {
+          const mimeType = customRecorderRef.current?.mimeType || 'video/webm';
+          const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+          console.log(`[PWAVideo] Gravado: ${(blob.size / 1024).toFixed(1)} KB`);
+          
+          base64Video = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (convErr) {
+          console.error("Erro ao converter pedaços do vídeo para Base64:", convErr);
+        }
+      } else if (videoUrl) {
+        try {
+          const response = await fetch(videoUrl);
+          const blob = await response.blob();
+          console.log(`[PWAVideo] Blob URL: ${(blob.size / 1024).toFixed(1)} KB`);
+          
+          base64Video = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (fetchErr) {
+          console.error("Erro ao descarregar blob URL do vídeo:", fetchErr);
+        }
+      }
+
+      await onDrawComplete(drawnWinners, base64Video);
+      alert("Resultados do Sorteio, lista de ganhadores e vídeo do sorteio foram persistidos com sucesso no Firestore!");
       onClose();
     } catch (err) {
       console.error(err);

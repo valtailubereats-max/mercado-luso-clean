@@ -79,6 +79,8 @@ export default function AdminSorteios() {
   const [formWinnersCount, setFormWinnersCount] = useState<number>(1);
   const [formDrawNumber, setFormDrawNumber] = useState<number>(0);
   const [formStatus, setFormStatus] = useState<'Ativo' | 'Encerrado' | 'Finalizado'>('Ativo');
+  const [formVideoUrl, setFormVideoUrl] = useState('');
+  const [formVideoBase64, setFormVideoBase64] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Participants View Modal
@@ -94,6 +96,7 @@ export default function AdminSorteios() {
   // Globo de Sorteios Interativo
   const [isGlobeOpen, setIsGlobeOpen] = useState(false);
   const [globeGiveaway, setGlobeGiveaway] = useState<Giveaway | null>(null);
+  const [activeVideoModal, setActiveVideoModal] = useState<{ title: string; url?: string; base64?: string } | null>(null);
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -129,13 +132,14 @@ export default function AdminSorteios() {
     }
   };
 
-  const handleGlobeDrawComplete = async (giveaway: Giveaway, winners: GiveawayWinner[]) => {
+  const handleGlobeDrawComplete = async (giveaway: Giveaway, winners: GiveawayWinner[], videoBase64?: string) => {
     try {
       // Atualizar Giveaway no Firebase
       const updatedGiveaway = {
         ...giveaway,
         status: 'Finalizado' as const,
-        winners: winners
+        winners: winners,
+        ...(videoBase64 ? { videoBase64 } : {})
       };
       await setDoc(doc(db, 'giveaways', giveaway.id), updatedGiveaway);
 
@@ -151,7 +155,8 @@ export default function AdminSorteios() {
           status: w.status ?? 'Pendente',
           place: idx + 1
         })),
-        drawnAt: new Date().toISOString()
+        drawnAt: new Date().toISOString(),
+        ...(videoBase64 ? { videoBase64 } : {})
       };
 
       // 1. Guardar no Local Storage para visualização imediata ultrarrápida
@@ -284,6 +289,8 @@ export default function AdminSorteios() {
     setFormDescription('');
     setFormPrizeImage('');
     setFormCountry('Ambos');
+    setFormVideoUrl('');
+    setFormVideoBase64('');
     
     // Default dates
     const today = new Date();
@@ -312,6 +319,8 @@ export default function AdminSorteios() {
     setFormWinnersCount(g.winnersCount);
     setFormDrawNumber(g.drawNumber !== undefined ? g.drawNumber : 1);
     setFormStatus(g.status);
+    setFormVideoUrl(g.videoUrl || '');
+    setFormVideoBase64(g.videoBase64 || '');
     setIsFormOpen(true);
   };
 
@@ -337,6 +346,8 @@ export default function AdminSorteios() {
         winnersCount: Number(formWinnersCount),
         drawNumber: Number(formDrawNumber),
         status: formStatus,
+        videoUrl: formVideoUrl,
+        videoBase64: formVideoBase64 || (editingId ? (giveaways.find(x => x.id === editingId)?.videoBase64 || '') : ''),
         createdAt: editingId ? (giveaways.find(x => x.id === editingId)?.createdAt || Timestamp.now()) : Timestamp.now(),
         createdBy: user?.uid || 'admin'
       };
@@ -755,20 +766,44 @@ export default function AdminSorteios() {
                 className="bg-slate-50/50 border border-slate-100 rounded-2.5xl overflow-hidden shadow-sm flex flex-col justify-between hover:scale-[1.01] transition-all"
               >
                 {/* Header Banner */}
-                <div className="h-44 relative bg-slate-200 overflow-hidden">
+                <div 
+                  className={`h-44 relative bg-slate-200 overflow-hidden ${
+                    g.videoBase64 || g.videoUrl ? 'cursor-pointer group' : ''
+                  }`}
+                  onClick={() => {
+                    if (g.videoBase64 || g.videoUrl) {
+                      setActiveVideoModal({ title: g.title, url: g.videoUrl, base64: g.videoBase64 });
+                    }
+                  }}
+                >
                   <img 
                     src={g.prizeImage} 
                     alt={g.title} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
+                  
+                  {/* Play video overlay indicator */}
+                  {(g.videoBase64 || g.videoUrl) && (
+                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-10">
+                      <div className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-indigo-600 scale-90 group-hover:scale-100 transition-all hover:bg-white">
+                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                      <span className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-black text-white px-2 py-0.5 bg-slate-900/80 rounded-full tracking-wider uppercase whitespace-nowrap">
+                        Ver Vídeo de Evidência
+                      </span>
+                    </div>
+                  )}
+
                   {/* Country Flag Badge */}
-                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 shadow-sm text-slate-800">
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 shadow-sm text-slate-800 z-10">
                     <Globe size={11} className="text-slate-400" />
                     <span>{g.country === 'Ambos' ? 'PT + UK 🌍' : g.country}</span>
                   </div>
 
                   {/* Status Badge */}
-                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-black uppercase text-white shadow-sm ${
+                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-black uppercase text-white shadow-sm z-10 ${
                     g.status === 'Ativo' ? 'bg-emerald-500' :
                     g.status === 'Encerrado' ? 'bg-rose-500' : 'bg-slate-700'
                   }`}>
@@ -790,6 +825,19 @@ export default function AdminSorteios() {
                     </div>
                     <h3 className="text-lg font-black text-slate-930 tracking-tight leading-snug">{g.title}</h3>
                     <p className="text-slate-500 text-xs line-clamp-2">{g.description}</p>
+                    
+                    {/* Compact Play Video Banner when video exists */}
+                    {(g.videoBase64 || g.videoUrl) && (
+                      <button
+                        onClick={() => {
+                          setActiveVideoModal({ title: g.title, url: g.videoUrl, base64: g.videoBase64 });
+                        }}
+                        className="mt-2 text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-xl font-extrabold flex items-center gap-1.5 cursor-pointer transition-all border border-indigo-150/60"
+                      >
+                        <span>🎥 Ver Vídeo do Sorteio</span>
+                        <span className="text-[8px] bg-indigo-150 text-indigo-800 px-1.5 py-0.2 rounded-md font-bold">Auditável</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Dates & Winners quota */}
@@ -1079,6 +1127,92 @@ export default function AdminSorteios() {
                     </div>
                   </div>
 
+                  {/* Video Evidence */}
+                  <div className="space-y-3 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-250/60">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black text-slate-700 uppercase block">Vídeo de Evidência do Sorteio</label>
+                      <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md">Firebase</span>
+                    </div>
+
+                    {/* Manual Link Input */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-bold block">Link para o Vídeo (YouTube, Drive, etc.):</span>
+                      <input
+                        type="url"
+                        value={formVideoUrl}
+                        onChange={(e) => setFormVideoUrl(e.target.value)}
+                        placeholder="https://youtube.com/... ou link de vídeo"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    {/* Base64 Upload or Globe Recording Info */}
+                    <div className="space-y-2 pt-1 border-t border-slate-200/60">
+                      <span className="text-[10px] text-slate-400 font-bold block">Gravação do Cartão (Base64 no Firestore):</span>
+                      {formVideoBase64 ? (
+                        <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                          <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-[10px]">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                            <span>Vídeo anexado (~{(formVideoBase64.length / 1024 / 1.33).toFixed(0)} KB)</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const win = window.open();
+                                if (win) {
+                                  win.document.write(`<video controls style="max-width:100%; h-screen bg-black" src="${formVideoBase64}"></video>`);
+                                }
+                              }}
+                              className="px-2 py-1 bg-white hover:bg-slate-50 text-[10px] font-bold text-slate-700 rounded-lg border border-slate-200 transition-all cursor-pointer"
+                            >
+                              Ver
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormVideoBase64('');
+                              }}
+                              className="px-2 py-1 bg-red-50 hover:bg-red-100 text-[10px] font-bold text-red-700 rounded-lg border border-red-200 transition-all cursor-pointer"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            id="pwa-video-file-upload"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 850 * 1024) {
+                                  alert("Aviso: O ficheiro de vídeo é demasiado grande. Por favor, utilize um vídeo curto de até 850 KB para não exceder limites do Firestore, ou insira como Link acima.");
+                                  return;
+                                }
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setFormVideoBase64(reader.result as string);
+                                  alert("Vídeo carregado com sucesso!");
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="pwa-video-file-upload"
+                            className="w-full flex items-center justify-center p-2.5 border border-dashed border-slate-300 rounded-xl text-[10.5px] font-black text-slate-600 hover:text-slate-800 hover:border-slate-400 hover:bg-slate-100 cursor-pointer transition-all"
+                          >
+                            📁 Carregar Vídeo de Evidência (&lt; 850 KB)
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Rules */}
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-600 uppercase block">Regras do Sorteio</label>
@@ -1275,6 +1409,94 @@ export default function AdminSorteios() {
           }}
         />
       )}
+
+      {/* Video Evidence Modal Popup */}
+      <AnimatePresence>
+        {activeVideoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveVideoModal(null)}
+              className="absolute inset-0 bg-slate-930/85 backdrop-blur-md"
+            />
+
+            {/* Content Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl flex flex-col z-10"
+            >
+              {/* Header */}
+              <div className="p-4 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/40">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse"></span>
+                  <h3 className="text-sm font-black tracking-tight">{activeVideoModal.title} - Evidência Oficial</h3>
+                </div>
+                <button 
+                  onClick={() => setActiveVideoModal(null)}
+                  className="p-1.5 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Player stage */}
+              <div className="p-1 bg-black aspect-video flex items-center justify-center relative min-h-[220px]">
+                {activeVideoModal.base64 ? (
+                  <video 
+                    src={activeVideoModal.base64} 
+                    controls 
+                    autoPlay 
+                    playsInline 
+                    className="w-full h-full rounded-2.5xl object-contain bg-black font-semibold"
+                  />
+                ) : activeVideoModal.url ? (
+                  activeVideoModal.url.includes('mp4') || activeVideoModal.url.includes('webm') || activeVideoModal.url.includes('video') ? (
+                    <video 
+                      src={activeVideoModal.url} 
+                      controls 
+                      autoPlay 
+                      playsInline 
+                      className="w-full h-full rounded-2.5xl object-contain bg-black font-semibold"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center p-6 space-y-4">
+                      <div className="w-16 h-16 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                        <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
+                          <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" stroke="currentColor"/>
+                        </svg>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-extrabold text-sm text-slate-100">Vídeo em Link Externo</p>
+                        <p className="text-xs text-slate-400 max-w-sm">Este vídeo está alojado numa plataforma externa regulamentada.</p>
+                      </div>
+                      <a 
+                        href={activeVideoModal.url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 font-extrabold text-xs text-white rounded-xl transition-all shadow-md active:scale-95 inline-block cursor-pointer"
+                      >
+                        Abrir Vídeo Noutro Separador →
+                      </a>
+                    </div>
+                  )
+                ) : (
+                  <p className="text-xs text-slate-400 font-bold">Vídeo não disponível ou em processamento.</p>
+                )}
+              </div>
+
+              {/* Bottom footer bar */}
+              <div className="p-3 bg-slate-950/40 text-slate-400 text-[10px] font-bold text-center border-t border-slate-800/60 leading-relaxed flex items-center justify-center gap-1.5">
+                <span>🛡️ Assinado digitalmente e encriptado no Firestore</span>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

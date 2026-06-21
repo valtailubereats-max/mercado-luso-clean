@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Menu, X, Share2, Bell, AlertTriangle, QrCode, Copy, Check } from 'lucide-react';
+import { LogOut, PlusCircle, Plus, User as UserIcon, ShieldCheck, ShoppingBag, Menu, X, Share2, Bell, AlertTriangle, QrCode, Copy, Check, Mail } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { auth, db, getDocsWithCacheFallback } from './firebase';
 import { signOut } from 'firebase/auth';
@@ -1075,8 +1075,12 @@ export default function App() {
                     </h4>
                     <ul className="space-y-3.5 text-xs font-bold text-slate-600">
                       <li>
-                        <a href="mailto:contato@mercado-luso.com" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-2 break-all font-semibold text-slate-500">
-                          contato@mercado-luso.com
+                        <a 
+                          href="mailto:contato@mercado-luso.com" 
+                          className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 px-3.5 py-2 rounded-xl transition-all inline-flex items-center gap-1.5 shadow-2xs font-extrabold cursor-pointer active:scale-95"
+                        >
+                          <Mail size={14} className="text-indigo-600 shrink-0" />
+                          <span>contato@mercado-luso.com</span>
                         </a>
                       </li>
                       <li>
