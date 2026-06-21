@@ -10,7 +10,7 @@ import { sendEmailGeneric } from '../utils/emailService';
 import { CITIES, Ad, MarketplaceSettings, PORTUGAL_CITIES, UK_CITIES } from '../types';
 import { SearchableCitySelect } from '../components/SearchableCitySelect';
 import { motion, AnimatePresence } from 'motion/react';
-import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw, Link, AlertCircle, Check } from 'lucide-react';
+import { Image as ImageIcon, Tag, MapPin, Euro, FileText, ChevronLeft, Upload, X, Plus, RefreshCcw, Link, AlertCircle, Check, Camera } from 'lucide-react';
 import { compressImage } from '../lib/imageUtils';
 import { normalizeDescription } from '../utils/textFormatter';
 
@@ -89,6 +89,7 @@ const CreateAd = () => {
   });
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPhotoSourceMenu, setShowPhotoSourceMenu] = useState(false);
   const [pendingAdData, setPendingAdData] = useState<any>(null);
   const [mockCardNumber, setMockCardNumber] = useState('4242 •••• •••• 4242');
   const [mockExpiry, setMockExpiry] = useState('12/29');
@@ -336,6 +337,7 @@ const CreateAd = () => {
   const [isDragging, setIsDragging] = useState(false);
   const uploadRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -469,6 +471,7 @@ const CreateAd = () => {
     if (remainingSlots <= 0) {
       alert(`Limite de ${maxAllowed} imagens atingido para este plano.`);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
       return;
     }
 
@@ -483,6 +486,7 @@ const CreateAd = () => {
     const filesToProceed = filesToUpload.filter(file => file.size <= 5 * 1024 * 1024);
     if (filesToProceed.length === 0) {
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
       return;
     }
 
@@ -518,6 +522,7 @@ const CreateAd = () => {
       setUploading(false);
       uploadRef.current = false;
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
@@ -1268,6 +1273,15 @@ const CreateAd = () => {
                 className="hidden"
                 disabled={uploading}
               />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={uploading}
+              />
               <AnimatePresence mode="popLayout">
                 {formData.images.map((url, index) => (
                   url && (
@@ -1306,7 +1320,7 @@ const CreateAd = () => {
               {formData.images.length < maxAllowed && !(isEditLocked && !isAdmin) && (
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setShowPhotoSourceMenu(true)}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -2358,6 +2372,89 @@ const CreateAd = () => {
               <p className="text-slate-500 text-sm font-medium leading-relaxed">{saveSuccessMsg}</p>
             </motion.div>
           </motion.div>
+        )}
+
+        {/* Foto Source Selector Menu Modality */}
+        {showPhotoSourceMenu && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50">
+            {/* Dark dismissable backdrop overlay */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPhotoSourceMenu(false)}
+              className="absolute inset-0 bg-slate-950/40"
+            />
+
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="relative w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-100 p-6 space-y-4 z-10 text-slate-800"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Adicionar Foto</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoSourceMenu(false)}
+                  className="text-slate-400 hover:text-slate-600 bg-slate-100 p-1.5 rounded-full transition-all cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Options */}
+              <div className="grid grid-cols-1 gap-3 pt-2">
+                {/* Clean Camera option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPhotoSourceMenu(false);
+                    // Minimal delay to let backdrop clear properly
+                    setTimeout(() => cameraInputRef.current?.click(), 150);
+                  }}
+                  className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-2xl font-black text-sm text-left border border-indigo-150 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                    <Camera size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-extrabold text-sm text-slate-900">Tirar Foto (Câmara Nativa)</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Abre a câmara do telemóvel para fotografar</p>
+                  </div>
+                </button>
+
+                {/* Gallery option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPhotoSourceMenu(false);
+                    setTimeout(() => fileInputRef.current?.click(), 150);
+                  }}
+                  className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-2xl font-black text-sm text-left border border-slate-200 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-600 flex items-center justify-center font-bold">
+                    <ImageIcon size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-extrabold text-sm text-slate-900">Escolher da Galeria</p>
+                    <p className="text-[11px] text-slate-500 font-medium">Escolha uma ou mais imagens já guardadas</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Cancel Button */}
+              <button
+                type="button"
+                onClick={() => setShowPhotoSourceMenu(false)}
+                className="w-full text-center py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Voltar
+              </button>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
