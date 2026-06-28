@@ -30,6 +30,7 @@ import AdDetails from './pages/AdDetails';
 import Suggestions from './pages/Suggestions';
 import FAQ from './pages/FAQ';
 import AdminSuggestions from './pages/AdminSuggestions';
+import AdminClaims from './pages/AdminClaims';
 import Fotos from './pages/Fotos';
 import AdminFotos from './pages/AdminFotos';
 import Empreendedores from './pages/Empreendedores';
@@ -977,6 +978,7 @@ export default function App() {
                 <Route path="/admin/ads" element={<AdminLayout><AdminAds /></AdminLayout>} />
                 <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
                 <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
+                <Route path="/admin/claims" element={<AdminLayout><AdminClaims /></AdminLayout>} />
                 <Route path="/admin/team" element={<AdminLayout><AdminTeam /></AdminLayout>} />
                 <Route path="/fotos" element={<Fotos />} />
                 <Route path="/empreendedores" element={<Empreendedores />} />

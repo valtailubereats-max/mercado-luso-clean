@@ -79,9 +79,24 @@ service cloud.firestore {
 
     function isValidAdCounterUpdate() {
       let affected = request.resource.data.diff(resource.data).affectedKeys();
-      return affected.hasOnly(['views', 'whatsappClicks']) &&
+      return affected.hasOnly(['views', 'whatsappClicks', 'businessViews']) &&
              (!affected.hasAny(['views']) || request.resource.data.views == resource.data.get('views', 0) + 1) &&
-             (!affected.hasAny(['whatsappClicks']) || request.resource.data.whatsappClicks == resource.data.get('whatsappClicks', 0) + 1);
+             (!affected.hasAny(['whatsappClicks']) || request.resource.data.whatsappClicks == resource.data.get('whatsappClicks', 0) + 1) &&
+             (!affected.hasAny(['businessViews']) || request.resource.data.businessViews == resource.data.get('businessViews', 0) + 1);
+    }
+
+    function isValidBusinessClaimRequest(data, requestId) {
+      return data.keys().hasAll(['id', 'adId', 'adTitle', 'userId', 'name', 'phone', 'email', 'status', 'createdAt']) &&
+             (data.id == requestId || data.id == "") &&
+             data.adId is string && data.adId != "" &&
+             data.adTitle is string && data.adTitle != "" &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name != "" &&
+             data.phone is string && data.phone != "" &&
+             data.email is string && data.email != "" &&
+             data.status == 'pending' &&
+             (!('message' in data) || data.message is string) &&
+             data.createdAt is timestamp;
     }
 
     function isValidReview(data) {
@@ -283,7 +298,11 @@ service cloud.firestore {
                         isValidAd(request.resource.data) &&
                         isValidAdImagesAndPlan(request.resource.data) &&
                         request.resource.data.status == 'pending' &&
-                        request.resource.data.category != 'Trabalho/Empregos'
+                        request.resource.data.category != 'Trabalho/Empregos' &&
+                        !('invitationStatus' in request.resource.data) &&
+                        !('invitationSentAt' in request.resource.data) &&
+                        !('invitationLastMessage' in request.resource.data) &&
+                        !('invitationCount' in request.resource.data)
                       )
                     );
 
@@ -293,7 +312,8 @@ service cloud.firestore {
           resource.data.sellerId == request.auth.uid &&
           isValidAd(request.resource.data) &&
           isValidAdImagesAndPlan(request.resource.data) &&
-          request.resource.data.status == 'pending'
+          request.resource.data.status == 'pending' &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isClaimableBusiness', 'claimStatus', 'claimedBy', 'claimedAt', 'sellerEmail', 'invitationStatus', 'invitationSentAt', 'invitationLastMessage', 'invitationCount']))
         ) ||
 
         (resource.data.status == 'approved' && isValidAdCounterUpdate()) ||
@@ -470,6 +490,12 @@ service cloud.firestore {
 
     match /system_health_events/{eventId} {
       allow read, write, create: if true;
+    }
+
+    match /businessClaimRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin() || isModerator();
     }
   }
 }

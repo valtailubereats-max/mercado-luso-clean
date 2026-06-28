@@ -7,9 +7,9 @@ import {
   Trash2, Edit, AlertCircle, ShieldAlert, ShoppingBag, Eye, Award, Calendar, Share2, ExternalLink
 } from 'lucide-react';
 import { 
-  doc, updateDoc, increment, setDoc, collection, query, where, limit, getDoc, serverTimestamp 
+  doc, updateDoc, increment, setDoc, collection, query, where, limit, getDoc, serverTimestamp, Timestamp 
 } from 'firebase/firestore';
-import { db, getDocWithCacheFallback, getDocsWithCacheFallback, parseFirestoreDate } from '../firebase';
+import { db, getDocWithCacheFallback, getDocsWithCacheFallback, parseFirestoreDate, handleFirestoreError, OperationType } from '../firebase';
 import { Ad, UserProfile, Review } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice, getAdUrl, extractIdFromSlug } from '../utils';
@@ -68,6 +68,106 @@ const AdDetails = () => {
   const [reportDetails, setReportDetails] = useState('');
   const [reporting, setReporting] = useState(false);
 
+  // Estados para Negócios Reivindicáveis/Claimable
+  const [showUnclaimedContactModal, setShowUnclaimedContactModal] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimName, setClaimName] = useState('');
+  const [claimPhone, setClaimPhone] = useState('');
+  const [claimEmail, setClaimEmail] = useState('');
+  const [claimMessage, setClaimMessage] = useState('');
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+
+  // Auto-preencher dados de reivindicação baseados no perfil do utilizador logado
+  useEffect(() => {
+    if (user && profile && showClaimModal) {
+      setClaimName(profile.name || user.displayName || '');
+      setClaimEmail(profile.email || user.email || '');
+      setClaimPhone(profile.phone || '');
+    }
+  }, [user, profile, showClaimModal]);
+
+  const handleOpenClaimModal = () => {
+    if (!user) {
+      navigate(`/login?message=${encodeURIComponent('Para reivindicar este negócio, faça login ou crie uma conta gratuita.')}&redirect=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    setShowClaimModal(true);
+  };
+
+  const handleClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ad || !user) return;
+    if (!claimName.trim() || !claimPhone.trim() || !claimEmail.trim()) {
+      showToastMsg('error', 'Por favor preencha todos os campos obrigatórios.');
+      return;
+    }
+    setClaimSubmitting(true);
+    try {
+      const claimId = `${ad.id}_${user.uid}_${Date.now()}_claim`;
+      const claimRef = doc(db, 'businessClaimRequests', claimId);
+
+      const claimPayload = {
+        id: claimId,
+        adId: ad.id,
+        adTitle: ad.title,
+        userId: user.uid,
+        name: claimName,
+        phone: claimPhone,
+        email: claimEmail,
+        message: claimMessage,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      };
+      
+      try {
+        await setDoc(claimRef, claimPayload);
+      } catch (writeErr) {
+        handleFirestoreError(writeErr, OperationType.WRITE, `businessClaimRequests/${claimId}`);
+        throw writeErr;
+      }
+      
+      showToastMsg('success', 'Pedido de referência submetido com sucesso! Será analisado pela administração.');
+      setShowClaimModal(false);
+    } catch (err) {
+      console.error('Erro ao submeter pedido de reivindicação:', err);
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      let displayError = 'Ocorreu um erro ao submeter o seu pedido. Tente novamente mais tarde.';
+      try {
+        const parsed = JSON.parse(rawMsg);
+        if (parsed && parsed.error) {
+          displayError = `Erro na BD: ${parsed.error}`;
+        }
+      } catch (_) {
+        if (rawMsg) {
+          displayError = `Erro: ${rawMsg}`;
+        }
+      }
+      showToastMsg('error', displayError);
+    } finally {
+      setClaimSubmitting(false);
+    }
+  };
+
+  const runDebugTest = async () => {
+    if (!user) return;
+    try {
+      const testId = 'debug_test_' + user.uid + '_' + Date.now();
+      await setDoc(
+        doc(db, 'businessClaimRequests', testId),
+        {
+          userId: user.uid,
+          status: 'pending',
+          test: true,
+          createdAt: serverTimestamp()
+        }
+      );
+      showToastMsg('success', 'Teste mínimo passou! Documento gravado com sucesso.');
+    } catch (err: any) {
+      console.error('Debug test error:', err);
+      showToastMsg('error', 'Teste falhou: ' + (err.message || String(err)));
+    }
+  };
+
   const isFavorite = ad ? favorites.includes(ad.id) : false;
 
   // Carregar anúncio e incrementar visualização
@@ -93,6 +193,33 @@ const AdDetails = () => {
         }
 
         const adData = { id: adSnap.id, ...adSnap.data() } as Ad;
+
+        // --- NEW BUSINESS VIEWS & MILESTONES LOGIC ---
+        if (adData.isClaimableBusiness) {
+          const sessionKey = `last_viewed_claimable_${adData.id}`;
+          const lastViewedStr = sessionStorage.getItem(sessionKey);
+          const now = Date.now();
+          const cooldownPeriod = 3600000; // 1 hour cooldown (3,600,000 ms)
+          
+          if (!lastViewedStr || now - parseInt(lastViewedStr, 10) > cooldownPeriod) {
+            sessionStorage.setItem(sessionKey, now.toString());
+            
+            const currentBusinessViews = Number(adData.businessViews || 0) + 1;
+            const updatesToApply: Record<string, any> = {
+              businessViews: increment(1)
+            };
+            
+            adData.businessViews = currentBusinessViews;
+            
+            try {
+              await updateDoc(adRef, updatesToApply);
+            } catch (bvErr) {
+              console.error('Erro ao incrementar visualizações do negócio/milestones:', bvErr);
+            }
+          }
+        }
+        // --- END OF NEW LOGIC ---
+
         setAd(adData);
 
         // Incrementar visualização no Firestore
@@ -262,6 +389,10 @@ const AdDetails = () => {
   };
 
   const handleContactClick = () => {
+    if (ad?.isClaimableBusiness && (ad.claimStatus === 'unclaimed' || !ad.claimStatus)) {
+      setShowUnclaimedContactModal(true);
+      return;
+    }
     if (ad?.adStatus === 'sold' || ad?.status === 'sold') {
       showToastMsg('error', 'Este anúncio já foi vendido. Não é possível contactar o vendedor.');
       return;
@@ -701,13 +832,34 @@ const AdDetails = () => {
               </span>
               <div className="flex items-center gap-3 text-slate-400 text-xs font-semibold">
                 <span className="flex items-center gap-1">
-                  <Eye size={14} /> {ad.views || 0}
+                  <Eye size={14} /> {ad.isClaimableBusiness ? (ad.businessViews || 0) : (ad.views || 0)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock size={14} /> {timeStr}
                 </span>
               </div>
             </div>
+
+            {/* Selos de Negócio Reivindicável */}
+            {ad.isClaimableBusiness && (
+              <div className="flex flex-wrap gap-2 animate-fade-in">
+                {(ad.claimStatus === 'unclaimed' || !ad.claimStatus) && (
+                  <span className="bg-amber-50 text-amber-605 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-amber-200 flex items-center gap-1">
+                    <AlertCircle size={12} /> Aguardando ativação do proprietário
+                  </span>
+                )}
+                {ad.claimStatus === 'pending' && (
+                  <span className="bg-indigo-50 text-indigo-600 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-indigo-200 flex items-center gap-1 animate-pulse">
+                    <Clock size={12} /> Ativação Pendente de Verificação
+                  </span>
+                )}
+                {ad.claimStatus === 'claimed' && (
+                  <span className="bg-emerald-50 text-emerald-700 text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider border border-emerald-200 flex items-center gap-1">
+                    <Award size={12} /> Negócio Verificado & Ativo
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Título & Preço */}
             <div className="space-y-2">
@@ -913,6 +1065,27 @@ const AdDetails = () => {
               )}
             </div>
           </div>
+
+          {/* Reivindicar Card no Desktop */}
+          {ad.isClaimableBusiness && (ad.claimStatus === 'unclaimed' || !ad.claimStatus) && (
+            <div className="bg-gradient-to-br from-indigo-50/70 to-amber-50/20 border border-indigo-100 rounded-[2rem] p-6 md:p-8 shadow-xl space-y-4 text-left animate-fade-in">
+              <div className="flex gap-3.5 items-start">
+                <span className="text-3xl">💼</span>
+                <div className="space-y-1">
+                  <p className="font-extrabold text-[#030d32] text-base">É o proprietário deste negócio?</p>
+                  <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                    Ative e reivindique gratuitamente este anúncio para começar a receber contactos de interessados direto no seu WhatsApp!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleOpenClaimModal}
+                className="w-full text-center py-3.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95"
+              >
+                Sou o proprietário deste negócio
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1023,13 +1196,34 @@ const AdDetails = () => {
             </span>
             <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
               <span className="flex items-center gap-1">
-                <Eye size={12} /> {ad.views || 0}
+                <Eye size={12} /> {ad.isClaimableBusiness ? (ad.businessViews || 0) : (ad.views || 0)}
               </span>
               <span className="flex items-center gap-1">
                 <Clock size={12} /> {timeStr}
               </span>
             </div>
           </div>
+
+          {/* Selos de Negócio Reivindicável no Mobile */}
+          {ad.isClaimableBusiness && (
+            <div className="flex flex-wrap gap-1.5 pt-1 animate-fade-in">
+              {(ad.claimStatus === 'unclaimed' || !ad.claimStatus) && (
+                <span className="bg-amber-50 text-amber-640 text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-wider border border-amber-200 flex items-center gap-1">
+                  <AlertCircle size={10} /> Aguardando ativação
+                </span>
+              )}
+              {ad.claimStatus === 'pending' && (
+                <span className="bg-indigo-50 text-indigo-600 text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-wider border border-indigo-200 flex items-center gap-1 animate-pulse">
+                  <Clock size={10} /> Ativação Pendente
+                </span>
+              )}
+              {ad.claimStatus === 'claimed' && (
+                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-wider border border-emerald-200 flex items-center gap-1">
+                  <Award size={10} /> Verificado & Ativo
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Title, Country/City, Price */}
           <div className="space-y-1.5">
@@ -1135,6 +1329,27 @@ const AdDetails = () => {
                 >
                   Visitar
                 </Link>
+              </div>
+            )}
+
+            {/* Reivindicar Card no Mobile */}
+            {ad.isClaimableBusiness && (ad.claimStatus === 'unclaimed' || !ad.claimStatus) && (
+              <div className="bg-gradient-to-br from-indigo-50 to-amber-50/10 border border-indigo-100 rounded-2xl p-4 space-y-2.5 text-left animate-fade-in my-2">
+                <div className="flex gap-2 items-start">
+                  <span className="text-xl">💼</span>
+                  <div className="space-y-0.5">
+                    <p className="font-extrabold text-[#030d32] text-xs">É o proprietário deste negócio?</p>
+                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
+                      Ative e reivindique gratuitamente este anúncio para começar a receber contactos de interessados direto no seu WhatsApp!
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleOpenClaimModal}
+                  className="w-full text-center py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  Confirmar Propriedade
+                </button>
               </div>
             )}
 
@@ -1448,6 +1663,166 @@ const AdDetails = () => {
                     className="py-2.5 px-6 text-sm font-extrabold bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-md transition disabled:opacity-50"
                   >
                     {reporting ? 'A Enviar...' : 'Denunciar Anúncio'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Modal: Unclaimed Contact Warning */}
+        {showUnclaimedContactModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 overflow-y-auto font-sans">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] p-6 md:p-8 max-w-md w-full border border-slate-100 shadow-2xl relative space-y-6"
+            >
+              <div className="flex justify-between items-start">
+                <div className="bg-amber-50 text-amber-600 p-3 rounded-2xl border border-amber-100 font-bold">
+                  <AlertCircle size={28} />
+                </div>
+                <button
+                  onClick={() => setShowUnclaimedContactModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1.5 bg-slate-50 border border-slate-150 rounded-full transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-left">
+                <h3 className="text-xl font-black text-slate-950">Contacto Indisponível</h3>
+                <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  Este anúncio foi criado para prestadores de serviços no Mercado Luso e está **aguardando a ativação por parte do seu proprietário**. O contacto direto via WhatsApp estará disponível assim que o negócio for ativado.
+                </p>
+                <p className="text-xs text-indigo-950 font-extrabold leading-relaxed bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-100">
+                  💡 Se é o proprietário ou gestor deste negócio, clique em "Reivindicar Negócio" abaixo para ativá-lo gratuitamente!
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => {
+                    setShowUnclaimedContactModal(false);
+                    handleOpenClaimModal();
+                  }}
+                  className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-wider text-center transition cursor-pointer shadow-md"
+                >
+                  Reivindicar Negócio 💼
+                </button>
+                <button
+                  onClick={() => setShowUnclaimedContactModal(false)}
+                  className="py-3 px-5 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl font-black text-xs uppercase border border-slate-150 text-center transition cursor-pointer"
+                >
+                  Voltar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Modal: Claim Form */}
+        {showClaimModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 overflow-y-auto font-sans">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] p-6 md:p-8 max-w-lg w-full border border-slate-100 shadow-2xl relative space-y-6"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">💼</span>
+                  <div className="text-left">
+                    <h3 className="text-lg font-black text-slate-950">Ativar meu Negócio</h3>
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Formulário de Verificação</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowClaimModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1.5 bg-slate-50 border border-slate-150 rounded-full transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-100 text-left">
+                <p className="text-xs text-indigo-950 font-semibold leading-relaxed">
+                  Para garantir a segurança da nossa comunidade, os pedidos de ativação de negócios são verificados manualmente pela gerência do Mercado Luso antes de serem homologados.
+                </p>
+              </div>
+
+              <form onSubmit={handleClaimSubmit} className="space-y-4 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-bold">O meu nome *</label>
+                    <input
+                      required
+                      type="text"
+                      value={claimName}
+                      onChange={(e) => setClaimName(e.target.value)}
+                      placeholder="Ex: João Silva"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-bold">Telemóvel / WhatsApp *</label>
+                    <input
+                      required
+                      type="tel"
+                      value={claimPhone}
+                      onChange={(e) => setClaimPhone(e.target.value)}
+                      placeholder="Ex: +351 912 345 678"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-bold">Email de contacto *</label>
+                  <input
+                    required
+                    type="email"
+                    value={claimEmail}
+                    onChange={(e) => setClaimEmail(e.target.value)}
+                    placeholder="Ex: joao.silva@exemplo.com"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-bold font-bold">Mensagem adicional (opcional)</label>
+                  <textarea
+                    value={claimMessage}
+                    onChange={(e) => setClaimMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Especifique redes sociais ou o seu website para acelerar o processo de aprovação..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={runDebugTest}
+                    className="py-2.5 px-4 text-xs font-black uppercase tracking-wider text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md transition cursor-pointer"
+                  >
+                    Testar Permissão
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowClaimModal(false)}
+                    className="py-2.5 px-5 text-xs font-black uppercase tracking-wider text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-150 transition cursor-pointer"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={claimSubmitting}
+                    className="py-2.5 px-6 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {claimSubmitting ? 'A Enviar...' : 'Ativar e Reivindicar'}
                   </button>
                 </div>
               </form>

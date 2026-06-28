@@ -25,7 +25,9 @@ import {
   Tag,
   Image as ImageIcon,
   LayoutGrid,
-  List
+  List,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -101,6 +103,7 @@ const AdminAds = () => {
   const [adminImageZoom, setAdminImageZoom] = useState<number>(1);
   const [savingPosition, setSavingPosition] = useState(false);
   const [savedPositionSuccess, setSavedPositionSuccess] = useState(false);
+  const [claimActionLoading, setClaimActionLoading] = useState(false);
 
   useEffect(() => {
     if (selectedAd) {
@@ -296,6 +299,75 @@ const AdminAds = () => {
       handleFirestoreError(err, OperationType.UPDATE, `ads/${adId}`);
     } finally {
       setRenewingId(null);
+    }
+  };
+
+  const handleMakeClaimable = async (adId: string) => {
+    if (!adId) return;
+    setClaimActionLoading(true);
+    try {
+      const adToUpdate = ads.find(a => a.id === adId) || (selectedAd?.id === adId ? selectedAd : null);
+      if (!adToUpdate) return;
+
+      const businessViews = adToUpdate.businessViews !== undefined ? adToUpdate.businessViews : 0;
+      const invitationStatus = adToUpdate.invitationStatus !== undefined ? adToUpdate.invitationStatus : "not_sent";
+      const invitationCount = adToUpdate.invitationCount !== undefined ? adToUpdate.invitationCount : 0;
+
+      const updates = {
+        isClaimableBusiness: true,
+        claimStatus: 'unclaimed',
+        businessViews,
+        invitationStatus,
+        invitationCount,
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(doc(db, 'ads', adId), updates);
+      clearHomeCache();
+
+      setAds(prevAds => prevAds.map(ad => ad.id === adId ? { ...ad, ...updates } as Ad : ad));
+      setSelectedAd(prev => prev && prev.id === adId ? { ...prev, ...updates } as any : prev);
+
+      alert('Anúncio atualizado com sucesso como Empreendedores Reivindicáveis!');
+    } catch (err) {
+      console.error('Erro ao tornar reivindicável:', err);
+      alert('Erro ao atualizar o anúncio: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setClaimActionLoading(false);
+    }
+  };
+
+  const handleRemoveClaimable = async (adId: string) => {
+    if (!adId) return;
+    setClaimActionLoading(true);
+    try {
+      const adToUpdate = ads.find(a => a.id === adId) || (selectedAd?.id === adId ? selectedAd : null);
+      if (!adToUpdate) return;
+
+      if (adToUpdate.claimStatus === 'claimed') {
+        alert('Não é possível remover a reivindicação de um anúncio já aprovado e reivindicado.');
+        return;
+      }
+
+      const updates = {
+        isClaimableBusiness: false,
+        claimStatus: null,
+        updatedAt: serverTimestamp()
+        // Wait, do we want to delete/reset the others? Setting claimStatus to null and isClaimableBusiness to false is perfect.
+      };
+
+      await updateDoc(doc(db, 'ads', adId), updates);
+      clearHomeCache();
+
+      setAds(prevAds => prevAds.map(ad => ad.id === adId ? { ...ad, ...updates } as Ad : ad));
+      setSelectedAd(prev => prev && prev.id === adId ? { ...prev, ...updates } as any : prev);
+
+      alert('Reivindicação removida com sucesso!');
+    } catch (err) {
+      console.error('Erro ao remover reivindicação:', err);
+      alert('Erro ao atualizar o anúncio: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setClaimActionLoading(false);
     }
   };
 
@@ -666,7 +738,7 @@ const AdminAds = () => {
               {/* Card Actions Footer */}
               <div className="bg-slate-50/50 p-3 sm:px-5 sm:py-3.5 flex flex-wrap gap-2 items-center justify-between">
                 {/* Secondary Navigation Tools */}
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5 items-center">
                   <button
                     onClick={() => setSelectedAd(ad)}
                     className="h-9 px-3 flex items-center gap-1.5 text-indigo-600 bg-white hover:bg-indigo-50 border border-indigo-100 rounded-xl transition-all font-bold text-[11px]"
@@ -684,6 +756,35 @@ const AdminAds = () => {
                     <Edit size={14} />
                     <span>Editar</span>
                   </button>
+
+                  {ad.isClaimableBusiness ? (
+                    ad.claimStatus === 'claimed' ? (
+                      <span className="h-9 px-3 flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl font-bold text-[11px]" title="Proprietário verificado">
+                        <ShieldCheck size={14} className="text-emerald-600" />
+                        <span>Proprietário verificado</span>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleRemoveClaimable(ad.id)}
+                        disabled={claimActionLoading}
+                        className="h-9 px-3 flex items-center gap-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-all font-bold text-[11px] disabled:opacity-50"
+                        title="Remover Reivindicação"
+                      >
+                        <ShieldAlert size={14} />
+                        <span>Remover Reivindicação</span>
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => handleMakeClaimable(ad.id)}
+                      disabled={claimActionLoading}
+                      className="h-9 px-3 flex items-center gap-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-xl transition-all font-bold text-[11px] disabled:opacity-50"
+                      title="Tornar Reivindicável"
+                    >
+                      <ShieldCheck size={14} />
+                      <span>Tornar Reivindicável</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Moderation / State Controls */}
@@ -950,6 +1051,36 @@ const AdminAds = () => {
                             >
                               Editar
                             </button>
+
+                            {/* Reivindicação Controls */}
+                            {ad.isClaimableBusiness ? (
+                              ad.claimStatus === 'claimed' ? (
+                                <span className="p-1 px-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] font-bold flex items-center gap-1" title="Proprietário verificado">
+                                  <ShieldCheck size={12} className="text-emerald-600" />
+                                  <span>Proprietário verificado</span>
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleRemoveClaimable(ad.id)}
+                                  disabled={claimActionLoading}
+                                  className="p-1 px-2 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-all text-[10px] font-bold flex items-center gap-1 disabled:opacity-50"
+                                  title="Remover Reivindicação"
+                                >
+                                  <ShieldAlert size={12} />
+                                  <span>Remover Reivindicação</span>
+                                </button>
+                              )
+                            ) : (
+                              <button
+                                onClick={() => handleMakeClaimable(ad.id)}
+                                disabled={claimActionLoading}
+                                className="p-1 px-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-all text-[10px] font-bold flex items-center gap-1 disabled:opacity-50"
+                                title="Tornar Reivindicável"
+                              >
+                                <ShieldCheck size={12} />
+                                <span>Tornar Reivindicável</span>
+                              </button>
+                            )}
 
                             {/* Aprove/Reject */}
                             {ad.status === 'pending' && (
@@ -1445,6 +1576,34 @@ const AdminAds = () => {
                         <span>Rejeitar</span>
                       </button>
                     </>
+                  )}
+                  {selectedAd.isClaimableBusiness ? (
+                    selectedAd.claimStatus === 'claimed' ? (
+                      <span className="h-10 px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl flex items-center gap-2" title="Proprietário verificado">
+                        <ShieldCheck size={16} className="text-emerald-600" />
+                        <span>Proprietário verificado</span>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleRemoveClaimable(selectedAd.id)}
+                        disabled={claimActionLoading}
+                        className="h-10 px-4 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                        title="Remover Reivindicação"
+                      >
+                        <ShieldAlert size={16} />
+                        <span>Remover Reivindicação</span>
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => handleMakeClaimable(selectedAd.id)}
+                      disabled={claimActionLoading}
+                      className="h-10 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                      title="Tornar Reivindicável"
+                    >
+                      <ShieldCheck size={16} />
+                      <span>Tornar Reivindicável</span>
+                    </button>
                   )}
                   <button
                     onClick={() => setSelectedAd(null)}

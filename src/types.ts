@@ -157,6 +157,16 @@ export interface Ad {
   duplicateOf?: string;
   listingType?: 'normal' | 'informativo';
   targetUrl?: string;
+  isClaimableBusiness?: boolean;
+  claimStatus?: 'unclaimed' | 'pending' | 'claimed';
+  claimedBy?: string | null;
+  claimedAt?: any;
+  businessViews?: number;
+  invitationMilestonesSent?: string[];
+  invitationStatus?: 'not_sent' | 'sent' | 'responded';
+  invitationSentAt?: any;
+  invitationLastMessage?: string;
+  invitationCount?: number;
 }
 
 export interface Favorite {

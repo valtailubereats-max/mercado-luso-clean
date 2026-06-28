@@ -20,7 +20,8 @@ import {
   QrCode,
   BookOpen,
   Gift,
-  Activity
+  Activity,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -90,6 +91,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: ShoppingBag, label: 'Gerir Anúncios', path: '/admin/ads' },
     { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
     { icon: Users, label: 'Utilizadores', path: '/admin/users' },
+    { icon: UserCheck, label: 'Reivindicações', path: '/admin/claims' },
     { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
     { icon: Gift, label: 'Sorteios & Campanhas', path: '/admin/sorteios' },
     { icon: QrCode, label: 'Convites', path: '/admin/invitations' },
@@ -106,7 +108,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       '/admin/ads',
       '/admin/marketing',
       '/admin/showcases',
-      '/admin/invitations'
+      '/admin/invitations',
+      '/admin/claims'
     ].includes(path);
   };
 
@@ -124,6 +127,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         { icon: ShoppingBag, label: 'Gerir Anúncios', path: '/admin/ads' },
         { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
         { icon: Users, label: 'Utilizadores', path: '/admin/users' },
+        { icon: UserCheck, label: 'Reivindicações', path: '/admin/claims' },
       ]
     },
     {

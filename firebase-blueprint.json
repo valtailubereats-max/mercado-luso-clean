@@ -47,7 +47,13 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "isFeatured": { "type": "boolean" },
         "featuredUntil": { "type": "string", "format": "date-time" },
-        "soldOutsidePlatform": { "type": "boolean" }
+        "soldOutsidePlatform": { "type": "boolean" },
+        "isClaimableBusiness": { "type": "boolean" },
+        "claimStatus": { "type": "string", "enum": ["unclaimed", "pending", "claimed"] },
+        "claimedBy": { "type": "string" },
+        "claimedAt": { "type": "string", "format": "date-time" },
+        "businessViews": { "type": "number" },
+        "invitationMilestonesSent": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["id", "title", "description", "imageUrl", "city", "category", "sellerId", "sellerPhone", "sellerName", "status", "createdAt"]
     },
@@ -355,6 +361,25 @@
         "isDemo": { "type": "boolean" }
       },
       "required": ["giveawayId", "giveawayTitle", "drawnAt", "winners"]
+    },
+    "BusinessClaimRequest": {
+      "title": "BusinessClaimRequest",
+      "description": "User request to claim ownership of an advertisement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "adId": { "type": "string" },
+        "adTitle": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "processedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "adId", "adTitle", "userId", "name", "phone", "email", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -441,6 +466,10 @@
     "/draw_history/{drawId}": {
       "schema": "DrawHistory",
       "description": "Historical log of conducted lottery drawings"
+    },
+    "/businessClaimRequests/{requestId}": {
+      "schema": "BusinessClaimRequest",
+      "description": "Requests to claim owner status on advertisements"
     }
   }
 }
