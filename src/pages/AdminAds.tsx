@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, updateDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db, handleFirestoreError, OperationType, getDocsWithCacheFallback } from '../firebase';
 import { Ad } from '../types';
 import { clearHomeCache } from '../utils/cache';
@@ -58,12 +58,38 @@ const ALL_COLUMNS: ColumnOption[] = [
 
 const AdminAds = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adFilter, setAdFilter] = useState<string>('all');
+  const [adFilter, setAdFilter] = useState<string>(searchParams.get('status') || 'all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+
+  const [selectedAdIds, setSelectedAdIds] = useState<string[]>([]);
+  const [batchLoading, setBatchLoading] = useState(false);
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status) {
+      setAdFilter(status);
+    }
+    const selectAllParam = searchParams.get('selectAll') === 'true';
+    if (selectAllParam && ads.length > 0) {
+      const targetFilter = status || 'all';
+      const targetFiltered = ads.filter(ad => {
+        const matchesFilter = targetFilter === 'all' 
+          ? true 
+          : targetFilter === 'duplicates' 
+            ? ad.isDuplicate === true 
+            : (ad.status === targetFilter || ad.adStatus === targetFilter);
+        return matchesFilter;
+      });
+      if (targetFiltered.length > 0) {
+        setSelectedAdIds(targetFiltered.map(a => a.id));
+      }
+    }
+  }, [searchParams, ads]);
 
   // New States for ERP / Scalability TabelaMode
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
@@ -268,6 +294,31 @@ const AdminAds = () => {
       handleFirestoreError(err, OperationType.UPDATE, `ads/${adId}`);
       return false;
     }
+  };
+
+  const handleBatchAction = async (status: 'approved' | 'rejected') => {
+    if (selectedAdIds.length === 0) return;
+    const actionLabel = status === 'approved' ? 'aprovar' : 'rejeitar';
+    const confirmMsg = `Deseja ${actionLabel} os ${selectedAdIds.length} anúncios selecionados em lote?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setBatchLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    const promises = selectedAdIds.map(async (id) => {
+      const res = await handleAdAction(id, status);
+      if (res) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    });
+
+    await Promise.all(promises);
+    setBatchLoading(false);
+    setSelectedAdIds([]);
+    alert(`Operação concluída com sucesso: ${successCount} anúncios atualizados.${failCount > 0 ? ` Falhas: ${failCount}` : ''}`);
   };
 
   const handleRenewAd = async (adId: string) => {
@@ -633,6 +684,52 @@ const AdminAds = () => {
         </div>
       </div>
 
+      {/* Barra de Ações em Massa / Lote */}
+      <AnimatePresence>
+        {selectedAdIds.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            className="overflow-hidden mb-4"
+          >
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                  {selectedAdIds.length} {selectedAdIds.length === 1 ? 'anúncio selecionado' : 'anúncios selecionados'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button
+                  onClick={() => handleBatchAction('approved')}
+                  disabled={batchLoading}
+                  className="flex-1 sm:flex-initial h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-100 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle size={14} />
+                  <span>Aprovar Selecionados</span>
+                </button>
+                <button
+                  onClick={() => handleBatchAction('rejected')}
+                  disabled={batchLoading}
+                  className="flex-1 sm:flex-initial h-9 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-red-100"
+                >
+                  <XCircle size={14} />
+                  <span>Rejeitar Selecionados</span>
+                </button>
+                <button
+                  onClick={() => setSelectedAdIds([])}
+                  disabled={batchLoading}
+                  className="h-9 px-3.5 bg-white border border-slate-200 text-slate-500 hover:text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+                >
+                  Desmarcar Todos
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {loading ? (
         <div className="text-center py-20 text-slate-400 font-bold animate-pulse">A carregar anúncios...</div>
       ) : filteredAds.length === 0 ? (
@@ -652,7 +749,22 @@ const AdminAds = () => {
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-200 transition-all flex flex-col"
             >
               {/* Card Header Info */}
-              <div className="p-4 sm:p-5 flex gap-4 items-start">
+              <div className="p-4 sm:p-5 flex gap-4 items-start relative">
+                {/* Seleção Multipla Checkbox */}
+                <div className="pt-2 sm:pt-4 self-center shrink-0">
+                  <input 
+                    type="checkbox"
+                    checked={selectedAdIds.includes(ad.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedAdIds(prev => [...prev, ad.id]);
+                      } else {
+                        setSelectedAdIds(prev => prev.filter(id => id !== ad.id));
+                      }
+                    }}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20 w-4.5 h-4.5 cursor-pointer"
+                  />
+                </div>
                 {/* Image Container */}
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center">
                   <OptimizedImage 
@@ -887,6 +999,21 @@ const AdminAds = () => {
             <table className="w-full text-left border-collapse transition-all" style={{ minWidth: `${Math.max(600, visibleColumns.length * 90)}px` }}>
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                  <th className="py-3 px-4 w-10 text-center">
+                    <input 
+                      type="checkbox"
+                      checked={pagedAds.length > 0 && pagedAds.every(ad => selectedAdIds.includes(ad.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const newSelected = Array.from(new Set([...selectedAdIds, ...pagedAds.map(ad => ad.id)]));
+                          setSelectedAdIds(newSelected);
+                        } else {
+                          setSelectedAdIds(selectedAdIds.filter(id => !pagedAds.map(a => a.id).includes(id)));
+                        }
+                      }}
+                      className="rounded border-slate-300 text-indigo-650 focus:ring-indigo-500/20 w-4 h-4 cursor-pointer"
+                    />
+                  </th>
                   {isColVisible('foto') && <th className="py-3 px-4 w-16 text-center">Foto</th>}
                   {isColVisible('titulo') && <th className="py-3 px-4">Anúncio</th>}
                   {isColVisible('pais') && <th className="py-3 px-4 text-center">País</th>}
@@ -906,6 +1033,20 @@ const AdminAds = () => {
                   const adCountryIcon = ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹';
                   return (
                     <tr key={`${ad.id}-${idx}`} className="hover:bg-slate-50/50 transition-colors text-xs">
+                      <td className="py-3 px-4 border-none text-center">
+                        <input 
+                          type="checkbox"
+                          checked={selectedAdIds.includes(ad.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAdIds(prev => [...prev, ad.id]);
+                            } else {
+                              setSelectedAdIds(prev => prev.filter(id => id !== ad.id));
+                            }
+                          }}
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20 w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       {/* Photo column */}
                       {isColVisible('foto') && (
                         <td className="py-3 px-4 border-none text-center">
@@ -1172,6 +1313,18 @@ const AdminAds = () => {
               const countryIcon = ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹';
               return (
                 <div key={`${ad.id}-${idx}`} className="py-3 flex gap-3.5 items-center">
+                  <input 
+                    type="checkbox"
+                    checked={selectedAdIds.includes(ad.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedAdIds(prev => [...prev, ad.id]);
+                      } else {
+                        setSelectedAdIds(prev => prev.filter(id => id !== ad.id));
+                      }
+                    }}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20 w-4 h-4 cursor-pointer shrink-0"
+                  />
                   <img 
                     src={ad.imageUrl} 
                     alt={ad.title} 

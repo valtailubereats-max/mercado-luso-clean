@@ -23,6 +23,11 @@ interface ClaimRequest {
   message: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;
+  verificationMethod?: 'email' | 'whatsapp' | 'manual';
+  verificationCode?: string;
+  verificationStatus?: 'sent' | 'confirmed' | 'invalid';
+  verificationSentAt?: any;
+  verificationConfirmedAt?: any;
 }
 
 const AdminClaims = () => {
@@ -48,6 +53,10 @@ const AdminClaims = () => {
   // Invitation text modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+
+  // Phase 5: Verification Code state
+  const [selectedMethod, setSelectedMethod] = useState<'email' | 'whatsapp' | 'manual'>('email');
+  const [claimCopied, setClaimCopied] = useState(false);
 
   const fetchClaims = async () => {
     setLoading(true);
@@ -101,6 +110,16 @@ const AdminClaims = () => {
       setSelectedClaimAd(null);
       return;
     }
+
+    // Set default verification method based on available info
+    if (selectedClaim.email && selectedClaim.email.trim() !== '') {
+      setSelectedMethod('email');
+    } else if (selectedClaim.phone && selectedClaim.phone.trim() !== '') {
+      setSelectedMethod('whatsapp');
+    } else {
+      setSelectedMethod('manual');
+    }
+    setClaimCopied(false);
 
     const fetchAd = async () => {
       setSelectedClaimAdLoading(true);
@@ -227,6 +246,88 @@ Ficamos à sua espera no Mercado Luso! 🤝`;
     setTimeout(() => {
       setMessage(null);
     }, 5000);
+  };
+
+  const handleGenerateVerificationCode = async (claim: ClaimRequest, method: 'email' | 'whatsapp' | 'manual') => {
+    setActionLoadingId(claim.id);
+    try {
+      const code = `ML-${Math.floor(100000 + Math.random() * 900000)}`;
+      const claimRef = doc(db, 'businessClaimRequests', claim.id);
+      
+      const updateData = {
+        verificationMethod: method,
+        verificationCode: code,
+        verificationStatus: 'sent',
+        verificationSentAt: serverTimestamp()
+      };
+
+      await updateDoc(claimRef, updateData);
+
+      // Update local states
+      const localSentAt = new Date();
+      setClaims(prev => prev.map(item => item.id === claim.id ? { 
+        ...item, 
+        verificationMethod: method, 
+        verificationCode: code, 
+        verificationStatus: 'sent', 
+        verificationSentAt: localSentAt 
+      } : item));
+      
+      if (selectedClaim?.id === claim.id) {
+        setSelectedClaim(prev => prev ? { 
+          ...prev, 
+          verificationMethod: method, 
+          verificationCode: code, 
+          verificationStatus: 'sent', 
+          verificationSentAt: localSentAt 
+        } : null);
+      }
+
+      showFeedback('success', 'Código de verificação gerado com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao gerar código de verificação:', error);
+      showFeedback('error', `Erro ao gerar código de verificação: ${error?.message || String(error)}`);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const getVerificationMessage = (claim: ClaimRequest) => {
+    const code = claim.verificationCode || '';
+    if (claim.verificationMethod === 'email') {
+      return {
+        subject: 'Confirmação da propriedade do seu negócio',
+        body: `Recebemos um pedido para ativação da página do seu negócio no Mercado Luso.
+
+O seu código de confirmação é:
+${code}
+
+Entre novamente no Mercado Luso e introduza este código para concluir a verificação.
+
+Após a confirmação, a equipa analisará a sua solicitação.`
+      };
+    } else if (claim.verificationMethod === 'whatsapp') {
+      return {
+        subject: '',
+        body: `Olá.
+
+Recebemos um pedido para ativação da página do seu negócio no Mercado Luso.
+
+O seu código de confirmação é:
+${code}
+
+Entre novamente no Mercado Luso e introduza este código para concluir a verificação.
+
+Obrigado.`
+      };
+    }
+    return { subject: '', body: '' };
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setClaimCopied(true);
+    setTimeout(() => setClaimCopied(false), 2000);
   };
 
   const handleApproveClaim = async (claim: ClaimRequest) => {
@@ -527,7 +628,22 @@ Ficamos à sua espera no Mercado Luso! 🤝`;
                               </span>
                             </td>
                             <td className="py-4 px-4 text-center">
-                              {getStatusBadge(item.status)}
+                              <div className="flex flex-col items-center gap-1">
+                                {getStatusBadge(item.status)}
+                                {item.verificationStatus && (
+                                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                                    item.verificationStatus === 'confirmed'
+                                      ? 'bg-emerald-50 text-emerald-700'
+                                      : item.verificationStatus === 'sent'
+                                      ? 'bg-amber-50 text-amber-700'
+                                      : 'bg-rose-50 text-rose-700'
+                                  }`}>
+                                    {item.verificationStatus === 'confirmed' && '✅ Verificado'}
+                                    {item.verificationStatus === 'sent' && '⏳ Enviado'}
+                                    {item.verificationStatus === 'invalid' && '❌ Inválido'}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-4 text-xs font-bold text-slate-400 whitespace-nowrap">
                               {formatClaimDate(item.createdAt)}
@@ -704,6 +820,158 @@ Ficamos à sua espera no Mercado Luso! 🤝`;
                         <p className="text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm leading-relaxed whitespace-pre-wrap">
                           {selectedClaim.message || 'Nenhuma mensagem adicional fornecida.'}
                         </p>
+                      </div>
+
+                      {/* Verificação de Identidade */}
+                      <div className="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={18} className="text-indigo-600" />
+                            <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider">Verificação de Identidade</h4>
+                          </div>
+                          {selectedClaim.verificationStatus && (
+                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-full border ${
+                              selectedClaim.verificationStatus === 'confirmed'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                : selectedClaim.verificationStatus === 'sent'
+                                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                                : 'bg-rose-50 border-rose-200 text-rose-700'
+                            }`}>
+                              {selectedClaim.verificationStatus === 'confirmed' && '🟢 Código confirmado'}
+                              {selectedClaim.verificationStatus === 'sent' && '🟡 Código enviado'}
+                              {selectedClaim.verificationStatus === 'invalid' && '🔴 Código inválido'}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Status Grid */}
+                        <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
+                          <div>
+                            <span className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1">Método de Envio</span>
+                            <div className="p-2.5 bg-white border border-slate-200 rounded-xl font-extrabold text-slate-700">
+                              {selectedClaim.verificationMethod 
+                                ? selectedClaim.verificationMethod.toUpperCase() 
+                                : 'Não Gerado'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1">Código Gerado</span>
+                            <div className="p-2.5 bg-white border border-slate-200 rounded-xl font-mono font-black text-slate-700 tracking-wider">
+                              {selectedClaim.verificationCode || '---'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1">Data de Envio</span>
+                            <div className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600">
+                              {selectedClaim.verificationSentAt 
+                                ? (selectedClaim.verificationSentAt.toDate ? format(selectedClaim.verificationSentAt.toDate(), "dd/MM/yyyy HH:mm") : format(new Date(selectedClaim.verificationSentAt), "dd/MM/yyyy HH:mm"))
+                                : '---'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mb-1">Data de Confirmação</span>
+                            <div className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600">
+                              {selectedClaim.verificationConfirmedAt 
+                                ? (selectedClaim.verificationConfirmedAt.toDate ? format(selectedClaim.verificationConfirmedAt.toDate(), "dd/MM/yyyy HH:mm") : format(new Date(selectedClaim.verificationConfirmedAt), "dd/MM/yyyy HH:mm"))
+                                : '---'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Code Generation options / Code copy */}
+                        {selectedClaim.status === 'pending' && (
+                          <div className="pt-2 border-t border-slate-100 space-y-3">
+                            {!selectedClaim.verificationCode ? (
+                              <div className="space-y-3">
+                                <span className="block text-xs font-black text-slate-500 uppercase tracking-wide">Selecionar Canal para Envio:</span>
+                                
+                                {(!selectedClaim.email?.trim() && !selectedClaim.phone?.trim()) ? (
+                                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-bold">
+                                    Este pedido deverá ser verificado manualmente. (Nenhum email ou telefone fornecido)
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-4">
+                                    {selectedClaim.email?.trim() && (
+                                      <label className="flex items-center gap-2 text-xs font-extrabold text-slate-700 cursor-pointer">
+                                        <input 
+                                          type="radio" 
+                                          name="verificationMethodRadio" 
+                                          checked={selectedMethod === 'email'} 
+                                          onChange={() => setSelectedMethod('email')}
+                                          className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        Email ({selectedClaim.email})
+                                      </label>
+                                    )}
+                                    {selectedClaim.phone?.trim() && (
+                                      <label className="flex items-center gap-2 text-xs font-extrabold text-slate-700 cursor-pointer">
+                                        <input 
+                                          type="radio" 
+                                          name="verificationMethodRadio" 
+                                          checked={selectedMethod === 'whatsapp'} 
+                                          onChange={() => setSelectedMethod('whatsapp')}
+                                          className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        WhatsApp ({selectedClaim.phone})
+                                      </label>
+                                    )}
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  disabled={actionLoadingId === selectedClaim.id || (!selectedClaim.email?.trim() && !selectedClaim.phone?.trim())}
+                                  onClick={() => handleGenerateVerificationCode(selectedClaim, selectedMethod)}
+                                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-black text-xs uppercase tracking-wide rounded-xl transition shadow"
+                                >
+                                  Gerar Código de Verificação
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">Mensagem Pronta para Copiar</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const msg = getVerificationMessage(selectedClaim);
+                                        const textToCopy = msg.subject 
+                                          ? `Assunto: ${msg.subject}\n\nMensagem:\n${msg.body}`
+                                          : msg.body;
+                                        copyToClipboard(textToCopy);
+                                      }}
+                                      className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 font-bold"
+                                    >
+                                      {claimCopied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                                      {claimCopied ? 'Copiado!' : 'Copiar'}
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="text-xs bg-slate-50 p-2.5 rounded-lg text-slate-600 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto border border-slate-100 select-all">
+                                    {selectedClaim.verificationMethod === 'email' && (
+                                      <>
+                                        <span className="font-extrabold text-slate-800 block mb-1">Assunto: Confirmação da propriedade do seu negócio</span>
+                                        <span className="block border-t border-slate-200 pt-1 mt-1" />
+                                      </>
+                                    )}
+                                    {getVerificationMessage(selectedClaim).body}
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleGenerateVerificationCode(selectedClaim, selectedMethod)}
+                                    className="text-slate-400 hover:text-indigo-600 text-xs font-extrabold"
+                                  >
+                                    Gerar Novo Código (Regerar)
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Call to Actions for claims */}

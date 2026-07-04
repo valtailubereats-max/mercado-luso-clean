@@ -495,7 +495,13 @@ service cloud.firestore {
     match /businessClaimRequests/{requestId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update, delete: if isAdmin() || isModerator();
+      allow update: if isAdmin() || isModerator() || (
+        isAuthenticated() &&
+        request.auth.uid == resource.data.userId &&
+        request.resource.data.verificationStatus == 'confirmed' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verificationStatus', 'verificationConfirmedAt'])
+      );
+      allow delete: if isAdmin() || isModerator();
     }
   }
 }

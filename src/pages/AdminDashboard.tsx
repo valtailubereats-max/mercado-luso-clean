@@ -545,7 +545,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <button 
-              onClick={() => navigate('/admin/ads')}
+              onClick={() => navigate('/admin/ads?status=pending')}
               className="text-amber-600 font-bold text-sm hover:underline"
             >
               Ver todos
@@ -613,7 +613,10 @@ const AdminDashboard = () => {
             </div>
 
             {/* Anúncios Pendentes */}
-            <div className={`p-5 rounded-2.5xl border flex flex-col justify-between transition-all ${realtimeStats.pendingAds > 0 ? 'animate-pending-highlight text-amber-950' : 'bg-slate-50/40 border-slate-200 text-slate-500 hover:border-slate-350'}`}>
+            <div 
+              onClick={() => navigate(realtimeStats.pendingAds > 0 ? '/admin/ads?status=pending&selectAll=true' : '/admin/ads?status=pending')}
+              className={`p-5 rounded-2.5xl border flex flex-col justify-between transition-all cursor-pointer hover:scale-[1.02] hover:shadow-md ${realtimeStats.pendingAds > 0 ? 'animate-pending-highlight text-amber-950 border-amber-300' : 'bg-slate-50/40 border-slate-200 text-slate-500 hover:border-slate-350'}`}
+            >
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${realtimeStats.pendingAds > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
                 <Clock size={18} />
               </div>

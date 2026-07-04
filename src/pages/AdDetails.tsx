@@ -148,26 +148,6 @@ const AdDetails = () => {
     }
   };
 
-  const runDebugTest = async () => {
-    if (!user) return;
-    try {
-      const testId = 'debug_test_' + user.uid + '_' + Date.now();
-      await setDoc(
-        doc(db, 'businessClaimRequests', testId),
-        {
-          userId: user.uid,
-          status: 'pending',
-          test: true,
-          createdAt: serverTimestamp()
-        }
-      );
-      showToastMsg('success', 'Teste mínimo passou! Documento gravado com sucesso.');
-    } catch (err: any) {
-      console.error('Debug test error:', err);
-      showToastMsg('error', 'Teste falhou: ' + (err.message || String(err)));
-    }
-  };
-
   const isFavorite = ad ? favorites.includes(ad.id) : false;
 
   // Carregar anúncio e incrementar visualização
@@ -1803,13 +1783,6 @@ const AdDetails = () => {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={runDebugTest}
-                    className="py-2.5 px-4 text-xs font-black uppercase tracking-wider text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md transition cursor-pointer"
-                  >
-                    Testar Permissão
-                  </button>
                   <button
                     type="button"
                     onClick={() => setShowClaimModal(false)}

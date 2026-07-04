@@ -89,6 +89,28 @@ const Profile = () => {
   const [profileSaved, setProfileSaved] = useState(false);
   const [productSavedSuccess, setProductSavedSuccess] = useState(false);
 
+  // Phase 5: User verification code states
+  const [userClaims, setUserClaims] = useState<any[]>([]);
+  const [userClaimsLoading, setUserClaimsLoading] = useState(true);
+  const [claimVerificationCode, setClaimVerificationCode] = useState<{[claimId: string]: string}>({});
+  const [claimVerificationError, setClaimVerificationError] = useState<{[claimId: string]: string}>({});
+  const [claimVerificationSuccess, setClaimVerificationSuccess] = useState<{[claimId: string]: boolean}>({});
+  const [verifyingClaimId, setVerifyingClaimId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'businessClaimRequests'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUserClaims(data);
+      setUserClaimsLoading(false);
+    }, (error) => {
+      console.error("Error fetching user claims:", error);
+      setUserClaimsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
   const fetchShowcaseProducts = async () => {
     if (!user) return;
     setProductsLoading(true);
@@ -299,6 +321,35 @@ const Profile = () => {
       handleFirestoreError(err, OperationType.WRITE, `sellerPublicProfiles/${user.uid}/products/${editingProduct.id}`);
     } finally {
       setIsSavingProduct(false);
+    }
+  };
+
+  const handleVerifyClaimCode = async (claimId: string, enteredCode: string, actualCode: string) => {
+    if (!enteredCode || enteredCode.trim() === '') {
+      setClaimVerificationError(prev => ({ ...prev, [claimId]: 'Por favor, digite o código de confirmação.' }));
+      return;
+    }
+
+    setVerifyingClaimId(claimId);
+    setClaimVerificationError(prev => ({ ...prev, [claimId]: '' }));
+
+    try {
+      if (enteredCode.trim().toUpperCase() === actualCode.trim().toUpperCase()) {
+        const claimRef = doc(db, 'businessClaimRequests', claimId);
+        await updateDoc(claimRef, {
+          verificationStatus: 'confirmed',
+          verificationConfirmedAt: serverTimestamp()
+        });
+
+        setClaimVerificationSuccess(prev => ({ ...prev, [claimId]: true }));
+      } else {
+        setClaimVerificationError(prev => ({ ...prev, [claimId]: 'Código inválido. Tente novamente.' }));
+      }
+    } catch (err: any) {
+      console.error('Erro ao verificar o código da reivindicação:', err);
+      setClaimVerificationError(prev => ({ ...prev, [claimId]: `Erro ao salvar confirmação: ${err?.message || String(err)}` }));
+    } finally {
+      setVerifyingClaimId(null);
     }
   };
 
@@ -1006,7 +1057,7 @@ const Profile = () => {
         <button
           onClick={() => navigate('/profile?tab=perfil')}
           className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)
+            currentTab === 'perfil' || !['perfil', 'anuncios', 'favorites', 'compras', 'reviews', 'reivindicacoes'].includes(currentTab)
               ? 'bg-white text-indigo-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-800'
           }`}
@@ -1072,9 +1123,20 @@ const Profile = () => {
         >
           Favoritos <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'favorites' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{favorites?.length || 0}</span>
         </button>
+        <button
+          onClick={() => navigate('/profile?tab=reivindicacoes')}
+          className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            currentTab === 'reivindicacoes'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+          id="btn-tab-reivindicacoes"
+        >
+          🛡️ Reivindicações <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 scale-90 ${currentTab === 'reivindicacoes' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{userClaims.length}</span>
+        </button>
       </div>
 
-      {(currentTab === 'perfil' || currentTab === 'vitrine' || !['perfil', 'vitrine', 'anuncios', 'favorites', 'compras', 'reviews'].includes(currentTab)) && (
+      {(currentTab === 'perfil' || currentTab === 'vitrine' || !['perfil', 'vitrine', 'anuncios', 'favorites', 'compras', 'reviews', 'reivindicacoes'].includes(currentTab)) && (
         <div className="space-y-12" id="profile-perfil-tab-content">
           <InstallButton variant="button" />
           <motion.div
@@ -1691,6 +1753,146 @@ const Profile = () => {
                         </button>
                       )}
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentTab === 'reivindicacoes' && (
+        <div className="space-y-6" id="reivindicacoes-tab-content">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            Meus Pedidos de Reivindicação
+            <span className="bg-indigo-100 text-indigo-800 text-sm px-3 py-1 rounded-full font-bold">{userClaims.length}</span>
+          </h2>
+
+          {userClaimsLoading ? (
+            <div className="text-center py-12 text-slate-400">A carregar os seus pedidos de reivindicação...</div>
+          ) : userClaims.length === 0 ? (
+            <div className="bg-white p-16 rounded-3xl text-center border-2 border-dashed border-slate-200" id="no-reivindicacoes-box">
+              <span className="text-4xl">🛡️</span>
+              <p className="text-slate-500 mt-4 font-semibold">Ainda não solicitou a reivindicação de nenhum negócio.</p>
+            </div>
+          ) : (
+            <div className="space-y-4" id="user-claims-list">
+              {userClaims.map((claim) => {
+                const claimDate = claim.createdAt?.toDate ? format(claim.createdAt.toDate(), "dd 'de' MMMM 'de' yyyy", { locale: pt }) : 'Recentemente';
+                
+                return (
+                  <div key={claim.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-50 pb-3">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">{claim.adTitle}</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Solicitado em: {claimDate}</p>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Overall Claim status */}
+                        <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                          claim.status === 'approved'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : claim.status === 'rejected'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                            : 'bg-amber-50 text-amber-700 border border-amber-100'
+                        }`}>
+                          {claim.status === 'approved' && '✓ Aprovado'}
+                          {claim.status === 'rejected' && '✗ Recusado'}
+                          {claim.status === 'pending' && '⏳ Em Análise'}
+                        </span>
+
+                        {/* Verification Status Badge */}
+                        {claim.verificationStatus && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                            claim.verificationStatus === 'confirmed'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                              : claim.verificationStatus === 'sent'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                              : 'bg-rose-50 text-rose-700 border border-rose-100'
+                          }`}>
+                            {claim.verificationStatus === 'confirmed' && '🟢 Código Confirmado'}
+                            {claim.verificationStatus === 'sent' && '🟡 Código Enviado'}
+                            {claim.verificationStatus === 'invalid' && '🔴 Código Inválido'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <span className="block text-slate-400 font-bold uppercase text-[9px] tracking-wide">Nome Completo</span>
+                        <span className="text-slate-800 font-extrabold">{claim.name}</span>
+                      </div>
+                      <div>
+                        <span className="block text-slate-400 font-bold uppercase text-[9px] tracking-wide">Email fornecido</span>
+                        <span className="text-slate-800 font-extrabold">{claim.email || 'Não fornecido'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-slate-400 font-bold uppercase text-[9px] tracking-wide">Telefone / WhatsApp</span>
+                        <span className="text-slate-800 font-extrabold">{claim.phone || 'Não fornecido'}</span>
+                      </div>
+                    </div>
+
+                    {/* Area do Utilizador - Confirmar Código Section */}
+                    {claim.status === 'pending' && claim.verificationCode && claim.verificationStatus === 'sent' && (
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-3 mt-2">
+                        <h4 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                          🔑 Confirmar Código de Verificação
+                        </h4>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          Foi-lhe atribuído um código de verificação para confirmar a propriedade deste negócio por 
+                          <span className="font-bold text-slate-700"> {claim.verificationMethod === 'email' ? 'Email' : 'WhatsApp'}</span>. 
+                          Insira o código abaixo para prosseguir com a análise do pedido.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+                          <input
+                            type="text"
+                            placeholder="Digite o código recebido (ex: ML-123456)"
+                            value={claimVerificationCode[claim.id] || ''}
+                            onChange={(e) => setClaimVerificationCode(prev => ({ ...prev, [claim.id]: e.target.value }))}
+                            disabled={verifyingClaimId === claim.id || claimVerificationSuccess[claim.id] || claim.verificationStatus === 'confirmed'}
+                            className="bg-white border border-slate-200 px-4 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1"
+                          />
+                          <button
+                            type="button"
+                            disabled={verifyingClaimId === claim.id || claimVerificationSuccess[claim.id] || claim.verificationStatus === 'confirmed'}
+                            onClick={() => handleVerifyClaimCode(claim.id, claimVerificationCode[claim.id], claim.verificationCode)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider disabled:bg-indigo-300 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow"
+                          >
+                            {verifyingClaimId === claim.id ? 'A verificar...' : 'Confirmar Código'}
+                          </button>
+                        </div>
+
+                        {claimVerificationError[claim.id] && (
+                          <p className="text-xs font-black text-rose-600">
+                            ❌ {claimVerificationError[claim.id]}
+                          </p>
+                        )}
+                        {claimVerificationSuccess[claim.id] && (
+                          <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl space-y-1">
+                            <p className="text-xs font-black text-emerald-800">
+                              ✅ Código confirmado com sucesso.
+                            </p>
+                            <p className="text-[11px] text-emerald-600 font-semibold leading-snug">
+                              A sua reivindicação encontra-se pronta para análise da equipa Mercado Luso.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* If verified (already confirmed) */}
+                    {claim.verificationStatus === 'confirmed' && (
+                      <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2 text-emerald-800 text-xs">
+                        <span>✅</span>
+                        <div>
+                          <p className="font-black">Código confirmado com sucesso.</p>
+                          <p className="font-semibold text-emerald-600">A sua reivindicação encontra-se pronta para análise da equipa Mercado Luso.</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

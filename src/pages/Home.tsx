@@ -727,7 +727,7 @@ const Home = () => {
     // Combine them in priority order: Paid National, Paid Local, Permanent Featured
     let finalResult = [...paidNational, ...paidLocal, ...filteredActivePermanent];
 
-    return finalResult.slice(0, 20);
+    return finalResult.slice(0, 50);
   }, [featuredAds, searchTerm, category, city, country]);
 
   const marqueeData = useMemo(() => {
@@ -831,6 +831,18 @@ const Home = () => {
     return filteredAds.length > limitAmount;
   }, [filteredAds, limitAmount]);
 
+  const flagItemsMarquee = [
+    { flag: '🇵🇹', name: 'Portugal', code: 'pt', border: 'border-green-400/80' },
+    { flag: '🇧🇷', name: 'Brasil', code: 'br', border: 'border-yellow-400/80' },
+    { flag: '🇦🇴', name: 'Angola', code: 'ao', border: 'border-red-400/80' },
+    { flag: '🇲🇿', name: 'Moçambique', code: 'mz', border: 'border-amber-400/80' },
+    { flag: '🇨🇻', name: 'Cabo Verde', code: 'cv', border: 'border-blue-400/80' },
+    { flag: '🇬🇼', name: 'Guiné-Bissau', code: 'gw', border: 'border-red-400/80' },
+    { flag: '🇸🇹', name: 'São Tomé e Príncipe', code: 'st', border: 'border-yellow-400/80' },
+    { flag: '🇹🇱', name: 'Timor-Leste', code: 'tl', border: 'border-red-400/80' },
+    { flag: '🇬🇶', name: 'Guiné Equatorial', code: 'gq', border: 'border-green-400/80' },
+  ];
+
   return (
     <div className="flex flex-col gap-2 md:gap-4">
       {/* HERO BANNER LUXURY SLIM + PAINEL LUSÓFONO */}
@@ -882,40 +894,74 @@ const Home = () => {
                   </p>
                 </div>
 
-                {/* Bandeiras dos países integradas com hover interativo e rebordo personalizado para cada nação (sem painel translúcido atrás) */}
-                <div className="grid grid-cols-3 md:flex md:flex-wrap items-center justify-center gap-2 md:gap-3.5 w-full max-w-4xl mx-auto px-1">
-                  {[
-                    { flag: '🇵🇹', name: 'Portugal', code: 'pt', border: 'border-green-400/80' },
-                    { flag: '🇧🇷', name: 'Brasil', code: 'br', border: 'border-yellow-400/80' },
-                    { flag: '🇦🇴', name: 'Angola', code: 'ao', border: 'border-red-400/80' },
-                    { flag: '🇲🇿', name: 'Moçambique', code: 'mz', border: 'border-amber-400/80' },
-                    { flag: '🇨🇻', name: 'Cabo Verde', code: 'cv', border: 'border-blue-400/80' },
-                    { flag: '🇬🇼', name: 'Guiné-Bissau', code: 'gw', border: 'border-red-400/80' },
-                    { flag: '🇸🇹', name: 'São Tomé', code: 'st', border: 'border-yellow-400/80' },
-                    { flag: '🇹🇱', name: 'Timor-Leste', code: 'tl', border: 'border-red-400/80' },
-                    { flag: '🇬🇶', name: 'Guiné Eq.', code: 'gq', border: 'border-green-400/80' },
-                  ].map((item, idx) => (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.04 }}
-                      key={item.name} 
-                      className={`group/flag flex items-center justify-center gap-1.5 md:gap-2.5 bg-slate-950/50 hover:bg-slate-950/75 active:scale-95 border-2 ${item.border} rounded-full py-1.5 px-2 md:py-2 md:px-4.5 transition-all duration-300 cursor-default shadow-lg hover:shadow-2xl hover:scale-[1.05]`}
-                      title={item.name}
-                    >
-                      <div className="w-6.5 h-6.5 md:w-8 md:h-8 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/30 shadow-inner shrink-0 relative">
-                        <img 
-                          src={`https://flagcdn.com/w40/${item.code}.png`} 
-                          alt={item.flag} 
-                          className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
-                          referrerPolicy="no-referrer"
-                        />
+                <style>{`
+                  @keyframes flagMarquee {
+                    0% {
+                      transform: translateX(0);
+                    }
+                    100% {
+                      transform: translateX(-50%);
+                    }
+                  }
+                  .animate-flag-marquee {
+                    display: flex;
+                    width: max-content;
+                    animation: flagMarquee 26s linear infinite;
+                  }
+                  .animate-flag-marquee:hover {
+                    animation-play-state: paused;
+                  }
+                `}</style>
+
+                {/* Bandeiras dos países integradas em carrossel infinito sem abreviação */}
+                <div className="w-full overflow-hidden relative py-2 select-none max-w-4xl mx-auto" id="flags-marquee-container">
+                  {/* Soft edge fade gradients for a premium visual flow */}
+                  <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-black/20 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black/20 to-transparent z-10 pointer-events-none" />
+                  
+                  <div className="animate-flag-marquee flex gap-3 md:gap-4">
+                    {/* Primeiro conjunto de bandeiras */}
+                    {flagItemsMarquee.map((item, idx) => (
+                      <div 
+                        key={`flag-1-${idx}`} 
+                        className={`group/flag shrink-0 flex items-center justify-center gap-1.5 md:gap-2.5 bg-slate-950/50 hover:bg-slate-950/75 active:scale-95 border-2 ${item.border} rounded-full py-1.5 px-3 md:py-2 md:px-4.5 transition-all duration-300 cursor-default shadow-lg hover:shadow-2xl hover:scale-[1.03]`}
+                        title={item.name}
+                      >
+                        <div className="w-6.5 h-6.5 md:w-8 md:h-8 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/30 shadow-inner shrink-0 relative">
+                          <img 
+                            src={`https://flagcdn.com/w40/${item.code}.png`} 
+                            alt={item.flag} 
+                            className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <span className="text-[10px] md:text-xs font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wide">
+                          {item.name}
+                        </span>
                       </div>
-                      <span className="text-[9px] xs:text-[10px] md:text-sm font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wide truncate max-w-[65px] xs:max-w-none">
-                        {item.name}
-                      </span>
-                    </motion.div>
-                  ))}
+                    ))}
+
+                    {/* Segundo conjunto idêntico de bandeiras para loop contínuo e perfeito */}
+                    {flagItemsMarquee.map((item, idx) => (
+                      <div 
+                        key={`flag-2-${idx}`} 
+                        className={`group/flag shrink-0 flex items-center justify-center gap-1.5 md:gap-2.5 bg-slate-950/50 hover:bg-slate-950/75 active:scale-95 border-2 ${item.border} rounded-full py-1.5 px-3 md:py-2 md:px-4.5 transition-all duration-300 cursor-default shadow-lg hover:shadow-2xl hover:scale-[1.03]`}
+                        title={item.name}
+                      >
+                        <div className="w-6.5 h-6.5 md:w-8 md:h-8 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/30 shadow-inner shrink-0 relative">
+                          <img 
+                            src={`https://flagcdn.com/w40/${item.code}.png`} 
+                            alt={item.flag} 
+                            className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <span className="text-[10px] md:text-xs font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wide">
+                          {item.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
 
