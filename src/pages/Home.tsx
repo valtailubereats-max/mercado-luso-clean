@@ -68,7 +68,7 @@ const Home = () => {
     : undefined;
 
   const customBorder = hasCustomStyles
-    ? hexToRgba(settings?.searchGroupBgColor, settings?.searchGroupOpacity === 0 ? 0 : Math.min(100, (settings?.searchGroupOpacity ?? 10) + 15))
+    ? hexToRgba(settings?.searchGroupBgColor, Math.max(50, Math.min(100, (settings?.searchGroupOpacity ?? 10) + 25)))
     : undefined;
 
   const isLightText = !(isColorLight(settings?.searchGroupBgColor) && (settings?.searchGroupOpacity || 10) > 40);
@@ -160,6 +160,8 @@ const Home = () => {
   // State to pause marquee on hover
   const [isHovered, setIsHovered] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSearchHovered, setIsSearchHovered] = useState(false);
 
   // Onboarding states for country selection
   const [showTooltip, setShowTooltip] = useState(false);
@@ -971,12 +973,22 @@ const Home = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={handleSearchFocus}
+                  onFocus={() => {
+                    handleSearchFocus();
+                    setIsSearchFocused(true);
+                  }}
+                  onBlur={() => setIsSearchFocused(false)}
+                  onMouseEnter={() => setIsSearchHovered(true)}
+                  onMouseLeave={() => setIsSearchHovered(false)}
                   placeholder="✨ O que procura hoje? Digite aqui..."
-                  className={`w-full ${blurClass} rounded-full py-2.5 sm:py-3 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border transition-all duration-300 font-extrabold tracking-wide text-base sm:text-lg focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)] hover:border-white/40 focus:border-white/60`}
+                  className={`w-full ${blurClass} rounded-full py-2.5 sm:py-3 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border-[4px] transition-all duration-300 font-extrabold tracking-wide text-base sm:text-lg focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)]`}
                   style={{
                     backgroundColor: customBg || 'rgba(15,23,42,0.3)',
-                    borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                    borderColor: isSearchFocused
+                      ? (customBorder || (isLightText ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.85)'))
+                      : isSearchHovered
+                        ? (customBorder || (isLightText ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)'))
+                        : (customBorder || (isLightText ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.45)')),
                   }}
                 />
                 <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
