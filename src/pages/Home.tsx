@@ -848,7 +848,7 @@ const Home = () => {
   return (
     <div className="flex flex-col gap-2 md:gap-4">
       {/* HERO BANNER LUXURY SLIM + PAINEL LUSÓFONO */}
-      <section className="relative -mt-6 md:-mt-8 transition-all duration-500 overflow-hidden max-w-full">
+      <section className="relative -mt-6 md:-mt-8 transition-all duration-500 max-w-full">
 
         {/* Imagem de Fundo dinâmica: Portugal / Reino Unido */}
         <div className="absolute inset-0 z-0 overflow-hidden shadow-2xl rounded-b-[2rem] md:rounded-b-[3rem]">
