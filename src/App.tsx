@@ -952,7 +952,7 @@ export default function App() {
         <AuthProvider>
           <Router>
             <ScrollToTop />
-            <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10">
+            <div className="min-h-screen font-sans text-slate-900 selection:bg-pt-green/10 max-w-full overflow-x-hidden">
             <Navbar />
             <ShareModal />
 

@@ -848,7 +848,7 @@ const Home = () => {
   return (
     <div className="flex flex-col gap-2 md:gap-4">
       {/* HERO BANNER LUXURY SLIM + PAINEL LUSÓFONO */}
-      <section className="relative -mt-6 md:-mt-8 transition-all duration-500">
+      <section className="relative -mt-6 md:-mt-8 transition-all duration-500 overflow-hidden max-w-full">
 
         {/* Imagem de Fundo dinâmica: Portugal / Reino Unido */}
         <div className="absolute inset-0 z-0 overflow-hidden shadow-2xl rounded-b-[2rem] md:rounded-b-[3rem]">
@@ -1262,7 +1262,7 @@ const Home = () => {
 
       {/* 🏪 EMPREENDEDORES EM DESTAQUE */}
       {featuredVitrines.length > 0 && (
-        <section className="space-y-2 pt-2.5 pb-4 md:pt-3 md:pb-5" id="featured-entrepreneurs">
+        <section className="space-y-2 pt-2.5 pb-4 md:pt-3 md:pb-5 overflow-hidden max-w-full" id="featured-entrepreneurs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-1">
             <div className="flex items-center gap-2">
               <span className="text-xl">🏪</span>

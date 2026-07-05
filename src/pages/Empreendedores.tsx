@@ -268,6 +268,7 @@ const Empreendedores = () => {
             return (
               <motion.div
                 key={`showcase-card-${elem.uid || idx}`}
+                className="shrink-0"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
