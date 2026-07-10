@@ -5,7 +5,7 @@ import { MapPin, MessageCircle, Clock, X, User, Phone, AlertTriangle, Heart, Fla
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
-import { formatPrice, getAdUrl } from '../utils';
+import { formatPrice, getAdUrl, getAdLocationLabel } from '../utils';
 import { sendEmailGeneric, getSellerEmail } from '../utils/emailService';
 import OptimizedImage from './OptimizedImage';
 import ReviewModal from './ReviewModal';
@@ -541,24 +541,36 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                 : 'text-[10px] md:text-[11px] mb-2 md:mb-3'
           }`}>
             <div className="flex items-center gap-1 text-slate-600">
-              <MapPin size={(useCompactMode || isFeaturedVariant) ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
-              <span className="truncate">
-                {ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'}{' '}
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (ad.listingType === 'informativo') {
-                      navigate(ad.targetUrl || '/links');
-                    } else {
-                      navigate(`${getAdUrl(ad)}#localizacao`);
-                    }
-                  }}
-                  className="text-indigo-600 font-extrabold cursor-pointer hover:underline transition-colors"
-                  title={ad.listingType === 'informativo' ? "Ver links úteis" : "Ver localização no anúncio"}
-                >
-                  {ad.city}
+              {(ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && ad.serviceCoverage === 'online' ? (
+                <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">
+                  <span>💻</span> Atendimento Online
                 </span>
-              </span>
+              ) : (ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && (ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal') ? (
+                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md border border-emerald-100 shadow-sm">
+                  <span>🌍</span> Atendimento Nacional
+                </span>
+              ) : (
+                <>
+                  <MapPin size={(useCompactMode || isFeaturedVariant) ? 10 : 12} className="text-indigo-500 shrink-0 opacity-75" />
+                  <span className="truncate">
+                    <span className="mr-1">{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'}</span>{' '}
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (ad.listingType === 'informativo') {
+                          navigate(ad.targetUrl || '/links');
+                        } else {
+                          navigate(`${getAdUrl(ad)}#localizacao`);
+                        }
+                      }}
+                      className="text-indigo-600 font-extrabold cursor-pointer hover:underline transition-colors"
+                      title={ad.listingType === 'informativo' ? "Ver links úteis" : "Ver localização no anúncio"}
+                    >
+                      {getAdLocationLabel(ad)}
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
             {!useCompactMode && (
               <div className="flex items-center gap-1 text-slate-500">
@@ -763,6 +775,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                     <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100">
                       {ad.category}
                     </span>
+                    {(ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && ad.serviceCoverage === 'online' && (
+                      <span className="bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-700 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-indigo-100 shadow-sm flex items-center gap-1">
+                        <span>💻</span> Atendimento Online
+                      </span>
+                    )}
+                    {(ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && (ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal') && (
+                      <span className="bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-emerald-100 shadow-sm flex items-center gap-1">
+                        <span>🌍</span> Atendimento Nacional
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
                     <div>
@@ -771,8 +793,18 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                       </h2>
                       <div className="flex items-center gap-3 text-slate-500 text-xs font-medium">
                         <div className="flex items-center gap-1">
-                          <MapPin size={14} className="text-indigo-600" />
-                          <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}</span>
+                          {(ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && ad.serviceCoverage === 'online' ? (
+                            <span className="text-sm font-bold text-indigo-600">💻 Atendimento Online</span>
+                          ) : (ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && ad.serviceCoverage === 'uk' ? (
+                            <span className="text-sm font-bold text-indigo-600">🌍 Todo o Reino Unido</span>
+                          ) : (ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && ad.serviceCoverage === 'portugal' ? (
+                            <span className="text-sm font-bold text-indigo-600">🇵🇹 Todo Portugal</span>
+                          ) : (
+                            <>
+                              <MapPin size={14} className="text-indigo-600" />
+                              <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {getAdLocationLabel(ad)}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

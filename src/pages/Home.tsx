@@ -102,6 +102,9 @@ const Home = () => {
   const [reloadCounter, setReloadCounter] = useState(0);
   const [category, setCategory] = useState('Todas');
   const [city, setCity] = useState('Todas');
+  const [filterRegion, setFilterRegion] = useState(false);
+  const [filterNational, setFilterNational] = useState(false);
+  const [filterOnline, setFilterOnline] = useState(false);
   
   const [country, setCountry] = useState<'Portugal' | 'Reino Unido'>(() => {
     // 1. Check URL parameters first for initial load precision
@@ -673,6 +676,26 @@ const Home = () => {
       // Category filter
       if (category !== 'Todas' && ad.category !== category) return false;
 
+      // Service coverage filter
+      const isServiceCategory = category === 'Serviços' || category?.startsWith('Serviços') || category?.includes('Serviços');
+      if (isServiceCategory && (filterRegion || filterNational || filterOnline)) {
+        const coverage = ad.serviceCoverage || 'city';
+        let matchesServiceFilter = false;
+        
+        if (filterRegion && (coverage === 'city' || coverage === 'radius20' || coverage === 'radius50' || coverage === 'county')) {
+          matchesServiceFilter = true;
+        }
+        if (filterNational) {
+          if (country === 'Reino Unido' && coverage === 'uk') matchesServiceFilter = true;
+          if (country === 'Portugal' && coverage === 'portugal') matchesServiceFilter = true;
+        }
+        if (filterOnline && coverage === 'online') {
+          matchesServiceFilter = true;
+        }
+        
+        if (!matchesServiceFilter) return false;
+      }
+
       // City / Regional limits
       const isNational = ad.featuredLevel === 'national' || ad.plan === 'national' || !ad.featuredLevel;
       if (city !== 'Todas') {
@@ -730,7 +753,7 @@ const Home = () => {
     let finalResult = [...paidNational, ...paidLocal, ...filteredActivePermanent];
 
     return finalResult.slice(0, 50);
-  }, [featuredAds, searchTerm, category, city, country]);
+  }, [featuredAds, searchTerm, category, city, country, filterRegion, filterNational, filterOnline]);
 
   const marqueeData = useMemo(() => {
     if (filteredFeaturedAds.length === 0) return { items: [], duration: '35s' };
@@ -769,6 +792,27 @@ const Home = () => {
       return adCountry === country;
     });
     if (category !== 'Todas') result = result.filter(ad => ad.category === category);
+
+    // Service coverage filter
+    const isServiceCategory = category === 'Serviços' || category?.startsWith('Serviços') || category?.includes('Serviços');
+    if (isServiceCategory && (filterRegion || filterNational || filterOnline)) {
+      result = result.filter(ad => {
+        const coverage = ad.serviceCoverage || 'city';
+        
+        if (filterRegion && (coverage === 'city' || coverage === 'radius20' || coverage === 'radius50' || coverage === 'county')) {
+          return true;
+        }
+        if (filterNational) {
+          if (country === 'Reino Unido' && coverage === 'uk') return true;
+          if (country === 'Portugal' && coverage === 'portugal') return true;
+        }
+        if (filterOnline && coverage === 'online') {
+          return true;
+        }
+        return false;
+      });
+    }
+
     if (city !== 'Todas') result = result.filter(ad => ad.city === city);
     return result.sort((a, b) => {
       // Prioridade:
@@ -813,7 +857,7 @@ const Home = () => {
       const timeB = b.createdAt?.seconds ? b.createdAt.seconds : (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
       return timeB - timeA;
     });
-  }, [ads, searchTerm, category, city, country]);
+  }, [ads, searchTerm, category, city, country, filterRegion, filterNational, filterOnline]);
 
   // Contagem calculada de anúncios aprovados em tempo real de acordo com as diretrizes de contexto de país e expiração de anúncios
   const totalApprovedCount = useMemo(() => {
@@ -1018,6 +1062,9 @@ const Home = () => {
                           navigate('/trabalhos');
                         } else {
                           setCategory(val);
+                          setFilterRegion(false);
+                          setFilterNational(false);
+                          setFilterOnline(false);
                         }
                       }} 
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -1213,6 +1260,72 @@ const Home = () => {
                   </div>
                 )}
               </div>
+
+              {/* Filtro de Área de Atendimento para Categoria Serviços */}
+              {(() => {
+                const isServiceCategory = category === 'Serviços' || category?.startsWith('Serviços') || category?.includes('Serviços');
+                return isServiceCategory && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="w-full mt-4"
+                  >
+                    <div 
+                      style={{
+                        backgroundColor: customBg || 'rgba(15,23,42,0.45)',
+                        borderColor: customBorder || 'rgba(255,255,255,0.2)',
+                      }}
+                      className={`p-4 md:p-5 rounded-3xl border ${blurClass} shadow-xl text-left max-w-xl md:max-w-2xl mx-auto`}
+                    >
+                      <h3 className={`text-xs md:text-sm font-black uppercase tracking-wider mb-3 ${txtColorClass} flex items-center gap-2`}>
+                        <span>📍</span> Área de Atendimento
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/5 active:scale-98 border border-transparent hover:border-white/10 select-none ${txtColorClass}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={filterRegion} 
+                            onChange={(e) => setFilterRegion(e.target.checked)}
+                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-xs md:text-sm font-extrabold">Apenas minha região</span>
+                            <span className="text-[10px] opacity-75">Local, raio 20/50km ou distrito</span>
+                          </div>
+                        </label>
+
+                        <label className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/5 active:scale-98 border border-transparent hover:border-white/10 select-none ${txtColorClass}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={filterNational} 
+                            onChange={(e) => setFilterNational(e.target.checked)}
+                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-xs md:text-sm font-extrabold">Atendimento Nacional</span>
+                            <span className="text-[10px] opacity-75">Todo o {country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}</span>
+                          </div>
+                        </label>
+
+                        <label className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/5 active:scale-98 border border-transparent hover:border-white/10 select-none ${txtColorClass}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={filterOnline} 
+                            onChange={(e) => setFilterOnline(e.target.checked)}
+                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-xs md:text-sm font-extrabold">Atendimento Online</span>
+                            <span className="text-[10px] opacity-75">Serviços 100% remotos</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })()}
             </div>
           </motion.div>
         </div>

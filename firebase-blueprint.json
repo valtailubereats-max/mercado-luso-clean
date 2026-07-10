@@ -53,7 +53,8 @@
         "claimedBy": { "type": "string" },
         "claimedAt": { "type": "string", "format": "date-time" },
         "businessViews": { "type": "number" },
-        "invitationMilestonesSent": { "type": "array", "items": { "type": "string" } }
+        "invitationMilestonesSent": { "type": "array", "items": { "type": "string" } },
+        "serviceCoverage": { "type": "string", "enum": ["city", "radius20", "radius50", "county", "uk", "portugal", "online"] }
       },
       "required": ["id", "title", "description", "imageUrl", "city", "category", "sellerId", "sellerPhone", "sellerName", "status", "createdAt"]
     },

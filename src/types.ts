@@ -148,6 +148,7 @@ export interface Ad {
   salary?: string;
   contractType?: string;
   workSchedule?: string;
+  serviceCoverage?: 'city' | 'radius20' | 'radius50' | 'county' | 'uk' | 'portugal' | 'online';
   companyName?: string;
   experienceRequired?: string;
   contactPhone?: string;

@@ -60,6 +60,7 @@ service cloud.firestore {
              (!('listingType' in data) || data.listingType in ['normal', 'informativo']) &&
              (!('listingType' in data) || data.listingType == 'normal' || isAdmin()) &&
              (!('targetUrl' in data) || data.targetUrl == '' || data.targetUrl == null || isAdmin()) &&
+             (!('serviceCoverage' in data) || data.serviceCoverage in ['city', 'radius20', 'radius50', 'county', 'uk', 'portugal', 'online']) &&
              data.createdAt is timestamp;
     }
 

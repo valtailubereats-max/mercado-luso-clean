@@ -85,7 +85,8 @@ const CreateAd = () => {
     contactPhone: '',
     isPermanentFeatured: false,
     listingType: 'normal' as 'normal' | 'informativo',
-    targetUrl: ''
+    targetUrl: '',
+    serviceCoverage: prefill?.serviceCoverage || 'city'
   });
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -297,10 +298,18 @@ const CreateAd = () => {
     const defaultCity = newCountry === 'Reino Unido' ? UK_CITIES[0] : PORTUGAL_CITIES[0];
     
     setFormData(prev => {
+      let nextCoverage = prev.serviceCoverage;
+      if (prev.serviceCoverage === 'uk' && newCountry === 'Portugal') {
+        nextCoverage = 'city';
+      } else if (prev.serviceCoverage === 'portugal' && newCountry === 'Reino Unido') {
+        nextCoverage = 'city';
+      }
+
       const updated = {
         ...prev,
         country: newCountry,
-        city: defaultCity
+        city: prev.city || defaultCity,
+        serviceCoverage: nextCoverage
       };
       
       // If profile phone is unchecked, and custom contact phone is empty or only holds a prefix, auto suggest new prefix
@@ -419,7 +428,8 @@ const CreateAd = () => {
           contactPhone: data.contactPhone || '',
           isPermanentFeatured: !!(data as any).isPermanentFeatured,
           listingType: data.listingType || 'normal',
-          targetUrl: data.targetUrl || ''
+          targetUrl: data.targetUrl || '',
+          serviceCoverage: (data as any).serviceCoverage || 'city'
         });
         setImagePositionX(data.imagePositionX !== undefined ? data.imagePositionX : 50);
         setImagePositionY(data.imagePositionY !== undefined ? data.imagePositionY : 50);
@@ -805,7 +815,8 @@ const CreateAd = () => {
         companyName: isJob ? formData.companyName.trim() : '',
         experienceRequired: isJob ? formData.experienceRequired : '',
         listingType: isAdmin ? formData.listingType : (originalAd?.listingType || 'normal'),
-        targetUrl: isAdmin ? (formData.listingType === 'informativo' ? formData.targetUrl.trim() : '') : (originalAd?.targetUrl || '')
+        targetUrl: isAdmin ? (formData.listingType === 'informativo' ? formData.targetUrl.trim() : '') : (originalAd?.targetUrl || ''),
+        serviceCoverage: (formData.category === 'Serviços' || formData.category?.startsWith('Serviços') || formData.category?.includes('Serviços')) ? (formData.serviceCoverage || 'city') : 'city'
       };
 
       if (formData.category === '💚 Doações & Solidariedade') {
@@ -1577,6 +1588,96 @@ const CreateAd = () => {
                   .map((c, index) => <option key={`category-${c}-${index}`} value={c}>{c}</option>)}
               </select>
             </div>
+
+            {(formData.category === 'Serviços' || formData.category?.startsWith('Serviços') || formData.category?.includes('Serviços')) && (
+              <div className="space-y-3 col-span-1 md:col-span-2">
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider block">Área de Atendimento</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl">
+                  <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm">
+                    <input
+                      type="radio"
+                      name="serviceCoverage"
+                      value="city"
+                      checked={formData.serviceCoverage === 'city'}
+                      onChange={() => setFormData({ ...formData, serviceCoverage: 'city' })}
+                      className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">Apenas minha cidade</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm">
+                    <input
+                      type="radio"
+                      name="serviceCoverage"
+                      value="radius20"
+                      checked={formData.serviceCoverage === 'radius20'}
+                      onChange={() => setFormData({ ...formData, serviceCoverage: 'radius20' })}
+                      className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">Até 20 km</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm">
+                    <input
+                      type="radio"
+                      name="serviceCoverage"
+                      value="radius50"
+                      checked={formData.serviceCoverage === 'radius50'}
+                      onChange={() => setFormData({ ...formData, serviceCoverage: 'radius50' })}
+                      className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">Até 50 km</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm">
+                    <input
+                      type="radio"
+                      name="serviceCoverage"
+                      value="county"
+                      checked={formData.serviceCoverage === 'county'}
+                      onChange={() => setFormData({ ...formData, serviceCoverage: 'county' })}
+                      className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">
+                      {formData.country === 'Reino Unido' ? 'Todo o condado' : 'Todo o distrito'}
+                    </span>
+                  </label>
+                  {formData.country === 'Reino Unido' ? (
+                    <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm">
+                      <input
+                        type="radio"
+                        name="serviceCoverage"
+                        value="uk"
+                        checked={formData.serviceCoverage === 'uk'}
+                        onChange={() => setFormData({ ...formData, serviceCoverage: 'uk' })}
+                        className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">Todo o Reino Unido</span>
+                    </label>
+                  ) : (
+                    <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm">
+                      <input
+                        type="radio"
+                        name="serviceCoverage"
+                        value="portugal"
+                        checked={formData.serviceCoverage === 'portugal'}
+                        onChange={() => setFormData({ ...formData, serviceCoverage: 'portugal' })}
+                        className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">Todo Portugal</span>
+                    </label>
+                  )}
+                  <label className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/10 cursor-pointer transition-all shadow-sm col-span-1 sm:col-span-2 md:col-span-3">
+                    <input
+                      type="radio"
+                      name="serviceCoverage"
+                      value="online"
+                      checked={formData.serviceCoverage === 'online'}
+                      onChange={() => setFormData({ ...formData, serviceCoverage: 'online' })}
+                      className="w-4.5 h-4.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">Atendimento Online</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             {formData.category === '💚 Doações & Solidariedade' && (
               <div className="col-span-1 md:col-span-3 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200/85 rounded-3xl shadow-sm text-left animate-pulse">

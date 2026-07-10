@@ -12,7 +12,7 @@ import {
 import { db, getDocWithCacheFallback, getDocsWithCacheFallback, parseFirestoreDate, handleFirestoreError, OperationType } from '../firebase';
 import { Ad, UserProfile, Review } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { formatPrice, getAdUrl, extractIdFromSlug } from '../utils';
+import { formatPrice, getAdUrl, extractIdFromSlug, getAdLocationLabel } from '../utils';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import ReviewModal from '../components/ReviewModal';
@@ -26,6 +26,7 @@ const AdDetails = () => {
   const location = useLocation();
 
   const [ad, setAd] = useState<Ad | null>(null);
+  const isService = ad ? (ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) : false;
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -761,30 +762,58 @@ const AdDetails = () => {
 
             <div className="flex flex-row items-center justify-between gap-4 bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100 font-sans">
               <div className="space-y-0.5">
-                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider text-left">Cidade</span>
-                <span className="text-sm sm:text-lg font-extrabold text-slate-900 block text-left">{ad.city || 'Não informada'}</span>
-              </div>
-              <div className="space-y-0.5 text-right">
-                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">País</span>
-                <span className="text-sm sm:text-lg font-extrabold text-slate-900 block">
-                  {ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}
+                <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider text-left">
+                  {isService ? 'Área de Atendimento' : 'Cidade'}
+                </span>
+                <span className="text-sm sm:text-lg font-extrabold text-slate-900 block text-left">
+                  {isService && ad.serviceCoverage === 'online' ? (
+                    '💻 Atendimento Online'
+                  ) : isService && ad.serviceCoverage === 'uk' ? (
+                    '🌍 Todo o Reino Unido'
+                  ) : isService && ad.serviceCoverage === 'portugal' ? (
+                    '🇵🇹 Todo Portugal'
+                  ) : (
+                    getAdLocationLabel(ad)
+                  )}
                 </span>
               </div>
+              {!(isService && (ad.serviceCoverage === 'online' || ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal')) && (
+                <div className="space-y-0.5 text-right">
+                  <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">País</span>
+                  <span className="text-sm sm:text-lg font-extrabold text-slate-900 block">
+                    {ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}
+                  </span>
+                </div>
+              )}
             </div>
 
-            {ad.city && ad.city.trim() !== '' && ad.city.toLowerCase() !== 'todas' && (
-              <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 relative">
-                <iframe
-                  title={`Mapa de ${ad.city}`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.city + ', ' + ad.country)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
-                />
+            {isService && ad.serviceCoverage === 'online' ? (
+              <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl text-center space-y-2">
+                <span className="text-4xl">💻</span>
+                <p className="text-base font-extrabold text-indigo-900">Serviço 100% Online / Remoto</p>
+                <p className="text-xs text-indigo-700/80 font-semibold max-w-md">Este profissional atende de forma totalmente digital. Não há necessidade de deslocações físicas ou mapas.</p>
               </div>
+            ) : isService && (ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal') ? (
+              <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-r from-teal-50 to-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-2">
+                <span className="text-4xl">🌍</span>
+                <p className="text-base font-extrabold text-emerald-900">Cobertura Nacional Ativa</p>
+                <p className="text-xs text-emerald-700/80 font-semibold max-w-md">Este profissional atende em todo o país ({ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}). Não há restrição de cidade ou região.</p>
+              </div>
+            ) : (
+              ad.city && ad.city.trim() !== '' && ad.city.toLowerCase() !== 'todas' && (
+                <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 relative">
+                  <iframe
+                    title={`Mapa de ${ad.city}`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.city + ', ' + ad.country)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                  />
+                </div>
+              )
             )}
 
             <div className="flex items-start gap-2.5 text-slate-500 bg-amber-50/40 border border-amber-100 rounded-2xl p-4 text-xs font-semibold font-sans">
@@ -848,8 +877,18 @@ const AdDetails = () => {
               </h1>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 text-slate-500 font-bold text-sm">
-                  <MapPin size={16} className="text-indigo-600" />
-                  <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {ad.city}, {ad.country || 'Portugal'}</span>
+                  {isService && ad.serviceCoverage === 'online' ? (
+                    <span>💻 Atendimento Online</span>
+                  ) : isService && ad.serviceCoverage === 'uk' ? (
+                    <span>🌍 Todo o Reino Unido</span>
+                  ) : isService && ad.serviceCoverage === 'portugal' ? (
+                    <span>🇵🇹 Todo Portugal</span>
+                  ) : (
+                    <>
+                      <MapPin size={16} className="text-indigo-600" />
+                      <span>{ad.country === 'Reino Unido' ? '🇬🇧' : '🇵🇹'} {getAdLocationLabel(ad)}, {ad.country || 'Portugal'}</span>
+                    </>
+                  )}
                 </div>
                 {ad.category === '💚 Doações & Solidariedade' ? (
                   <div className="text-3.5xl font-black text-emerald-600 bg-emerald-50 py-1.5 px-4 rounded-2xl border border-emerald-200 flex items-center justify-center animate-pulse">
@@ -1212,8 +1251,18 @@ const AdDetails = () => {
             </h1>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-1 text-slate-500 font-bold text-xs truncate">
-                <MapPin size={13} className="text-indigo-600 shrink-0" />
-                <span className="truncate">{ad.city}, {ad.country || 'Portugal'}</span>
+                {isService && ad.serviceCoverage === 'online' ? (
+                  <span className="truncate">💻 Atendimento Online</span>
+                ) : isService && ad.serviceCoverage === 'uk' ? (
+                  <span className="truncate">🌍 Todo o Reino Unido</span>
+                ) : isService && ad.serviceCoverage === 'portugal' ? (
+                  <span className="truncate">🇵🇹 Todo Portugal</span>
+                ) : (
+                  <>
+                    <MapPin size={13} className="text-indigo-600 shrink-0" />
+                    <span className="truncate">{getAdLocationLabel(ad)}, {ad.country || 'Portugal'}</span>
+                  </>
+                )}
               </div>
               {ad.category === '💚 Doações & Solidariedade' ? (
                 <div className="text-lg sm:text-xl font-black text-emerald-600 bg-emerald-50 py-0.5 px-2.5 rounded-lg border border-emerald-200 flex-shrink-0">
@@ -1390,30 +1439,58 @@ const AdDetails = () => {
 
           <div className="flex flex-row items-center justify-between gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100 font-sans">
             <div className="space-y-0.5">
-              <span className="block text-[8px] text-slate-400 uppercase font-black tracking-wider text-left">Cidade</span>
-              <span className="text-xs sm:text-sm font-extrabold text-slate-900 block text-left truncate">{ad.city || 'Não informada'}</span>
-            </div>
-            <div className="space-y-0.5 text-right">
-              <span className="block text-[8px] text-slate-400 uppercase font-black tracking-wider">País</span>
-              <span className="text-xs sm:text-sm font-extrabold text-slate-900 block truncate">
-                {ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}
+              <span className="block text-[8px] text-slate-400 uppercase font-black tracking-wider text-left">
+                {isService ? 'Área de Atendimento' : 'Cidade'}
+              </span>
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 block text-left truncate">
+                {isService && ad.serviceCoverage === 'online' ? (
+                  '💻 Atendimento Online'
+                ) : isService && ad.serviceCoverage === 'uk' ? (
+                  '🌍 Todo o Reino Unido'
+                ) : isService && ad.serviceCoverage === 'portugal' ? (
+                  '🇵🇹 Todo Portugal'
+                ) : (
+                  getAdLocationLabel(ad)
+                )}
               </span>
             </div>
+            {!(isService && (ad.serviceCoverage === 'online' || ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal')) && (
+              <div className="space-y-0.5 text-right">
+                <span className="block text-[8px] text-slate-400 uppercase font-black tracking-wider">País</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-900 block truncate">
+                  {ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}
+                </span>
+              </div>
+            )}
           </div>
 
-          {ad.city && ad.city.trim() !== '' && ad.city.toLowerCase() !== 'todas' && (
-            <div className="w-full h-40 rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 relative">
-              <iframe
-                title={`Mapa de ${ad.city}`}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.city + ', ' + ad.country)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
-              />
+          {isService && ad.serviceCoverage === 'online' ? (
+            <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl text-center space-y-1">
+              <span className="text-3xl">💻</span>
+              <p className="text-sm font-extrabold text-indigo-900">Serviço 100% Online</p>
+              <p className="text-[10px] text-indigo-700/85 font-semibold max-w-xs leading-normal">Este serviço é prestado remotamente / online.</p>
             </div>
+          ) : isService && (ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal') ? (
+            <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-r from-teal-50 to-emerald-50 border border-emerald-100 rounded-xl text-center space-y-1">
+              <span className="text-3xl">🌍</span>
+              <p className="text-sm font-extrabold text-emerald-900">Cobertura Nacional</p>
+              <p className="text-[10px] text-emerald-700/85 font-semibold max-w-xs leading-normal">Este serviço possui atendimento em todo o país ({ad.country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}).</p>
+            </div>
+          ) : (
+            ad.city && ad.city.trim() !== '' && ad.city.toLowerCase() !== 'todas' && (
+              <div className="w-full h-40 rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 relative">
+                <iframe
+                  title={`Mapa de ${ad.city}`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.city + ', ' + ad.country)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                />
+              </div>
+            )
           )}
 
           <div className="flex items-start gap-1.5 text-slate-500 bg-amber-50/20 border border-amber-100/60 rounded-xl p-2.5 text-[10px] font-sans">
