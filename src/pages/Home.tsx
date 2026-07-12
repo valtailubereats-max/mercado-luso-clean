@@ -905,15 +905,15 @@ const Home = () => {
       {/* ============================================================== */}
       {/* 💻 LAYOUT DESKTOP (Aparece apenas em ecrãs médios e superiores) */}
       {/* ============================================================== */}
-      <div className="hidden md:flex flex-col gap-6 md:gap-8 max-w-full">
+      <div className="hidden md:flex flex-col gap-4 md:gap-5 max-w-full">
         {/* 1. BARRA DE PESQUISA PRINCIPAL (Estilo OLX / Mercado Livre / Airbnb) */}
         <section className="w-full" id="desktop-search-section">
-          <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-3 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-300">
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+          <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-2 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="flex flex-row items-center gap-2 w-full">
               
               {/* Campo de Pesquisa Textual */}
-              <div className="flex-1 flex items-center gap-3 px-3.5 py-2.5 bg-slate-100/80 dark:bg-slate-800 rounded-2xl border border-slate-250 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all">
-                <Search size={20} className="text-slate-500 dark:text-slate-300 shrink-0" />
+              <div className="flex-1 flex items-center gap-2.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/60 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all">
+                <Search size={16} className="text-slate-400 dark:text-slate-300 shrink-0" />
                 <input
                   type="text"
                   value={searchTerm}
@@ -924,13 +924,22 @@ const Home = () => {
                   }}
                   onBlur={() => setIsSearchFocused(false)}
                   placeholder="O que procura hoje? Digite aqui..."
-                  className="w-full bg-transparent text-slate-900 dark:text-slate-100 font-extrabold placeholder:text-slate-450 dark:placeholder:text-slate-450 focus:outline-none text-base"
+                  className="w-full bg-transparent text-slate-900 dark:text-slate-100 font-extrabold placeholder:text-slate-400 focus:outline-none text-sm"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="text-slate-400 hover:text-slate-600 px-1 font-extrabold text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
 
               {/* Seletor de Categoria */}
-              <div className="w-full lg:w-56 flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-100/80 dark:bg-slate-800 rounded-2xl border border-slate-250 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all relative">
-                <Tag size={18} className="text-slate-500 dark:text-slate-300 shrink-0" />
+              <div className="relative w-40 lg:w-48 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2 transition-all">
+                <Tag size={14} className="text-slate-400 dark:text-slate-300 shrink-0 select-none" />
                 <select 
                   value={category} 
                   onChange={(e) => {
@@ -944,58 +953,62 @@ const Home = () => {
                       setFilterOnline(false);
                     }
                   }} 
-                  className="w-full bg-transparent text-slate-900 dark:text-white font-black text-sm md:text-base focus:outline-none cursor-pointer appearance-none pr-6"
+                  className="w-full bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none appearance-none cursor-pointer pr-4 border-none py-0 pl-0 min-w-0"
                 >
-                  <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Todas as Categorias</option>
+                  <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Categorias</option>
                   {categories.map((c, i) => (
                     <option key={i} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">{c}</option>
                   ))}
                 </select>
-                <span className="absolute right-3.5 text-slate-600 dark:text-slate-300 text-xs pointer-events-none">▼</span>
+                <span className="text-[8px] text-slate-400 dark:text-slate-300 absolute right-2 pointer-events-none select-none">▼</span>
               </div>
 
               {/* Seletor de Cidade / Região */}
-              <div className="w-full lg:w-48 flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-100/80 dark:bg-slate-800 rounded-2xl border border-slate-250 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all relative">
-                <MapPin size={18} className="text-slate-500 dark:text-slate-300 shrink-0" />
+              <div className="relative w-36 lg:w-44 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2 transition-all">
+                <MapPin size={14} className="text-slate-400 dark:text-slate-300 shrink-0 select-none" />
                 <select 
                   value={city} 
                   onChange={(e) => setCity(e.target.value)} 
-                  className="w-full bg-transparent text-slate-900 dark:text-white font-black text-sm md:text-base focus:outline-none cursor-pointer appearance-none pr-6"
+                  className="w-full bg-transparent text-xs font-black text-slate-900 dark:text-white focus:outline-none appearance-none cursor-pointer pr-4 border-none py-0 pl-0 min-w-0"
                 >
-                  <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Todas as Cidades</option>
+                  <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Cidades</option>
                   {selectableCitiesOnHome.map((c, i) => (
                     <option key={i} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">{c}</option>
                   ))}
                 </select>
-                <span className="absolute right-3.5 text-slate-600 dark:text-slate-300 text-xs pointer-events-none">▼</span>
+                <span className="text-[8px] text-slate-400 dark:text-slate-300 absolute right-2 pointer-events-none select-none">▼</span>
               </div>
 
               {/* Seletor de País / Comunidade */}
-              <div className="w-full lg:w-20 relative shrink-0" ref={dropdownRef}>
+              <div className="relative w-16 lg:w-20 shrink-0 flex items-stretch" ref={dropdownRef} id="desktop-country-dropdown-wrapper">
                 <button 
                   type="button"
                   onClick={() => {
                     setCountryDropdownOpen(prev => !prev);
                     setShowTooltip(false);
                   }}
-                  className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-sm md:text-base font-black text-slate-900 dark:text-white rounded-2xl border border-slate-250 dark:border-slate-700/80 transition-all cursor-pointer"
+                  className="w-full flex items-center justify-between gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60 rounded-xl px-2 py-2 transition-all cursor-pointer"
                   id="community-toggle-button-search"
                 >
-                  <span className="text-xl select-none leading-none">
-                    {country === 'Portugal' ? '🇵🇹' : '🇬🇧'}
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-300 text-[10px] shrink-0 leading-none">▼</span>
+                  <img
+                    src={getFlagSvgUrl(country)}
+                    alt={country}
+                    className="w-[25px] h-[16px] object-cover rounded-sm pointer-events-none select-none shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="text-[6px] text-slate-400 dark:text-slate-300 pointer-events-none select-none leading-none">▼</span>
                 </button>
 
                 {/* Dropdown de Países */}
                 <AnimatePresence>
                   {countryDropdownOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      initial={{ opacity: 0, y: 4, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 z-50 w-48 rounded-2xl p-2 shadow-2xl flex flex-col gap-1.5 border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                      exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 top-full mt-1.5 z-50 w-44 rounded-2xl p-2 shadow-2xl flex flex-col gap-1 border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                      role="menu"
                     >
                       <button
                         type="button"
@@ -1003,14 +1016,20 @@ const Home = () => {
                           handleCountryChange('Portugal');
                           setCountryDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-black transition-all cursor-pointer select-none border ${
+                        role="menuitem"
+                        className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
                           country === 'Portugal'
-                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#046a38] dark:text-emerald-400 border-emerald-250 dark:border-emerald-800 font-black'
-                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300'
                         }`}
                       >
-                        <span className="text-base">🇵🇹</span>
-                        <span>Portugal</span>
+                        <img
+                          src={getFlagSvgUrl('Portugal')}
+                          alt="Portugal"
+                          className="w-5 h-3.5 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <span>🇵🇹 Portugal</span>
                       </button>
                       <button
                         type="button"
@@ -1018,14 +1037,20 @@ const Home = () => {
                           handleCountryChange('Reino Unido');
                           setCountryDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-black transition-all cursor-pointer select-none border ${
+                        role="menuitem"
+                        className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
                           country === 'Reino Unido'
-                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-black'
-                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/20'
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300'
                         }`}
                       >
-                        <span className="text-base">🇬🇧</span>
-                        <span>Reino Unido</span>
+                        <img
+                          src={getFlagSvgUrl('Reino Unido')}
+                          alt="Reino Unido"
+                          className="w-5 h-3.5 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <span>🇬🇧 Reino Unido</span>
                       </button>
                     </motion.div>
                   )}
@@ -1061,9 +1086,9 @@ const Home = () => {
               <button
                 type="button"
                 onClick={() => handleSearchFocus()}
-                className="w-full lg:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-7 py-3.5 lg:py-3 rounded-2xl transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95 shadow-md shadow-indigo-600/15 cursor-pointer"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0 active:scale-95 shadow-md shadow-indigo-600/15 cursor-pointer"
               >
-                <Search size={18} />
+                <Search size={14} />
                 <span>Pesquisar</span>
               </button>
 
@@ -1149,7 +1174,7 @@ const Home = () => {
             <div className="absolute inset-0 bg-black/18" />
           </div>
 
-          <div className="relative z-10 mx-auto w-full px-6 py-4 md:py-6 lg:py-7">
+          <div className="relative z-10 mx-auto w-full px-5 py-3 md:py-4.5 lg:py-5">
             <motion.div 
               initial={{ opacity: 0, y: 10 }} 
               animate={{ opacity: 1, y: 0 }}
@@ -1158,14 +1183,16 @@ const Home = () => {
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
                 
                 {/* Bloco de Texto Principal: Badge e Título */}
-                <div className="flex-1 text-center md:text-left space-y-2">
-                  <div className="inline-flex items-center gap-1.5 bg-[#046a38]/90 text-amber-300 px-3 py-1 rounded-full border border-amber-400/20 text-[9px] md:text-xs font-black uppercase tracking-[0.15em] shadow-sm">
-                    <span>🌍</span> Comunidade Lusófona
-                  </div>
-
+                <div className="flex-1 text-center md:text-left space-y-1">
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-amber-400 block">
+                    Comunidade Lusófona
+                  </span>
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight drop-shadow-lg">
-                    Mais de <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent font-black">300 Milhões</span> de falantes de português unidos.
+                    Mercado Luso Marketplace
                   </h1>
+                  <p className="text-xs md:text-sm text-white/95 font-bold">
+                    Negócios locais perto de si. <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent font-black">Mais de 300 Milhões</span> de falantes de português unidos.
+                  </p>
                 </div>
 
                 {/* Estatísticas (Stats) do Marketplace como Cards Flutuantes de Vidro */}
@@ -1283,9 +1310,9 @@ const Home = () => {
         {filteredFeaturedAds.length > 0 && (
           <section className="py-2 md:py-4 border-b border-slate-250/20">
             <div className="flex flex-col gap-0.5 mb-4 text-left">
-              <div className="flex items-center gap-2">
-                <span className="text-lg md:text-xl">✨</span>
-                <h2 className="text-md md:text-lg lg:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base sm:text-lg">✨</span>
+                <h2 className="text-xs sm:text-sm md:text-base font-brand font-black uppercase tracking-wider text-pt-green dark:text-emerald-400">
                   Anúncios em Destaque
                 </h2>
               </div>
@@ -1325,9 +1352,9 @@ const Home = () => {
           <section className="py-2 md:py-4 border-b border-slate-250/20 overflow-hidden max-w-full" id="desktop-featured-entrepreneurs">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-4 text-left">
               <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg md:text-xl">🏪</span>
-                  <h2 className="text-md md:text-lg lg:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base sm:text-lg">🏪</span>
+                  <h2 className="text-xs sm:text-sm md:text-base font-brand font-black uppercase tracking-wider text-pt-green dark:text-emerald-400">
                     Empreendedores em Destaque
                   </h2>
                 </div>
@@ -1409,9 +1436,9 @@ const Home = () => {
         {/* 5. 🛍️ GRID DE ANÚNCIOS (Últimos anúncios) */}
         <section className="py-2 md:py-4 text-left">
           <div className="flex flex-col gap-0.5 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-lg md:text-xl">🛍️</span>
-              <h2 className="text-md md:text-lg lg:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base sm:text-lg">🛍️</span>
+              <h2 className="text-xs sm:text-sm md:text-base font-brand font-black uppercase tracking-wider text-pt-green dark:text-emerald-400">
                 Últimos Anúncios
               </h2>
             </div>
@@ -1697,7 +1724,7 @@ const Home = () => {
           <section className="w-full border-b border-slate-100 dark:border-slate-800/60 pb-3" id="mobile-featured-section">
             <div className="flex items-center gap-1.5 mb-2.5 text-left">
               <span className="text-base">✨</span>
-              <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">
+              <h2 className="text-xs font-brand font-black uppercase tracking-wider text-pt-green dark:text-emerald-400">
                 Destaques
               </h2>
             </div>
@@ -1729,7 +1756,7 @@ const Home = () => {
             <div className="flex items-center justify-between mb-2.5 text-left">
               <div className="flex items-center gap-1.5">
                 <span className="text-base">🏪</span>
-                <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">
+                <h2 className="text-xs font-brand font-black uppercase tracking-wider text-pt-green dark:text-emerald-400">
                   Vitrine Empreendedora
                 </h2>
               </div>
@@ -1762,7 +1789,7 @@ const Home = () => {
         <section className="w-full text-left" id="mobile-latest-section">
           <div className="flex items-center gap-1.5 mb-3">
             <span className="text-base">🛍️</span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">
+            <h2 className="text-xs font-brand font-black uppercase tracking-wider text-pt-green dark:text-emerald-400">
               Últimas Ofertas
             </h2>
           </div>
