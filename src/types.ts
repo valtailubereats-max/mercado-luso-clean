@@ -435,4 +435,21 @@ export interface SystemHealthAlert {
   relatedLink: string;
 }
 
+export interface CommunityVideo {
+  id: string;
+  slug: string;
+  youtubeUrl: string;
+  youtubeId: string;
+  title: string;
+  channelName: string;
+  category: string;
+  country: string;
+  description: string;
+  thumbnailUrl: string;
+  isFeatured: boolean;
+  active: boolean;
+  createdAt: any; // Firestore Timestamp
+  createdBy: string;
+}
+
 

@@ -504,5 +504,10 @@ service cloud.firestore {
       );
       allow delete: if isAdmin() || isModerator();
     }
+
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

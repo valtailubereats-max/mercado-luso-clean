@@ -21,7 +21,8 @@ import {
   BookOpen,
   Gift,
   Activity,
-  UserCheck
+  UserCheck,
+  Film
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -97,6 +98,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: QrCode, label: 'Convites', path: '/admin/invitations' },
     { icon: MessageSquare, label: 'Sugestões', path: '/admin/suggestions' },
     { icon: Camera, label: 'Loja de Fotos', path: '/admin/fotos' },
+    { icon: Film, label: 'Vídeos Comunidade', path: '/admin/videos' },
     { icon: Settings, label: 'Definições', path: '/admin/settings' },
     { icon: BookOpen, label: 'Manual Técnico', path: '/admin/manual-tecnico' },
   ];
@@ -128,6 +130,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         { icon: Store, label: 'Vitrines Digitais', path: '/admin/showcases' },
         { icon: Users, label: 'Utilizadores', path: '/admin/users' },
         { icon: UserCheck, label: 'Reivindicações', path: '/admin/claims' },
+        { icon: Film, label: 'Vídeos Comunidade', path: '/admin/videos' },
       ]
     },
     {

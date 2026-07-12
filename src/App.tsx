@@ -51,6 +51,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import Links from './pages/Links';
 import Sorteios from './pages/Sorteios';
 import AdminSorteios from './pages/AdminSorteios';
+import Videos from './pages/Videos';
+import VideoDetails from './pages/VideoDetails';
+import AdminVideos from './pages/AdminVideos';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ShareModal } from './components/ShareModal';
 import { triggerShare } from './utils/shareUtils';
@@ -428,6 +431,14 @@ const Navbar = () => {
                         🏪 Empreendedores
                       </Link>
                       <Link
+                        to="/videos"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                        id="nav-videos-link"
+                      >
+                        🎬 Vídeos
+                      </Link>
+                      <Link
                         to="/trabalhos"
                         onClick={() => setShowUserDropdown(false)}
                         className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
@@ -629,6 +640,14 @@ const Navbar = () => {
                           🏪 Empreendedores
                         </Link>
                         <Link
+                          to="/videos"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
+                          id="nav-videos-link-guest"
+                        >
+                          🎬 Vídeos
+                        </Link>
+                        <Link
                           to="/trabalhos"
                           onClick={() => setShowUserDropdown(false)}
                           className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 transition-colors text-sm font-bold text-indigo-600"
@@ -711,6 +730,7 @@ const Navbar = () => {
                 <Link to="/fotos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-705 text-slate-700">Fotos</Link>
               )}
               <Link to="/empreendedores" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Empreendedores</Link>
+              <Link to="/videos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Vídeos</Link>
               <Link to="/trabalhos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Trabalhos</Link>
               <Link to="/precos" onClick={() => setIsOpen(false)} className="text-lg font-black text-slate-700">Preços</Link>
               
@@ -994,6 +1014,9 @@ export default function App() {
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/links" element={<Links />} />
                 <Route path="/sorteios" element={<Sorteios />} />
+                <Route path="/videos" element={<Videos />} />
+                <Route path="/videos/:slug" element={<VideoDetails />} />
+                <Route path="/admin/videos" element={<AdminLayout><AdminVideos /></AdminLayout>} />
                 <Route path="/convite" element={<Convite />} />
                 <Route path="/admin/invitations" element={<AdminLayout><AdminInvitations /></AdminLayout>} />
                 <Route path="/admin/suggestions" element={<AdminLayout><AdminSuggestions /></AdminLayout>} />
@@ -1044,6 +1067,11 @@ export default function App() {
                       <li>
                         <Link to="/empreendedores" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-1.5">
                           Vitrines Digitais <span className="text-[9px] bg-indigo-50 border border-indigo-150 text-indigo-600 px-1 py-0.5 rounded uppercase tracking-widest">Novo</span>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/videos" className="hover:text-[#046a38] hover:underline transition-all flex items-center gap-1.5 font-extrabold">
+                          Vídeos da Comunidade <span className="text-[9px] bg-red-50 border border-red-150 text-red-600 px-1 py-0.5 rounded uppercase tracking-widest">Novo</span>
                         </Link>
                       </li>
                     </ul>
