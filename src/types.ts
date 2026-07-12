@@ -71,7 +71,7 @@ export interface UserProfile {
   email: string;
   phone: string;
   city?: string;
-  role?: 'user' | 'admin' | 'moderator';
+  role?: 'user' | 'admin' | 'moderator' | 'content_creator';
   acceptedTerms: boolean;
   acceptedTermsAt: any; // Firestore Timestamp
   lastLoginAt?: any; // Firestore Timestamp
@@ -450,6 +450,15 @@ export interface CommunityVideo {
   active: boolean;
   createdAt: any; // Firestore Timestamp
   createdBy: string;
+  
+  // Future Expansion/Creator Fields
+  ownerId?: string | null;
+  ownerName?: string | null;
+  channelId?: string | null;
+  channelUrl?: string | null;
+  createdByRole?: 'admin' | 'content_creator' | string;
+  status?: 'pending' | 'approved' | 'rejected' | 'disabled';
+  updatedAt?: any; // Firestore Timestamp
 }
 
 

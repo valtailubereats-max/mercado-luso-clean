@@ -222,7 +222,15 @@ export default function AdminVideos() {
       thumbnailUrl,
       isFeatured,
       active,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      
+      // Content Creator Architecture preparation fields
+      ownerId: editingVideo ? (editingVideo.ownerId || null) : null,
+      ownerName: editingVideo ? (editingVideo.ownerName || null) : null,
+      channelId: editingVideo ? (editingVideo.channelId || null) : null,
+      channelUrl: editingVideo ? (editingVideo.channelUrl || null) : null,
+      createdByRole: editingVideo ? (editingVideo.createdByRole || 'admin') : 'admin',
+      status: editingVideo ? (editingVideo.status || 'approved') : 'approved'
     };
 
     try {

@@ -400,7 +400,14 @@
         "isFeatured": { "type": "boolean" },
         "active": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "createdBy": { "type": "string" }
+        "createdBy": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "channelId": { "type": "string" },
+        "channelUrl": { "type": "string" },
+        "createdByRole": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "disabled"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "slug", "youtubeUrl", "youtubeId", "title", "channelName", "category", "country", "thumbnailUrl", "isFeatured", "active", "createdAt", "createdBy"]
     }
