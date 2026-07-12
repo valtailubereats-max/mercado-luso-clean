@@ -19,6 +19,31 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
+// Intercept console.error to downgrade benign Firestore connection or offline cache warnings
+if (typeof window !== 'undefined') {
+  const originalConsoleError = console.error;
+  console.error = function(...args) {
+    const errorStr = args.map(arg => {
+      try {
+        return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+      } catch {
+        return String(arg);
+      }
+    }).join(' ');
+
+    if (
+      errorStr.includes('Could not reach Cloud Firestore backend') ||
+      errorStr.includes('@firebase/firestore') ||
+      errorStr.includes('Failed to get document from cache') ||
+      errorStr.includes('Failed to get document from server')
+    ) {
+      console.warn('[Firebase Connection/Cache Note]', ...args);
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
+}
+
 // Enable long polling only in sandboxed environments (such as localhost or Google Cloud Run dev URL)
 // to bypass sandboxed iframe restrictions. In production (mercado-luso.com), use the default transport
 // (WebSockets / streaming) to prevent reverse proxies/CDNs from buffering long-polling chunks and timing out.
@@ -54,37 +79,89 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// Cache/de-duplication maps for document and query snapshots to prevent simultaneous duplicate requests and timeouts
+const docCache = new Map<string, Promise<DocumentSnapshot>>();
+const docsCache = new Map<string, Promise<QuerySnapshot>>();
+
 // Configura as buscas para tentarem ler primeiro do Servidor e apenas do Cache como Fallback (Offline) para garantir dados sempre atualizados em tempo real estando online
 export async function getDocsWithCacheFallback(q: Query, pathLabel: string = 'unknown'): Promise<QuerySnapshot> {
-  try {
-    const snap = await withTimeout(getDocsFromServer(q), 4000);
-    return snap;
-  } catch (err) {
-    console.warn(`[Firestore Status] Servidor inacessível ou lento para obter docs (${pathLabel}). Recorrendo ao cache local...`, err);
+  const cacheKey = pathLabel;
+  
+  if (docsCache.has(cacheKey)) {
+    const cachedPromise = docsCache.get(cacheKey)!;
     try {
-      const snap = await getDocsFromCache(q);
+      const snap = await cachedPromise;
       return snap;
-    } catch (cacheErr) {
-      console.error(`[Firestore Fatal Error] Falha de leitura e cache para: ${pathLabel}`, cacheErr);
-      throw err;
+    } catch {
+      docsCache.delete(cacheKey);
     }
   }
+
+  const promise = (async () => {
+    try {
+      const snap = await withTimeout(getDocsFromServer(q), 10000);
+      return snap;
+    } catch (err) {
+      console.warn(`[Firestore Status] Servidor inacessível ou lento para obter docs (${pathLabel}). Recorrendo ao cache local...`, err);
+      try {
+        const snap = await getDocsFromCache(q);
+        return snap;
+      } catch (cacheErr) {
+        console.error(`[Firestore Fatal Error] Falha de leitura e cache para: ${pathLabel}`, cacheErr);
+        throw err;
+      }
+    }
+  })();
+
+  docsCache.set(cacheKey, promise);
+  // Limit cache lifetime to 5 seconds to allow fresh updates while de-duplicating rapid simultaneous triggers
+  setTimeout(() => {
+    if (docsCache.get(cacheKey) === promise) {
+      docsCache.delete(cacheKey);
+    }
+  }, 5000);
+
+  return promise;
 }
 
 export async function getDocWithCacheFallback(docRef: DocumentReference, pathLabel: string = 'unknown'): Promise<DocumentSnapshot> {
-  try {
-    const snap = await withTimeout(getDocFromServer(docRef), 4000);
-    return snap;
-  } catch (err) {
-    console.warn(`[Firestore Status] Servidor inacessível ou lento para obter documento (${pathLabel}). Recorrendo ao cache local...`, err);
+  const cacheKey = docRef.path;
+  
+  if (docCache.has(cacheKey)) {
+    const cachedPromise = docCache.get(cacheKey)!;
     try {
-      const snap = await getDocFromCache(docRef);
+      const snap = await cachedPromise;
       return snap;
-    } catch (cacheErr) {
-      console.error(`[Firestore Fatal Error] Falha de leitura e cache para documento: ${pathLabel}`, cacheErr);
-      throw err;
+    } catch {
+      docCache.delete(cacheKey);
     }
   }
+
+  const promise = (async () => {
+    try {
+      const snap = await withTimeout(getDocFromServer(docRef), 10000);
+      return snap;
+    } catch (err) {
+      console.warn(`[Firestore Status] Servidor inacessível ou lento para obter documento (${pathLabel}). Recorrendo ao cache local...`, err);
+      try {
+        const snap = await getDocFromCache(docRef);
+        return snap;
+      } catch (cacheErr) {
+        console.error(`[Firestore Fatal Error] Falha de leitura e cache para documento: ${pathLabel}`, cacheErr);
+        throw err;
+      }
+    }
+  })();
+
+  docCache.set(cacheKey, promise);
+  // Limit cache lifetime to 10 seconds to allow fresh updates while de-duplicating rapid card renders
+  setTimeout(() => {
+    if (docCache.get(cacheKey) === promise) {
+      docCache.delete(cacheKey);
+    }
+  }, 10000);
+
+  return promise;
 }
 
 export const auth = getAuth(app);

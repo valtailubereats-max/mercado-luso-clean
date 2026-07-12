@@ -93,7 +93,7 @@ const Home = () => {
   const isModeratorOrAdmin = isAdmin || profile?.role === 'admin' || profile?.role === 'moderator';
   // Só consideramos administrador confirmado para consultas restritas de contagem de users.
   const isConfirmedAdminOnly = !authLoading && profile?.role === 'admin';
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [ads, setAds] = useState<Ad[]>([]);
   const [featuredAds, setFeaturedAds] = useState<Ad[]>([]);
@@ -172,8 +172,10 @@ const Home = () => {
 
   // Custom Dropdown states
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [mobileCountryDropdownOpen, setMobileCountryDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileCountryDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -224,12 +226,21 @@ const Home = () => {
     setCountryDropdownOpen(false);
   });
 
+  useClickOutside(mobileCountryDropdownRef, () => {
+    setMobileCountryDropdownOpen(false);
+  });
+
   // Handle Country Change
   const handleCountryChange = (val: 'Portugal' | 'Reino Unido') => {
     setCountry(val);
     setCity('Todas');
     localStorage.setItem('selectedCountry', val);
     setShowTooltip(false);
+
+    // Sync country URL parameter to prevent useSearchParams useEffect from reverting the value
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('country', val);
+    setSearchParams(currentParams);
   };
 
   const handleOnboardingButtonClick = () => {
@@ -890,129 +901,19 @@ const Home = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-2 md:gap-4">
-      {/* HERO BANNER LUXURY SLIM + PAINEL LUSÓFONO */}
-      <section className="relative -mt-6 md:-mt-8 transition-all duration-500 max-w-full">
-
-        {/* Imagem de Fundo dinâmica: Portugal / Reino Unido */}
-        <div className="absolute inset-0 z-0 overflow-hidden shadow-2xl rounded-b-[2rem] md:rounded-b-[3rem]">
-          <img 
-            src={country === 'Portugal' ? lisbonAerial : londonBg} 
-            alt={country} 
-            className="w-full h-full object-cover scale-105 transition-all duration-700 ease-in-out"
-            onError={() => {
-              if (londonBg !== londonAerialOriginalStandby) {
-                setLondonBg(londonAerialOriginalStandby);
-              }
-            }}
-          />
-          {/* Overlay suave para contraste (ajustado para aspeto de dia radiante, claro e nítido) */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/35 backdrop-saturate-[1.1]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 hidden lg:block" />
-        </div>
-
-        <div className="relative z-10 mx-auto w-full px-1.5 xs:px-2 sm:px-6 py-3 md:py-6 lg:py-7.5">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-5xl"
-          >
-            <div className="flex flex-col items-center justify-center text-center gap-3.5 md:gap-4 w-full">
-
-              {/* Painel Lusófono elegante integrado diretamente sobre a imagem sem quadro translúcido (Proposta A Melhorada e Purificada) */}
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-4xl flex flex-col items-center justify-center gap-3.5 md:gap-4 select-none tracking-tight relative overflow-hidden px-2 py-2"
-              >
-                <div className="text-center space-y-2.5 md:space-y-4">
-                  {/* Badge da comunidade com as cores clássicas (verde e amarelo) integradas de forma luxuosa */}
-                  <div className="inline-flex items-center gap-2 bg-[#046a38]/90 text-amber-300 px-5 py-2 rounded-full border border-amber-400/30 text-[10px] md:text-xs font-black uppercase tracking-[0.25em] shadow-lg hover:scale-105 transition-transform duration-300 select-none drop-shadow-md">
-                    <span>🌍</span> Comunidade Lusófona
-                  </div>
-
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-none drop-shadow-2xl">
-                    Mais de <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent drop-shadow-sm font-black">300 Milhões</span>
-                  </h1>
-                  
-                  <p className="text-sm sm:text-base md:text-xl font-bold text-white/95 tracking-wide drop-shadow-md max-w-2xl mx-auto leading-relaxed">
-                    de falantes de português unidos no mundo.
-                  </p>
-                </div>
-
-                <style>{`
-                  @keyframes flagMarquee {
-                    0% {
-                      transform: translateX(0);
-                    }
-                    100% {
-                      transform: translateX(-50%);
-                    }
-                  }
-                  .animate-flag-marquee {
-                    display: flex;
-                    width: max-content;
-                    animation: flagMarquee 26s linear infinite;
-                  }
-                  .animate-flag-marquee:hover {
-                    animation-play-state: paused;
-                  }
-                `}</style>
-
-                {/* Bandeiras dos países integradas em carrossel infinito sem abreviação */}
-                <div className="w-full overflow-hidden relative py-2 select-none max-w-4xl mx-auto" id="flags-marquee-container">
-                  {/* Soft edge fade gradients for a premium visual flow */}
-                  <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-black/20 to-transparent z-10 pointer-events-none" />
-                  <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black/20 to-transparent z-10 pointer-events-none" />
-                  
-                  <div className="animate-flag-marquee flex gap-3 md:gap-4">
-                    {/* Primeiro conjunto de bandeiras */}
-                    {flagItemsMarquee.map((item, idx) => (
-                      <div 
-                        key={`flag-1-${idx}`} 
-                        className={`group/flag shrink-0 flex items-center justify-center gap-1.5 md:gap-2.5 bg-slate-950/50 hover:bg-slate-950/75 active:scale-95 border-2 ${item.border} rounded-full py-1.5 px-3 md:py-2 md:px-4.5 transition-all duration-300 cursor-default shadow-lg hover:shadow-2xl hover:scale-[1.03]`}
-                        title={item.name}
-                      >
-                        <div className="w-6.5 h-6.5 md:w-8 md:h-8 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/30 shadow-inner shrink-0 relative">
-                          <img 
-                            src={`https://flagcdn.com/w40/${item.code}.png`} 
-                            alt={item.flag} 
-                            className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                        <span className="text-[10px] md:text-xs font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wide">
-                          {item.name}
-                        </span>
-                      </div>
-                    ))}
-
-                    {/* Segundo conjunto idêntico de bandeiras para loop contínuo e perfeito */}
-                    {flagItemsMarquee.map((item, idx) => (
-                      <div 
-                        key={`flag-2-${idx}`} 
-                        className={`group/flag shrink-0 flex items-center justify-center gap-1.5 md:gap-2.5 bg-slate-950/50 hover:bg-slate-950/75 active:scale-95 border-2 ${item.border} rounded-full py-1.5 px-3 md:py-2 md:px-4.5 transition-all duration-300 cursor-default shadow-lg hover:shadow-2xl hover:scale-[1.03]`}
-                        title={item.name}
-                      >
-                        <div className="w-6.5 h-6.5 md:w-8 md:h-8 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/30 shadow-inner shrink-0 relative">
-                          <img 
-                            src={`https://flagcdn.com/w40/${item.code}.png`} 
-                            alt={item.flag} 
-                            className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                        <span className="text-[10px] md:text-xs font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wide">
-                          {item.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Barra de Pesquisa Minimalista - Destaque Central */}
-              <div className="relative w-full max-w-xl md:max-w-2xl mx-auto group px-1">
+    <div className="w-full">
+      {/* ============================================================== */}
+      {/* 💻 LAYOUT DESKTOP (Aparece apenas em ecrãs médios e superiores) */}
+      {/* ============================================================== */}
+      <div className="hidden md:flex flex-col gap-6 md:gap-8 max-w-full">
+        {/* 1. BARRA DE PESQUISA PRINCIPAL (Estilo OLX / Mercado Livre / Airbnb) */}
+        <section className="w-full" id="desktop-search-section">
+          <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-3 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+              
+              {/* Campo de Pesquisa Textual */}
+              <div className="flex-1 flex items-center gap-3 px-3.5 py-2.5 bg-slate-100/80 dark:bg-slate-800 rounded-2xl border border-slate-250 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all">
+                <Search size={20} className="text-slate-500 dark:text-slate-300 shrink-0" />
                 <input
                   type="text"
                   value={searchTerm}
@@ -1022,530 +923,913 @@ const Home = () => {
                     setIsSearchFocused(true);
                   }}
                   onBlur={() => setIsSearchFocused(false)}
-                  onMouseEnter={() => setIsSearchHovered(true)}
-                  onMouseLeave={() => setIsSearchHovered(false)}
-                  placeholder="✨ O que procura hoje? Digite aqui..."
-                  className={`w-full ${blurClass} rounded-full py-2.5 sm:py-3 pl-6 sm:pl-7 pr-12 sm:pr-14 ${txtColorClass} ${placeholderClass} outline-none border-[4px] transition-all duration-300 font-extrabold tracking-wide text-base sm:text-lg focus:scale-[1.03] focus:shadow-[0_0_25px_rgba(255,255,255,0.25)]`}
-                  style={{
-                    backgroundColor: customBg || 'rgba(15,23,42,0.3)',
-                    borderColor: isSearchFocused
-                      ? (customBorder || (isLightText ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.85)'))
-                      : isSearchHovered
-                        ? (customBorder || (isLightText ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)'))
-                        : (customBorder || (isLightText ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.45)')),
-                  }}
+                  placeholder="O que procura hoje? Digite aqui..."
+                  className="w-full bg-transparent text-slate-900 dark:text-slate-100 font-extrabold placeholder:text-slate-450 dark:placeholder:text-slate-450 focus:outline-none text-base"
                 />
-                <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
-                  <Search size={20} className={`${txtMutedClass} group-focus-within:${txtColorClass} transition-colors group-focus-within:scale-110 duration-300`} />
-                </div>
               </div>
 
-              {/* Ícones de Filtro e Contador - Centralizados com Elegância */}
-              <div className="flex items-center justify-center gap-3 md:gap-4 flex-wrap w-full">
+              {/* Seletor de Categoria */}
+              <div className="w-full lg:w-56 flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-100/80 dark:bg-slate-800 rounded-2xl border border-slate-250 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all relative">
+                <Tag size={18} className="text-slate-500 dark:text-slate-300 shrink-0" />
+                <select 
+                  value={category} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Trabalho/Empregos') {
+                      navigate('/trabalhos');
+                    } else {
+                      setCategory(val);
+                      setFilterRegion(false);
+                      setFilterNational(false);
+                      setFilterOnline(false);
+                    }
+                  }} 
+                  className="w-full bg-transparent text-slate-900 dark:text-white font-black text-sm md:text-base focus:outline-none cursor-pointer appearance-none pr-6"
+                >
+                  <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Todas as Categorias</option>
+                  {categories.map((c, i) => (
+                    <option key={i} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">{c}</option>
+                  ))}
+                </select>
+                <span className="absolute right-3.5 text-slate-600 dark:text-slate-300 text-xs pointer-events-none">▼</span>
+              </div>
 
-                {/* Botão Categoria - Ícone com Texto Abaixo */}
-                <div className="relative group flex flex-col items-center">
-                  <div 
-                    style={{
-                      backgroundColor: customBg || 'rgba(255,255,255,0.1)',
-                      borderColor: customBorder || 'rgba(255,255,255,0.2)',
-                    }}
-                    className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
-                    title="Categoria"
-                  >
-                    <Tag size={18} />
-                    <select 
-                      value={category} 
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === 'Trabalho/Empregos') {
-                          navigate('/trabalhos');
-                        } else {
-                          setCategory(val);
-                          setFilterRegion(false);
-                          setFilterNational(false);
-                          setFilterOnline(false);
-                        }
-                      }} 
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    >
-                      <option value="Todas">Categorias</option>
-                      {categories.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
-                    </select>
-                  </div>
-                  <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
-                    {category === 'Todas' ? 'Categoria' : category}
+              {/* Seletor de Cidade / Região */}
+              <div className="w-full lg:w-48 flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-100/80 dark:bg-slate-800 rounded-2xl border border-slate-250 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500 transition-all relative">
+                <MapPin size={18} className="text-slate-500 dark:text-slate-300 shrink-0" />
+                <select 
+                  value={city} 
+                  onChange={(e) => setCity(e.target.value)} 
+                  className="w-full bg-transparent text-slate-900 dark:text-white font-black text-sm md:text-base focus:outline-none cursor-pointer appearance-none pr-6"
+                >
+                  <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Todas as Cidades</option>
+                  {selectableCitiesOnHome.map((c, i) => (
+                    <option key={i} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">{c}</option>
+                  ))}
+                </select>
+                <span className="absolute right-3.5 text-slate-600 dark:text-slate-300 text-xs pointer-events-none">▼</span>
+              </div>
+
+              {/* Seletor de País / Comunidade */}
+              <div className="w-full lg:w-20 relative shrink-0" ref={dropdownRef}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setCountryDropdownOpen(prev => !prev);
+                    setShowTooltip(false);
+                  }}
+                  className="w-full flex items-center justify-between gap-1.5 px-3 py-2.5 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-sm md:text-base font-black text-slate-900 dark:text-white rounded-2xl border border-slate-250 dark:border-slate-700/80 transition-all cursor-pointer"
+                  id="community-toggle-button-search"
+                >
+                  <span className="text-xl select-none leading-none">
+                    {country === 'Portugal' ? '🇵🇹' : '🇬🇧'}
                   </span>
+                  <span className="text-slate-600 dark:text-slate-300 text-[10px] shrink-0 leading-none">▼</span>
+                </button>
+
+                {/* Dropdown de Países */}
+                <AnimatePresence>
+                  {countryDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 z-50 w-48 rounded-2xl p-2 shadow-2xl flex flex-col gap-1.5 border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCountryChange('Portugal');
+                          setCountryDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-black transition-all cursor-pointer select-none border ${
+                          country === 'Portugal'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-[#046a38] dark:text-emerald-400 border-emerald-250 dark:border-emerald-800 font-black'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
+                        }`}
+                      >
+                        <span className="text-base">🇵🇹</span>
+                        <span>Portugal</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCountryChange('Reino Unido');
+                          setCountryDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-black transition-all cursor-pointer select-none border ${
+                          country === 'Reino Unido'
+                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-black'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/20'
+                        }`}
+                      >
+                        <span className="text-base">🇬🇧</span>
+                        <span>Reino Unido</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Tooltip de Onboarding no 1º acesso */}
+                {showTooltip && (
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                      className="absolute top-14 left-1/2 -translate-x-1/2 z-[9998] w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
+                    >
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
+                      <p className="text-xs font-semibold leading-relaxed text-slate-200">
+                        Escolha a sua comunidade para ver anúncios perto de si.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOnboardingButtonClick}
+                        className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
+                        id="onboarding-community-select"
+                      >
+                        Escolher Comunidade
+                      </button>
+                    </motion.div>
+                  </AnimatePresence>
+                )}
+              </div>
+
+              {/* Botão de Pesquisa */}
+              <button
+                type="button"
+                onClick={() => handleSearchFocus()}
+                className="w-full lg:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-7 py-3.5 lg:py-3 rounded-2xl transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95 shadow-md shadow-indigo-600/15 cursor-pointer"
+              >
+                <Search size={18} />
+                <span>Pesquisar</span>
+              </button>
+
+            </div>
+
+            {/* Filtro de Área de Atendimento para Categoria Serviços */}
+            {(() => {
+              const isServiceCategory = category === 'Serviços' || category?.startsWith('Serviços') || category?.includes('Serviços');
+              return isServiceCategory && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="w-full mt-3 border-t border-slate-100 dark:border-slate-800 pt-3"
+                >
+                  <div className="text-left">
+                    <h3 className="text-xs font-black uppercase tracking-wider mb-2 text-slate-500 flex items-center gap-2">
+                      <span>📍</span> Filtro de Área de Atendimento
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <label className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-slate-100 dark:border-slate-800 select-none bg-slate-50/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200">
+                        <input 
+                          type="checkbox" 
+                          checked={filterRegion} 
+                          onChange={(e) => setFilterRegion(e.target.checked)}
+                          className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-xs md:text-sm font-extrabold">Apenas minha região</span>
+                          <span className="text-[10px] text-slate-400">Local, raio 20/50km ou distrito</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-slate-100 dark:border-slate-800 select-none bg-slate-50/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200">
+                        <input 
+                          type="checkbox" 
+                          checked={filterNational} 
+                          onChange={(e) => setFilterNational(e.target.checked)}
+                          className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-xs md:text-sm font-extrabold">Atendimento Nacional</span>
+                          <span className="text-[10px] text-slate-400">Todo o {country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-slate-100 dark:border-slate-800 select-none bg-slate-50/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200">
+                        <input 
+                          type="checkbox" 
+                          checked={filterOnline} 
+                          onChange={(e) => setFilterOnline(e.target.checked)}
+                          className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-xs md:text-sm font-extrabold">Atendimento Online</span>
+                          <span className="text-[10px] text-slate-400">Serviços 100% remotos</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+          </div>
+        </section>
+
+        {/* 2. HERO BANNER LUXURY SLIM (Altura Reduzida em 40%, Elegante, Foco Institucional) */}
+        <section className="relative overflow-hidden shadow-lg rounded-3xl transition-all duration-500 max-w-full">
+          {/* Imagem de Fundo dinâmica */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            <img 
+              src={country === 'Portugal' ? lisbonAerial : londonBg} 
+              alt={country} 
+              className="w-full h-full object-cover scale-105 transition-all duration-700 ease-in-out"
+              onError={() => {
+                if (londonBg !== londonAerialOriginalStandby) {
+                  setLondonBg(londonAerialOriginalStandby);
+                }
+              }}
+            />
+            {/* Overlay suave para alto contraste */}
+            <div className="absolute inset-0 bg-black/18" />
+          </div>
+
+          <div className="relative z-10 mx-auto w-full px-6 py-4 md:py-6 lg:py-7">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-auto max-w-5xl"
+            >
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
+                
+                {/* Bloco de Texto Principal: Badge e Título */}
+                <div className="flex-1 text-center md:text-left space-y-2">
+                  <div className="inline-flex items-center gap-1.5 bg-[#046a38]/90 text-amber-300 px-3 py-1 rounded-full border border-amber-400/20 text-[9px] md:text-xs font-black uppercase tracking-[0.15em] shadow-sm">
+                    <span>🌍</span> Comunidade Lusófona
+                  </div>
+
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight drop-shadow-lg">
+                    Mais de <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent font-black">300 Milhões</span> de falantes de português unidos.
+                  </h1>
                 </div>
 
-                {/* Botão País com Bandeira e Nome da Comunidade */}
-                <div className="relative" ref={dropdownRef}>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setCountryDropdownOpen(prev => !prev);
-                      setShowTooltip(false);
-                    }}
-                    style={{
-                      borderColor: customBorder || 'rgba(255,255,255,0.25)',
-                    }}
-                    className={`relative overflow-hidden h-10 md:h-12 w-28 md:w-32 flex items-center justify-center gap-1 ${blurClass} rounded-full border ${txtColorClass} hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-lg font-bold outline-none select-none animate-country-pulse`}
-                    title="Mudar de Comunidade"
-                    id="community-toggle-button"
-                  >
-                    {/* Camada 1: Bandeira de fundo com 100% de opacidade (sem transparência nem desbotamento) */}
-                    {getFlagSvgUrl(country) && (
-                      <div 
-                        className="absolute inset-0 z-0 pointer-events-none select-none"
-                        style={{
-                          backgroundImage: `url("${getFlagSvgUrl(country)}")`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          opacity: 1,
-                        }}
-                      />
-                    )}
-
-                    {/* Camada 2: Cor de fundo transparente configurável / máscara de sobreposição */}
+                {/* Estatísticas (Stats) do Marketplace como Cards Flutuantes de Vidro */}
+                <div className="flex flex-row md:flex-row items-center gap-3 shrink-0">
+                  {/* Contador de Anúncios Slim */}
+                  {(settings?.showTotalAdsBadge === true || isModeratorOrAdmin) && (
                     <div 
-                      className="absolute inset-0 z-10 pointer-events-none select-none"
-                      style={{
-                        backgroundColor: customBg || 'rgba(15,23,42,0.35)',
-                      }}
-                    />
+                      className="flex items-center bg-black/45 backdrop-blur-md border border-white/10 rounded-xl px-3 py-1.5 shadow-md select-none min-w-[110px] relative group"
+                    >
+                      <span className="text-white font-black text-base md:text-xl mr-2">
+                        {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
+                      </span>
+                      <span className="text-white/70 text-[8px] md:text-[9px] uppercase font-black tracking-wider leading-none">Anúncios<br/>Ativos</span>
 
-                    {/* Camada 3: Conteúdo interativo */}
-                    <div className="relative z-20 flex items-center justify-center w-full h-full">
-                      <span className="text-[10px] md:text-xs opacity-90 text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] filter shrink-0">▼</span>
+                      {!settings?.showTotalAdsBadge && isModeratorOrAdmin && (
+                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                          🔒 Oculto (Visto por Staff)
+                        </span>
+                      )}
                     </div>
-                  </button>
+                  )}
 
-                  {/* Dropdown de Países Personalizado */}
-                  <AnimatePresence>
-                    {countryDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-12 md:top-14 z-[9999] w-52 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1.5 border border-slate-200 bg-white text-slate-800"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleCountryChange('Portugal');
-                            setCountryDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer select-none border ${
-                            country === 'Portugal'
-                              ? 'bg-emerald-50 text-[#046a38] border-emerald-200 font-extrabold shadow-sm'
-                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-[#e3f6ea] hover:border-[#bfead0] hover:text-[#046a38] hover:scale-[1.01] font-semibold'
-                          }`}
-                        >
-                          <span className="text-lg">🇵🇹</span>
-                          <span>Portugal</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleCountryChange('Reino Unido');
-                            setCountryDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-bold transition-all cursor-pointer select-none border ${
-                            country === 'Reino Unido'
-                              ? 'bg-blue-50 text-blue-800 border-blue-200 font-extrabold shadow-sm'
-                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-blue-50 hover:border-blue-150 hover:text-blue-800 hover:scale-[1.01] font-semibold'
-                          }`}
-                        >
-                          <span className="text-lg">🇬🇧</span>
-                          <span>Reino Unido</span>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {/* Contador de Utilizadores Slim */}
+                  {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
+                    <div 
+                      className="flex items-center bg-white/10 backdrop-blur-md border border-white/15 rounded-xl px-3 py-1.5 shadow-md select-none min-w-[110px] relative group"
+                    >
+                      <span className="text-amber-300 font-black text-base md:text-xl mr-2">
+                        {totalUsersCount}
+                      </span>
+                      <span className="text-white/80 text-[8px] md:text-[9px] uppercase font-black tracking-wider leading-none">Membros<br/>Mundiais</span>
 
-                  {/* Tooltip de Onboarding no 1º acesso */}
-                  {showTooltip && (
-                    <AnimatePresence>
-                      <motion.div
-                        initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                        className="absolute top-14 left-1/2 -translate-x-1/2 z-[9998] w-64 bg-slate-900 border border-indigo-500/30 text-white rounded-2xl p-4 shadow-2xl text-center"
-                      >
-                        {/* Seta do Balão */}
-                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-900" />
-                        <p className="text-xs font-semibold leading-relaxed text-slate-200">
-                          Escolha a sua comunidade para ver anúncios perto de si.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleOnboardingButtonClick}
-                          className="mt-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-full font-bold transition-all shadow-md cursor-pointer hover:scale-105 w-full text-center"
-                          id="onboarding-community-select"
-                        >
-                          Escolher Comunidade
-                        </button>
-                      </motion.div>
-                    </AnimatePresence>
+                      {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
+                        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                          🔒 Oculto (Visto por Staff)
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                {/* Botão Localização - Ícone com Texto Abaixo */}
-                <div className="relative group flex flex-col items-center">
-                  <div 
-                    style={{
-                      backgroundColor: customBg || 'rgba(255,255,255,0.1)',
-                      borderColor: customBorder || 'rgba(255,255,255,0.2)',
-                    }}
-                    className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center ${blurClass} rounded-full border ${txtColorClass} hover:opacity-85 hover:scale-110 transition-all cursor-pointer shadow-lg`} 
-                    title="Cidade"
-                  >
-                    <MapPin size={18} />
-                    <select 
-                      value={city} 
-                      onChange={(e) => setCity(e.target.value)} 
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    >
-                      <option value="Todas">Cidade / Região</option>
-                      {selectableCitiesOnHome.map((c, i) => <option key={i} value={c} className="bg-slate-900">{c}</option>)}
-                    </select>
-                  </div>
-                  <span className="text-[9px] md:text-[10px] font-bold text-white/90 drop-shadow-sm mt-1 select-none pointer-events-none whitespace-nowrap">
-                    {city === 'Todas' ? 'Cidade' : city}
-                  </span>
-                </div>
-
-                {/* Contador de Anúncios Slim */}
-                {(settings?.showTotalAdsBadge === true || isModeratorOrAdmin) && (
-                  <div 
-                    style={{
-                      backgroundColor: customBg || 'rgba(0,0,0,0.3)',
-                      borderColor: customBorder || 'rgba(255,255,255,0.1)',
-                    }}
-                    className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
-                  >
-                    <span className={`${txtColorClass} font-black text-sm md:text-lg mr-2`}>
-                      {totalApprovedCount !== null ? totalApprovedCount : filteredAds.length}
-                    </span>
-                    <span className={`${txtMutedClass} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Anúncios</span>
-
-                    {!settings?.showTotalAdsBadge && isModeratorOrAdmin && (
-                      <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
-                        🔒 Oculto para o público (Visto por Staff)
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Contador de Utilizadores Slim */}
-                {(settings?.showTotalUsersBadge || isModeratorOrAdmin) && totalUsersCount !== null && (
-                  <div 
-                    style={{
-                      backgroundColor: customBg || 'rgba(15,23,42,0.4)',
-                      borderColor: customBorder || 'rgba(99,102,241,0.3)',
-                    }}
-                    className={`h-10 md:h-12 px-4 md:px-5 flex items-center ${blurClass} rounded-full border shadow-inner group relative select-none`}
-                  >
-                    <span className={`${isLightText ? 'text-indigo-300' : 'text-indigo-950'} font-black text-sm md:text-lg mr-2`}>
-                      {totalUsersCount}
-                    </span>
-                    <span className={`${isLightText ? 'text-indigo-400/80' : 'text-indigo-800/80'} text-[10px] md:text-xs uppercase font-bold tracking-tighter`}>Membros</span>
-
-                    {!settings?.showTotalUsersBadge && isModeratorOrAdmin && (
-                      <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-950 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
-                        🔒 Oculto para o público (Visto por Staff)
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
 
-              {/* Filtro de Área de Atendimento para Categoria Serviços */}
-              {(() => {
-                const isServiceCategory = category === 'Serviços' || category?.startsWith('Serviços') || category?.includes('Serviços');
-                return isServiceCategory && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="w-full mt-4"
-                  >
+              <style>{`
+                @keyframes flagMarquee {
+                  0% {
+                    transform: translateX(0);
+                  }
+                  100% {
+                    transform: translateX(-50%);
+                  }
+                }
+                .animate-flag-marquee {
+                  display: flex;
+                  width: max-content;
+                  animation: flagMarquee 26s linear infinite;
+                }
+                .animate-flag-marquee:hover {
+                  animation-play-state: paused;
+                }
+              `}</style>
+
+              {/* Bandeiras dos países em carrossel elegante na base do banner */}
+              <div className="w-full overflow-hidden relative pt-1 mt-4 border-t border-white/10" id="desktop-flags-marquee-container">
+                <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/20 to-transparent z-10 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/20 to-transparent z-10 pointer-events-none" />
+                
+                <div className="animate-flag-marquee flex gap-3">
+                  {flagItemsMarquee.map((item, idx) => (
                     <div 
-                      style={{
-                        backgroundColor: customBg || 'rgba(15,23,42,0.45)',
-                        borderColor: customBorder || 'rgba(255,255,255,0.2)',
-                      }}
-                      className={`p-4 md:p-5 rounded-3xl border ${blurClass} shadow-xl text-left max-w-xl md:max-w-2xl mx-auto`}
+                      key={`flag-1-dt-${idx}`} 
+                      className={`group/flag shrink-0 flex items-center justify-center gap-1.5 bg-slate-950/40 hover:bg-slate-950/60 border ${item.border} rounded-full py-0.5 px-2.5 transition-all duration-300 cursor-default shadow-sm`}
+                      title={item.name}
                     >
-                      <h3 className={`text-xs md:text-sm font-black uppercase tracking-wider mb-3 ${txtColorClass} flex items-center gap-2`}>
-                        <span>📍</span> Área de Atendimento
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <label className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/5 active:scale-98 border border-transparent hover:border-white/10 select-none ${txtColorClass}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={filterRegion} 
-                            onChange={(e) => setFilterRegion(e.target.checked)}
-                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-xs md:text-sm font-extrabold">Apenas minha região</span>
-                            <span className="text-[10px] opacity-75">Local, raio 20/50km ou distrito</span>
-                          </div>
-                        </label>
-
-                        <label className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/5 active:scale-98 border border-transparent hover:border-white/10 select-none ${txtColorClass}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={filterNational} 
-                            onChange={(e) => setFilterNational(e.target.checked)}
-                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-xs md:text-sm font-extrabold">Atendimento Nacional</span>
-                            <span className="text-[10px] opacity-75">Todo o {country === 'Reino Unido' ? 'Reino Unido' : 'Portugal'}</span>
-                          </div>
-                        </label>
-
-                        <label className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/5 active:scale-98 border border-transparent hover:border-white/10 select-none ${txtColorClass}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={filterOnline} 
-                            onChange={(e) => setFilterOnline(e.target.checked)}
-                            className="w-5 h-5 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-xs md:text-sm font-extrabold">Atendimento Online</span>
-                            <span className="text-[10px] opacity-75">Serviços 100% remotos</span>
-                          </div>
-                        </label>
+                      <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center border border-white/20 shadow-inner shrink-0 relative">
+                        <img 
+                          src={`https://flagcdn.com/w40/${item.code}.png`} 
+                          alt={item.flag} 
+                          className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
+                          referrerPolicy="no-referrer"
+                        />
                       </div>
+                      <span className="text-[8px] md:text-[9px] font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wider">
+                        {item.name}
+                      </span>
                     </div>
-                  </motion.div>
-                );
-              })()}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-      {/* ✨ ANÚNCIOS EM DESTAQUE */}
-      {filteredFeaturedAds.length > 0 && (
-        <section className="space-y-1 pt-0 pb-1.5 md:space-y-1.5 md:pb-2">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">✨</span>
-              <div>
-                <h2 className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-none">
-                  Anúncios em Destaque
-                </h2>
-                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-0.5">
-                  Anúncios promovidos pela comunidade
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Carrossel Horizontal Responsivo (Esteira Contínua/Marquee) */}
-          <div className="relative w-full overflow-hidden py-1">
-            <div 
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              onTouchStart={() => setIsHovered(true)}
-              onTouchEnd={() => setIsHovered(false)}
-              className="carouselTrack flex gap-4 md:gap-6"
-              style={{
-                animationName: (settings?.highlightSpeed !== 0) ? 'scrollCarousel' : 'none',
-                animationDuration: marqueeData.duration,
-                animationTimingFunction: 'linear',
-                animationIterationCount: 'infinite',
-                animationPlayState: (isHovered || settings?.highlightSpeed === 0) ? 'paused' : 'running',
-              }}
-            >
-              {marqueeData.items.map((ad, idx) => (
-                <div key={`${ad.id}-${idx}`} className="w-[140px] sm:w-[165px] md:w-[195px] shrink-0">
-                  <AdCard ad={ad} variant="featured" />
+                  ))}
+
+                  {flagItemsMarquee.map((item, idx) => (
+                    <div 
+                      key={`flag-2-dt-${idx}`} 
+                      className={`group/flag shrink-0 flex items-center justify-center gap-1.5 bg-slate-950/40 hover:bg-slate-950/60 border ${item.border} rounded-full py-0.5 px-2.5 transition-all duration-300 cursor-default shadow-sm`}
+                      title={item.name}
+                    >
+                      <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center border border-white/20 shadow-inner shrink-0 relative">
+                        <img 
+                          src={`https://flagcdn.com/w40/${item.code}.png`} 
+                          alt={item.flag} 
+                          className="h-full w-full object-cover shrink-0 select-none scale-120 group-hover/flag:scale-135 transition-transform duration-300"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <span className="text-[8px] md:text-[9px] font-black text-white group-hover/flag:text-amber-300 transition-colors duration-300 select-none uppercase tracking-wider">
+                        {item.name}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            </motion.div>
           </div>
         </section>
-      )}
 
-      {/* 🏪 EMPREENDEDORES EM DESTAQUE */}
-      {featuredVitrines.length > 0 && (
-        <section className="space-y-2 pt-2.5 pb-4 md:pt-3 md:pb-5 overflow-hidden max-w-full" id="featured-entrepreneurs">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🏪</span>
-              <div>
-                <h2 className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-none">
-                  Empreendedores em Destaque
+        {/* 3. ✨ ANÚNCIOS EM DESTAQUE */}
+        {filteredFeaturedAds.length > 0 && (
+          <section className="py-2 md:py-4 border-b border-slate-250/20">
+            <div className="flex flex-col gap-0.5 mb-4 text-left">
+              <div className="flex items-center gap-2">
+                <span className="text-lg md:text-xl">✨</span>
+                <h2 className="text-md md:text-lg lg:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none">
+                  Anúncios em Destaque
                 </h2>
-                <p className="text-[10px] md:text-xs text-slate-500 font-bold tracking-wide uppercase mt-0.5">
+              </div>
+              <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-wider uppercase">
+                Anúncios promovidos de forma especial pela comunidade
+              </p>
+            </div>
+            
+            {/* Carrossel Horizontal Responsivo */}
+            <div className="relative w-full overflow-hidden py-1">
+              <div 
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                onTouchStart={() => setIsHovered(true)}
+                onTouchEnd={() => setIsHovered(false)}
+                className="carouselTrack flex gap-4 md:gap-6"
+                style={{
+                  animationName: (settings?.highlightSpeed !== 0) ? 'scrollCarousel' : 'none',
+                  animationDuration: marqueeData.duration,
+                  animationTimingFunction: 'linear',
+                  animationIterationCount: 'infinite',
+                  animationPlayState: (isHovered || settings?.highlightSpeed === 0) ? 'paused' : 'running',
+                }}
+              >
+                {marqueeData.items.map((ad, idx) => (
+                  <div key={`${ad.id}-${idx}`} className="w-[140px] sm:w-[165px] md:w-[195px] shrink-0">
+                    <AdCard ad={ad} variant="featured" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 4. 🏪 EMPREENDEDORES EM DESTAQUE */}
+        {featuredVitrines.length > 0 && (
+          <section className="py-2 md:py-4 border-b border-slate-250/20 overflow-hidden max-w-full" id="desktop-featured-entrepreneurs">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-4 text-left">
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg md:text-xl">🏪</span>
+                  <h2 className="text-md md:text-lg lg:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none">
+                    Empreendedores em Destaque
+                  </h2>
+                </div>
+                <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-wider uppercase">
                   Vitrines Digitais em alta na comunidade
                 </p>
               </div>
+              <Link
+                to="/empreendedores"
+                className="group flex items-center gap-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors uppercase tracking-wider bg-indigo-50 dark:bg-slate-800 hover:bg-indigo-100/80 px-3.5 py-1.5 rounded-full shadow-sm"
+              >
+                <span>Ver Todos</span>
+                <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             </div>
-            <Link
-              to="/empreendedores"
-              className="group flex items-center gap-1 text-xs font-black text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-wider"
-            >
-              <span>Ver Todos</span>
-              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
 
-          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-1.5 px-1.5 xs:-mx-2 xs:px-2 sm:mx-0 sm:px-0 no-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
-            {featuredVitrines.map((vitrine) => {
-              const linkTo = `/empreendedores/${vitrine.showcaseSlug}`;
-              const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=450&h=150&fit=crop&q=80';
-              return (
-                <Link 
-                  key={vitrine.uid} 
-                  to={linkTo}
-                  className="w-[270px] sm:w-[300px] h-[340px] shrink-0 bg-[#0d0e12] rounded-[1.75rem] border border-slate-800/60 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden group scroll-snap-align-start cursor-pointer"
-                  style={{ scrollSnapAlign: 'start' }}
-                >
-                  {/* Banner Cover taking ~80% of the card height */}
-                  <div className="relative h-[275px] w-full bg-slate-900 overflow-hidden">
-                    <img 
-                      src={vitrine.showcaseCover || fallbackCover} 
-                      alt={vitrine.showcaseName} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                      referrerPolicy="no-referrer"
-                    />
-                    
-                    {/* Centered circular logo at the top over the banner */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-white border-2 border-white shadow-md flex items-center justify-center overflow-hidden z-20">
-                      {vitrine.showcaseLogo && vitrine.showcaseLogo.trim() !== '' ? (
-                        <img src={vitrine.showcaseLogo} alt="Logo" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
-                      ) : (
-                        <span className="text-xl">🏬</span>
-                      )}
-                    </div>
+            <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 no-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+              {featuredVitrines.map((vitrine) => {
+                const linkTo = `/empreendedores/${vitrine.showcaseSlug}`;
+                const fallbackCover = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=450&h=150&fit=crop&q=80';
+                return (
+                  <Link 
+                    key={vitrine.uid} 
+                    to={linkTo}
+                    className="w-[260px] sm:w-[280px] h-[320px] shrink-0 bg-[#0d0e12] rounded-[1.5rem] border border-slate-800/60 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden group scroll-snap-align-start cursor-pointer"
+                    style={{ scrollSnapAlign: 'start' }}
+                  >
+                    <div className="relative h-[255px] w-full bg-slate-900 overflow-hidden">
+                      <img 
+                        src={vitrine.showcaseCover || fallbackCover} 
+                        alt={vitrine.showcaseName} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        referrerPolicy="no-referrer"
+                      />
+                      
+                      <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-white border-2 border-white shadow-md flex items-center justify-center overflow-hidden z-20">
+                        {vitrine.showcaseLogo && vitrine.showcaseLogo.trim() !== '' ? (
+                          <img src={vitrine.showcaseLogo} alt="Logo" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                        ) : (
+                          <span className="text-lg">🏬</span>
+                        )}
+                      </div>
 
-                    {/* Dark gradient overlay on bottom of the image for text contrast */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent pt-16 p-4 flex flex-col justify-end z-10">
-                      <div className="flex justify-between items-end gap-2 text-white">
-                        <div className="min-w-0 flex-1">
-                          {/* Name */}
-                          <h3 className="font-extrabold text-white text-base sm:text-lg leading-tight line-clamp-1 truncate drop-shadow-md">
-                            {vitrine.showcaseName}
-                          </h3>
-                          {/* Location */}
-                          <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-350 font-medium mt-1 truncate drop-shadow-sm">
-                            <MapPin size={11} className="text-slate-400 shrink-0" />
-                            <span className="truncate">{vitrine.city ? `${vitrine.city}, ` : ''}{vitrine.country === 'Portugal' ? '🇵🇹 pt' : '🇬🇧 uk'}</span>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pt-12 p-3.5 flex flex-col justify-end z-10">
+                        <div className="flex justify-between items-end gap-2 text-white">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-black text-white text-sm sm:text-base leading-tight line-clamp-1 truncate drop-shadow-md">
+                              {vitrine.showcaseName}
+                            </h3>
+                            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-300 font-semibold mt-0.5 truncate drop-shadow-sm">
+                              <MapPin size={10} className="text-slate-400 shrink-0" />
+                              <span className="truncate">{vitrine.city ? `${vitrine.city}, ` : ''}{vitrine.country === 'Portugal' ? '🇵🇹 pt' : '🇬🇧 uk'}</span>
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Compact items badge on bottom right corner of image */}
-                        <div className="px-2 py-1 bg-black/65 border border-white/10 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shrink-0 shadow-xs">
-                          <span>📦</span>
-                          <span>{vitrine.productsCount} {vitrine.productsCount === 1 ? 'item' : 'itens'}</span>
+                          
+                          <div className="px-1.5 py-0.5 bg-black/70 border border-white/15 text-white rounded-md text-[9px] font-black flex items-center gap-1 shrink-0 shadow-sm">
+                            <span>📦</span>
+                            <span>{vitrine.productsCount} {vitrine.productsCount === 1 ? 'item' : 'itens'}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Bottom ~20% of the card - CTA button */}
-                  <div className="p-3 bg-[#0d0e12] flex items-center justify-center h-[65px] shrink-0 border-t border-slate-900/35">
-                    <div
-                      className="w-full py-2 bg-[#136338] group-hover:bg-[#1a5e37] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 rounded-xl transition-all shadow-md text-center border border-emerald-800/10"
-                    >
-                      <Store size={14} className="text-white shrink-0" />
-                      <span>Meu Negócio</span>
+                    <div className="p-2.5 bg-[#0d0e12] flex items-center justify-center h-[60px] shrink-0 border-t border-slate-900/35">
+                      <div
+                        className="w-full py-1.5 bg-[#136338] group-hover:bg-[#1a5e37] text-white font-black text-xs flex items-center justify-center gap-1.5 rounded-lg transition-all shadow-md text-center border border-emerald-800/10"
+                      >
+                        <Store size={12} className="text-white shrink-0" />
+                        <span>Meu Negócio</span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 5. 🛍️ GRID DE ANÚNCIOS (Últimos anúncios) */}
+        <section className="py-2 md:py-4 text-left">
+          <div className="flex flex-col gap-0.5 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg md:text-xl">🛍️</span>
+              <h2 className="text-md md:text-lg lg:text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none">
+                Últimos Anúncios
+              </h2>
+            </div>
+            <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-wider uppercase">
+              Descubra os anúncios e ofertas mais recentes em tempo real
+            </p>
+          </div>
+
+          <div className="px-0">
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="bg-slate-100 dark:bg-slate-800 rounded-2xl h-64 animate-pulse" />
+                ))}
+              </div>
+            ) : errorMsg ? (
+              <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-red-100 dark:border-red-950 shadow-md max-w-md mx-auto p-6 flex flex-col items-center">
+                <span className="text-3xl">⚠️</span>
+                <h3 className="text-md font-extrabold text-slate-850 dark:text-slate-100 mt-2">Problema de Ligação</h3>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 leading-relaxed">
+                  Não foi possível ligar ao banco de dados neste momento.
+                </p>
+                <button
+                  onClick={() => {
+                    setErrorMsg(null);
+                    setLoading(true);
+                    clearHomeCache();
+                    setReloadCounter(prev => prev + 1);
+                  }}
+                  className="mt-4 px-5 py-2 bg-slate-900 dark:bg-slate-850 text-white font-black text-xs rounded-lg hover:bg-slate-800 transition active:scale-95 shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <RefreshCcw size={12} />
+                  Tentar Novamente
+                </button>
+              </div>
+            ) : filteredAds.length === 0 ? (
+              <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                <ShoppingBag size={40} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
+                <h3 className="text-md font-extrabold text-slate-400">Nenhum anúncio encontrado</h3>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+                {displayedAds.map((ad) => (
+                  <AdCard key={ad.id} ad={ad} />
+                ))}
+              </div>
+            )}
+
+            {hasMore && !loading && (
+              <div className="flex justify-center mt-10 pb-6">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isFetchingMore}
+                  className="flex items-center gap-2 px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-full shadow-md active:scale-95 disabled:opacity-50 transition-all duration-300 cursor-pointer"
+                >
+                  {isFetchingMore ? (
+                    <>
+                      <RefreshCcw className="animate-spin" size={14} />
+                      A carregar mais...
+                    </>
+                  ) : (
+                    <>
+                      Ver mais anúncios
+                      <ArrowRight size={14} />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </section>
-      )}
-
-      {/* Grid de Anúncios */}
-      <div ref={resultsSectionRef} className="px-0">
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 xs:gap-2.5 sm:gap-4 md:gap-6">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-slate-100 rounded-3xl h-64 animate-pulse" />
-            ))}
-          </div>
-        ) : errorMsg ? (
-          <div className="text-center py-16 bg-white rounded-[3rem] border border-red-100 shadow-md max-w-md mx-auto p-8 flex flex-col items-center">
-            <span className="text-4xl">⚠️</span>
-            <h3 className="text-lg font-extrabold text-slate-800 mt-3">Problema de Ligação ao Banco de Dados</h3>
-            <p className="text-slate-500 text-sm mt-1.5 leading-relaxed">
-              O servidor do banco de dados está temporariamente sob sobrecarga ou em standby. Deseja tentar estabelecer ligação novamente?
-            </p>
-            <button
-              onClick={() => {
-                setErrorMsg(null);
-                setLoading(true);
-                clearHomeCache();
-                setReloadCounter(prev => prev + 1);
-              }}
-              className="mt-5 px-6 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition active:scale-95 shadow-md shadow-slate-900/10 cursor-pointer flex items-center gap-2"
-            >
-              <RefreshCcw size={14} />
-              Tentar Novamente
-            </button>
-          </div>
-        ) : filteredAds.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-            <ShoppingBag size={48} className="mx-auto text-slate-200 mb-4" />
-            <h3 className="text-xl font-bold text-slate-400">Nenhum tesouro encontrado</h3>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 xs:gap-2.5 sm:gap-4 md:gap-6">
-            {displayedAds.map((ad) => (
-              <AdCard key={ad.id} ad={ad} />
-            ))}
-          </div>
-        )}
-
-        {hasMore && !loading && (
-          <div className="flex justify-center mt-12 pb-8">
-            <button
-              onClick={handleLoadMore}
-              disabled={isFetchingMore}
-              className="flex items-center gap-2 px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-full shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-            >
-              {isFetchingMore ? (
-                <>
-                  <RefreshCcw className="animate-spin" size={16} />
-                  A carregar mais...
-                </>
-              ) : (
-                <>
-                  Ver mais anúncios
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        <AnimatePresence>
-          {showScrollTop && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 15 }}
-              onClick={scrollToTop}
-              title="Voltar ao topo"
-              aria-label="Voltar ao topo"
-              className="fixed bottom-6 right-6 z-50 p-3.5 md:p-4 bg-white text-indigo-600 hover:text-indigo-700 border border-slate-150 rounded-full shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
-              id="back-to-top-btn"
-            >
-              <ArrowUp size={20} className="md:w-6 md:h-6" />
-            </motion.button>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* ============================================================== */}
+      {/* 📱 LAYOUT MOBILE (Aparece apenas em ecrãs menores que md) */}
+      {/* ============================================================== */}
+      <div className="flex md:hidden flex-col gap-4 w-full max-w-full overflow-hidden" id="mobile-home-root">
+        {/* 1. PESQUISA MOBILE (Exatamente uma única linha, ultra-compacta) */}
+        <section className="w-full" id="mobile-search-section">
+          <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-md">
+            <Search size={18} className="text-slate-400 shrink-0" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => {
+                handleSearchFocus();
+                setIsSearchFocused(true);
+              }}
+              placeholder="O que procura hoje?"
+              className="w-full bg-transparent text-slate-900 dark:text-white font-black placeholder:text-slate-400 focus:outline-none text-sm"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="text-slate-400 hover:text-slate-600 px-1 font-extrabold text-sm"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* 2. FILTROS COMPACTOS EM UMA ÚNICA LINHA (Compacto, Proporcional sem Extravasar Viewport) */}
+        <section className="w-full px-0.5" id="mobile-filters-section">
+          <div className="flex items-stretch gap-1.5 w-full max-w-full overflow-visible">
+            
+            {/* Categoria (~41% de largura) */}
+            <div className="relative flex-1 min-w-0 flex items-center gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60 rounded-xl px-2 py-1.5 transition-all">
+              <Tag size={11} className="text-slate-400 dark:text-slate-300 shrink-0 select-none" />
+              <select
+                value={category}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'Trabalho/Empregos') {
+                    navigate('/trabalhos');
+                  } else {
+                    setCategory(val);
+                    setFilterRegion(false);
+                    setFilterNational(false);
+                    setFilterOnline(false);
+                  }
+                }}
+                className="w-full bg-transparent text-[10px] md:text-xs font-black text-slate-900 dark:text-white focus:outline-none appearance-none cursor-pointer pr-4 border-none py-0 pl-0 min-w-0"
+              >
+                <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Categorias</option>
+                {categories.map((c, i) => (
+                  <option key={i} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">{c}</option>
+                ))}
+              </select>
+              <span className="text-[6px] text-slate-400 dark:text-slate-300 absolute right-1.5 pointer-events-none select-none">▼</span>
+            </div>
+
+            {/* Cidade (~41% de largura) */}
+            <div className="relative flex-1 min-w-0 flex items-center gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60 rounded-xl px-2 py-1.5 transition-all">
+              <MapPin size={11} className="text-slate-400 dark:text-slate-300 shrink-0 select-none" />
+              <select
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full bg-transparent text-[10px] md:text-xs font-black text-slate-900 dark:text-white focus:outline-none appearance-none cursor-pointer pr-4 border-none py-0 pl-0 min-w-0"
+              >
+                <option value="Todas" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">Cidades</option>
+                {selectableCitiesOnHome.map((c, i) => (
+                  <option key={i} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold">{c}</option>
+                ))}
+              </select>
+              <span className="text-[6px] text-slate-400 dark:text-slate-300 absolute right-1.5 pointer-events-none select-none">▼</span>
+            </div>
+
+            {/* País (~18% de largura) */}
+            <div ref={mobileCountryDropdownRef} className="relative w-[18%] shrink-0 flex items-stretch" id="mobile-country-dropdown-wrapper">
+              <button
+                type="button"
+                onClick={() => setMobileCountryDropdownOpen(prev => !prev)}
+                aria-expanded={mobileCountryDropdownOpen}
+                aria-haspopup="menu"
+                className="w-full h-full flex items-center justify-between gap-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60 rounded-xl px-1.5 py-1.5 transition-all cursor-pointer"
+              >
+                {/* Bandeira oficial diretamente dentro do botão, mantendo proporção ideal, cantos arredondados e sem bordas adicionais */}
+                <img
+                  src={getFlagSvgUrl(country)}
+                  alt={country}
+                  className="w-[25px] h-[16px] object-cover rounded-sm pointer-events-none select-none shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                {/* Pequena seta discreta alinhada à direita */}
+                <span className="text-[6px] text-slate-400 dark:text-slate-300 pointer-events-none select-none leading-none">▼</span>
+              </button>
+
+              {/* Menu suspenso personalizado em React com AnimatePresence */}
+              <AnimatePresence>
+                {mobileCountryDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                    transition={{ duration: 0.12 }}
+                    className="absolute right-0 top-full mt-1.5 z-50 w-44 rounded-2xl p-2 shadow-2xl flex flex-col gap-1 border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                    role="menu"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCountryChange('Portugal');
+                        setMobileCountryDropdownOpen(false);
+                      }}
+                      role="menuitem"
+                      className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        country === 'Portugal'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      <img
+                        src={getFlagSvgUrl('Portugal')}
+                        alt="Portugal"
+                        className="w-5 h-3.5 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span>🇵🇹 Portugal</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCountryChange('Reino Unido');
+                        setMobileCountryDropdownOpen(false);
+                      }}
+                      role="menuitem"
+                      className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        country === 'Reino Unido'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      <img
+                        src={getFlagSvgUrl('Reino Unido')}
+                        alt="Reino Unido"
+                        className="w-5 h-3.5 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span>🇬🇧 Reino Unido</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+          </div>
+
+          {/* Filtros expandidos de serviços se categoria for Serviços */}
+          {(() => {
+            const isServiceCategory = category === 'Serviços' || category?.startsWith('Serviços') || category?.includes('Serviços');
+            return isServiceCategory && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="w-full mt-2 bg-slate-50 dark:bg-slate-900 rounded-xl p-2.5 border border-slate-200 dark:border-slate-800"
+              >
+                <div className="flex flex-col gap-2 text-left">
+                  <span className="text-[10px] font-black uppercase text-slate-400">Filtro de Atendimento:</span>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <input type="checkbox" checked={filterRegion} onChange={(e) => setFilterRegion(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                      <span>Região</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <input type="checkbox" checked={filterNational} onChange={(e) => setFilterNational(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                      <span>Nacional</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <input type="checkbox" checked={filterOnline} onChange={(e) => setFilterOnline(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                      <span>Online</span>
+                    </label>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })()}
+        </section>
+
+        {/* 3. BANNER PEQUENO (Reduzido para ~120px de Altura, Simplificado, Extremamente Compacto) */}
+        <section className="w-full" id="mobile-banner-section">
+          <div className="relative overflow-hidden rounded-2xl h-[115px] shadow-sm">
+            <img 
+              src={country === 'Portugal' ? lisbonAerial : londonBg} 
+              alt={country} 
+              className="absolute inset-0 w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-black/15 to-black/10" />
+            
+            <div className="relative z-10 h-full flex flex-col justify-center px-4 text-left">
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Comunidade Lusófona</span>
+              <h2 className="text-base font-black text-white mt-0.5 leading-tight">Mercado Luso Marketplace</h2>
+              <p className="text-[10px] text-white/80 font-bold mt-1">Negócios locais perto de si.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. ANÚNCIOS EM DESTAQUE (Carrossel Compacto) */}
+        {filteredFeaturedAds.length > 0 && (
+          <section className="w-full border-b border-slate-100 dark:border-slate-800/60 pb-3" id="mobile-featured-section">
+            <div className="flex items-center gap-1.5 mb-2.5 text-left">
+              <span className="text-base">✨</span>
+              <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">
+                Destaques
+              </h2>
+            </div>
+            
+            {/* Esteira horizontal compacta */}
+            <div className="relative w-full overflow-hidden">
+              <div 
+                className="carouselTrack flex gap-3"
+                style={{
+                  animationName: (settings?.highlightSpeed !== 0) ? 'scrollCarousel' : 'none',
+                  animationDuration: marqueeData.duration,
+                  animationTimingFunction: 'linear',
+                  animationIterationCount: 'infinite',
+                }}
+              >
+                {marqueeData.items.map((ad, idx) => (
+                  <div key={`${ad.id}-${idx}`} className="w-[125px] shrink-0">
+                    <AdCard ad={ad} variant="featured" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 5. EMPREENDEDORES MOBILE (Compact scroller) */}
+        {featuredVitrines.length > 0 && (
+          <section className="w-full border-b border-slate-100 dark:border-slate-800/60 pb-3" id="mobile-entrepreneurs-section">
+            <div className="flex items-center justify-between mb-2.5 text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">🏪</span>
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">
+                  Vitrine Empreendedora
+                </h2>
+              </div>
+              <Link to="/empreendedores" className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-50 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+                Ver todos
+              </Link>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+              {featuredVitrines.map((vitrine) => (
+                <Link 
+                  key={`mb-${vitrine.uid}`} 
+                  to={`/empreendedores/${vitrine.showcaseSlug}`}
+                  className="w-[190px] h-[135px] shrink-0 bg-slate-950 rounded-xl overflow-hidden relative flex flex-col justify-end p-2 border border-slate-800"
+                  style={{ scrollSnapAlign: 'start' }}
+                >
+                  <img src={vitrine.showcaseCover || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=350&q=85'} alt="" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                  <div className="relative z-10">
+                    <h3 className="text-xs font-black text-white truncate line-clamp-1">{vitrine.showcaseName}</h3>
+                    <p className="text-[8px] text-slate-300 font-bold mt-0.5 truncate">{vitrine.city || 'Portugal'}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 6. ÚLTIMOS ANÚNCIOS (Grid Compacta de 2 Colunas) */}
+        <section className="w-full text-left" id="mobile-latest-section">
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="text-base">🛍️</span>
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">
+              Últimas Ofertas
+            </h2>
+          </div>
+
+          <div ref={resultsSectionRef}>
+            {loading ? (
+              <div className="grid grid-cols-2 gap-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-slate-100 dark:bg-slate-850 rounded-xl h-44 animate-pulse" />
+                ))}
+              </div>
+            ) : errorMsg ? (
+              <div className="text-center py-8 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-red-100 dark:border-red-950 p-4">
+                <span className="text-2xl">⚠️</span>
+                <p className="text-slate-600 dark:text-slate-400 text-xs mt-1 font-bold">Lamentamos, não foi possível carregar.</p>
+              </div>
+            ) : filteredAds.length === 0 ? (
+              <div className="text-center py-10 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs font-black text-slate-400">Nenhum anúncio disponível.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {displayedAds.map((ad) => (
+                  <AdCard key={`mb-ad-${ad.id}`} ad={ad} />
+                ))}
+              </div>
+            )}
+
+            {hasMore && !loading && (
+              <div className="flex justify-center mt-6 pb-4">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isFetchingMore}
+                  className="flex items-center gap-1.5 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-full shadow-md transition-all cursor-pointer"
+                >
+                  {isFetchingMore ? (
+                    <span>A carregar...</span>
+                  ) : (
+                    <>
+                      <span>Carregar mais</span>
+                      <ArrowRight size={12} />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Voltar ao Topo (Comum a ambos os layouts) */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 15 }}
+            onClick={scrollToTop}
+            title="Voltar ao topo"
+            aria-label="Voltar ao topo"
+            className="fixed bottom-6 right-6 z-50 p-3.5 md:p-4 bg-white text-indigo-600 hover:text-indigo-700 border border-slate-150 rounded-full shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+            id="back-to-top-btn"
+          >
+            <ArrowUp size={20} className="md:w-6 md:h-6" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
