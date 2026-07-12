@@ -468,14 +468,14 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
                   : 'from-amber-500 to-yellow-400 text-white font-sans'
             } font-black rounded-full shadow-md flex items-center justify-center ${
               isFeaturedVariant 
-                ? 'top-2 left-2 text-[10px] w-6 h-6' 
-                : 'top-3 left-3 text-xs w-7 h-7'
+                ? 'top-1 left-1 text-[8px] w-4.5 h-4.5' 
+                : 'top-1.5 left-1.5 text-[9px] w-5 h-5'
             }`}>
               <span>{(ad.category === '💚 Doações & Solidariedade' || ad.donationBadge || ad.featuredReason === 'donation') ? '💚' : isNationalHighlight ? '👑' : '⭐'}</span>
             </div>
           )}
           {ad.listingType === 'informativo' && (
-            <div className="absolute top-2 right-2 z-10 bg-emerald-600 text-white text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-md shadow-md">
+            <div className="absolute top-1 right-1 z-10 bg-emerald-600 text-white text-[8px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm">
               💡 Guia Útil
             </div>
           )}
@@ -542,11 +542,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
           }`}>
             <div className="flex items-center gap-1 text-slate-600">
               {(ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && ad.serviceCoverage === 'online' ? (
-                <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">
+                <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded border border-indigo-100 shadow-sm">
                   <span>💻</span> Atendimento Online
                 </span>
               ) : (ad.category === 'Serviços' || ad.category?.startsWith('Serviços') || ad.category?.includes('Serviços')) && (ad.serviceCoverage === 'uk' || ad.serviceCoverage === 'portugal') ? (
-                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-md border border-emerald-100 shadow-sm">
+                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm">
                   <span>🌍</span> Atendimento Nacional
                 </span>
               ) : (
@@ -637,13 +637,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, variant = 'normal' }) => {
               <div className="mt-auto pt-1 flex flex-col items-center justify-center text-center">
                 {ad.listingType === 'informativo' ? (
                   <div className="flex flex-col items-center justify-center">
-                    <span className="text-xs font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 flex items-center gap-1">
+                    <span className="text-[9px] sm:text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
                       💡 Links Úteis
                     </span>
                   </div>
                 ) : (ad.category === '💚 Doações & Solidariedade' || ad.donationBadge) ? (
                   <div className="flex flex-col items-center justify-center">
-                    <span className="text-xs font-black text-emerald-700 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-150 flex items-center gap-1">
+                    <span className="text-[9px] sm:text-[10px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-150 flex items-center gap-1">
                       Grátis 💚
                     </span>
                   </div>
