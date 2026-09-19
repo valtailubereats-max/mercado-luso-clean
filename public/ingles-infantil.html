@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Meu Primeiro Inglês</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#172033;background:#f5f9ff}
+*{box-sizing:border-box}html,body{height:100%;overflow:hidden}body{margin:0;padding:8px}.wrap{max-width:1000px;margin:auto;height:calc(100dvh - 16px);display:flex;flex-direction:column;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+h1{font-size:25px;margin:4px 0}.muted{color:#64748b}.bar{height:8px;flex:0 0 8px;background:#e2e8f0;border-radius:20px;overflow:hidden;margin:7px 0}
+#progress{height:100%;background:#2563eb;width:3.33%;transition:.25s}
+.card{background:white;border:1px solid #dbe4ee;border-radius:20px;padding:12px;text-align:center;box-shadow:0 5px 20px #0000000c;min-height:0;flex:1;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start}
+.category{font-weight:bold;color:#64748b;font-size:22px}#lessonScreen{width:100%;height:100%}#lessonScreen:not(.intro-mode){display:flex;flex-direction:column;justify-content:flex-start}#quiz{height:100%;width:100%;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center}#quiz.hidden{display:none!important}#learn{display:flex;flex-direction:column;justify-content:space-evenly;flex:1;min-height:0;padding-top:4px}.emoji{font-size:190px;line-height:1.02;margin:8px}
+.word{font-size:54px;font-weight:900;letter-spacing:1px}#question{margin:4px 0;font-size:clamp(24px,4vw,34px)}#hearQuestion{margin:4px auto}.translation{font-size:28px;margin:5px}
+.btn{border:0;border-radius:16px;padding:14px 18px;font-size:18px;font-weight:bold;min-height:56px;cursor:pointer}
+.primary{background:#2563eb;color:white}.audio{background:#e8f0ff;color:#173d88}.audio-pt{background:#fff4d8;color:#694b00}
+.repeat-btn{border:1px solid #dbe4ee;background:#fff;border-radius:50%;padding:0;font-weight:800;min-height:58px;width:76px;height:58px;display:flex;align-items:center;justify-content:center;margin:0 auto}.icon-repeat{font-size:27px;letter-spacing:2px}.learn-actions{display:flex;justify-content:center;align-items:center;margin-top:18px}.learn-actions .btn{width:min(520px,90%);min-height:68px}.flag{font-size:34px;line-height:1;vertical-align:middle;display:inline-block;margin-right:8px}.step-btn{display:block;margin:18px auto 0;width:min(520px,90%)}.trophy{font-size:120px;line-height:1;margin:8px 0}.success-title{font-size:32px;font-weight:900;margin:8px 0}
+.answers{display:flex;flex-direction:column;justify-content:space-evenly;gap:10px;width:min(560px,92%);flex:1;min-height:0;margin:8px auto}.answer{width:100%;font-size:76px;background:#f8fafc;border:2px solid #dbe4ee;border-radius:20px;min-height:0;flex:1;max-height:145px}
+#feedback{font-size:22px;font-weight:bold;min-height:32px;margin:12px 0}.hidden{display:none!important}
+.fs-btn{border:1px solid #cbd5e1;background:white;border-radius:12px;padding:10px 12px;font-size:15px;font-weight:bold;min-height:44px}
+.note{text-align:center;color:#64748b;font-size:12px;margin-top:4px;flex:0 0 auto}
+.locked{opacity:.45;filter:grayscale(.3)}
+.final-trophy{font-size:min(17vh,130px);line-height:1}.confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}.confetti i{position:absolute;top:-12%;font-style:normal;font-size:24px;animation:fall 3.2s linear infinite}@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}.prize-screen{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;overflow:hidden}.name-box{width:min(90%,430px);display:flex;flex-direction:column;gap:7px;text-align:center;font-weight:800}.name-box input{font:inherit;font-size:22px;text-align:center;padding:13px 16px;border:2px solid #cbd5e1;border-radius:16px;background:#fff;color:#0f172a;outline:none}.name-box input:focus{border-color:#2563eb}.intro{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}.intro-star{font-size:min(18vh,130px)}.intro h2{font-size:clamp(28px,5vw,46px);margin:0}.intro p{font-size:clamp(18px,3vw,26px);margin:0 0 12px;color:#64748b}.intro .btn{width:min(500px,90%);min-height:70px}.activity{max-width:700px;width:100%;margin:0 auto}.activity-icon{font-size:72px;line-height:1;margin:5px}.timer{font-size:46px;font-weight:900;margin:6px}.activity h2{font-size:26px;margin:5px}.activity p{font-size:18px;margin:5px}.activity .btn{min-height:50px;padding:10px 16px}
+body:fullscreen{padding:8px}.wrap:fullscreen{max-width:none}
+:fullscreen .wrap{max-width:none;width:100%;height:calc(100dvh - 16px)}:fullscreen .card{border-radius:18px;padding-top:10px}:fullscreen #lessonScreen{width:100%;height:100%}:fullscreen .emoji{font-size:min(23vh,205px);margin:4px}:fullscreen .answer{min-height:min(14vh,120px);font-size:min(7vh,68px)}
+@media(max-width:600px){body{padding:5px}.wrap{height:calc(100dvh - 10px)}.card{padding:8px}.emoji{font-size:min(20vh,145px);margin:4px}.word{font-size:34px}.translation{font-size:18px}.answer{font-size:min(7.5vh,58px);min-height:0;max-height:min(14vh,105px)}.learn-actions{gap:6px;margin-top:8px}.btn{font-size:15px;min-height:48px;padding:9px 12px}.top{align-items:flex-start}h1{font-size:21px}.category{font-size:16px}#feedback{margin:5px 0}.trophy{font-size:min(16vh,100px)}}
+
+#successScreen{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;min-height:0}
+#activityScreen{height:100%;flex-direction:column;align-items:center;justify-content:space-evenly;min-height:0}
+#activityScreen:not(.hidden){display:flex}
+.emergency{background:#dc2626!important;color:#fff!important;border:none!important;box-shadow:0 4px 0 #991b1b}
+.emergency:active{transform:translateY(2px);box-shadow:0 2px 0 #991b1b}
+
+#successScreen:not(.hidden){
+ display:grid!important;
+ grid-template-rows:minmax(0,1fr) auto auto minmax(0,.8fr) auto minmax(18px,.35fr);
+ place-items:center;
+ width:100%;height:100%;
+ padding:18px 20px 22px;
+ box-sizing:border-box;
+}
+#successScreen .trophy{align-self:end}
+#successScreen #next{width:min(92%,760px);align-self:center;margin:0}
+#successScreen h2,#successScreen .success-title{margin:0}
+#successScreen .success-en{margin:0}
+
+#doneEarly{
+  width:min(78vw,660px)!important;
+  min-height:150px!important;
+  padding:28px 42px!important;
+  border-radius:34px!important;
+  font-size:44px!important;
+  font-weight:900!important;
+  line-height:1.1!important;
+}
+@media(max-width:600px){
+  #doneEarly{
+    width:min(86vw,520px)!important;
+    min-height:132px!important;
+    font-size:38px!important;
+    padding:24px 30px!important;
+  }
+}
+
+#childName::placeholder{color:#94a3b8;opacity:.48}
+.close-btn{font-weight:900}
+.btn.audio-locked,.btn:disabled{opacity:.48;pointer-events:none;filter:grayscale(.15)}
+
+.card,.card h1,.card h2,.card p,.card div:not(.btn):not(.answers),
+.category,.emoji,.translation,.word,.muted,#stage,#stars{
+  -webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+.card h1,.card h2,.card p,.category,.emoji,.translation,.word{
+  pointer-events:none;
+}
+button,input{user-select:auto;-webkit-user-select:auto}
+
+/* 10 MELHORIAS */
+#bonusScreen{height:100%;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;overflow:hidden}#bonusScreen.hidden{display:none!important}
+#bonusContent{width:100%;display:flex;justify-content:center;align-items:center;min-height:0;flex:1}.bonus-title{font-size:clamp(28px,5vw,44px);font-weight:900;margin:0}.bonus-sub{font-size:clamp(18px,3vw,26px);font-weight:800;margin:0}
+.big-touch,.mic-big{border:0;background:transparent;font-size:min(23vh,175px);line-height:1}.balloon-area,.memory-row{width:min(94%,700px);display:flex;justify-content:space-evenly;align-items:center;gap:10px}.balloon{border:0;background:transparent;font-size:min(16vh,120px);transition:.2s}.balloon.popped{transform:scale(1.7);opacity:0;pointer-events:none}.memory-item{font-size:min(16vh,120px)}
+.path-row{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;width:min(96%,760px);font-size:32px}.path-dot{opacity:.28}.path-dot.done{opacity:1}.path-dot.now{opacity:1;transform:scale(1.4)}
+.reward-reveal{display:block;font-size:min(23vh,180px);animation:rewardPop .55s ease both}@keyframes rewardPop{0%{transform:scale(.1) rotate(-18deg)}75%{transform:scale(1.22)}100%{transform:scale(1)}}
+.answer.correct-pop{animation:correctPop .55s ease}.answer.wrong-shake{animation:wrongShake .4s ease}@keyframes correctPop{50%{transform:scale(1.13)}}@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-16px)}75%{transform:translateX(16px)}}
+.flying-star{position:fixed;z-index:9999;font-size:76px;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;animation:flyStar .95s ease-in forwards}@keyframes flyStar{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.45)}100%{left:88%;top:7%;opacity:0;transform:translate(-50%,-50%) scale(.3)}}
+.final-name-big{font-size:clamp(52px,11vw,100px)!important;font-weight:1000!important;margin:0!important}.final-prize-word{font-size:clamp(36px,7vw,68px);font-weight:1000}#finalPrizeScreen.final-show .final-trophy{animation:finalTrophy .9s ease both}@keyframes finalTrophy{0%{transform:scale(.05)}70%{transform:scale(1.28)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div class="wrap" id="gameRoot">
+<div class="top"><div><div class="muted">🇬🇧 Inglês para 3–4 anos</div><h1 id="stage">Fase 1 de 30</h1></div><div class="top-actions"><button id="closeBtn" class="fs-btn close-btn" type="button" aria-label="Fechar">✕ Fechar</button><button id="backBtn" class="fs-btn" type="button">← Voltar</button><div id="stars">⭐ 0</div><button id="fullscreen" class="fs-btn">⛶ Tela cheia</button></div></div>
+<div class="bar"><div id="progress"></div></div>
+<div class="card">
+<div id="introScreen" class="intro">
+<div class="intro-star">⭐</div>
+<h2>Pronto para os desafios?</h2>
+<p>Complete todas as fases e chegue até o final!</p>
+<div class="name-box">
+<label for="childName">Qual é o nome da criança?</label>
+<input id="childName" type="text" inputmode="text" autocomplete="off" maxlength="24" placeholder="Leonardo" value="">
+</div>
+<button id="beginGame" class="btn primary">▶ Começar o jogo</button>
+</div>
+<div id="lessonScreen" class="hidden">
+<div id="category" class="category"></div>
+<button id="repeatInstruction" class="repeat-btn icon-repeat" type="button" aria-label="Repetir pergunta" title="Repetir pergunta"><span aria-hidden="true">👂 🔊</span></button>
+<div id="emoji" class="emoji"></div>
+<div id="learn">
+
+<div id="translation" class="translation lang-pt"></div><div id="word" class="word lang-en hidden"></div>
+<div class="learn-actions">
+<button id="hearPt" class="btn audio-pt"><span class="flag">🇧🇷</span> 1. Ouvir em português</button>
+<button id="hearWord" class="btn audio hidden"><span class="flag">🇬🇧</span> 2. Ouvir em inglês</button>
+<button id="startQuiz" class="btn primary hidden">Next</button>
+</div>
+</div>
+<div id="quiz" class="hidden">
+<h2 id="question"></h2><button id="hearQuestion" class="btn audio">🔊 Ouvir pergunta</button>
+<div id="answers" class="answers"></div>
+</div>
+</div>
+<div id="bonusScreen" class="hidden"><div class="category">⭐ DESAFIO ESPECIAL</div><h2 id="bonusTitle" class="bonus-title"></h2><div id="bonusContent"></div><p id="bonusText" class="bonus-sub"></p><button id="bonusNext" class="btn primary hidden">Next</button></div>
+<div id="successScreen" class="hidden">
+<div class="trophy">🏆</div>
+<div class="success-title">Muito bem!</div>
+<div class="translation">Well done!</div>
+</div>
+<div id="finalPrizeScreen" class="prize-screen hidden">
+<div id="confetti" class="confetti"></div>
+<div class="final-trophy">🏆</div>
+<h2 id="finalWinnerName" class="success-title final-name-big">Você conseguiu!</h2>
+<div class="translation">Parabéns! Você ganhou o prêmio!</div><div class="final-prize-word">🎁 PRÊMIO!</div>
+</div>
+<div id="activityScreen" class="activity hidden">
+<div class="category">🎈 PAUSA ATIVA</div><div id="activityIcon" class="activity-icon"></div>
+<h2 id="activityTitle"></h2><p id="activityText"></p>
+<div id="timer" class="timer">20</div>
+<button id="startActivity" class="btn primary">▶ Começar 20 segundos</button>
+<button id="doneEarly" class="btn emergency hidden">✓ Consegui!</button>
+<button id="finishActivity" class="btn primary hidden">Next</button>
+</div>
+<div id="feedback"></div><button id="next" class="btn primary hidden">Next</button>
+</div>
+
+</div>
+<script>
+const lessons=[
+['🐾 ANIMALS','🐶','DOG','cachorro',['🐶','🐱','🐮']],['🐾 ANIMALS','🐱','CAT','gato',['🐰','🐱','🐶']],['🐾 ANIMALS','🐟','FISH','peixe',['🐦','🐟','🐸']],['🐾 ANIMALS','🐦','BIRD','pássaro',['🐦','🐢','🐷']],['🐾 ANIMALS','🐮','COW','vaca',['🐴','🐮','🐑']],
+['🎨 COLOURS','🔴','RED','vermelho',['🔴','🔵','🟢']],['🎨 COLOURS','🔵','BLUE','azul',['🟡','🔵','🔴']],['🎨 COLOURS','🟢','GREEN','verde',['🟢','🟣','🟠']],['🎨 COLOURS','🟡','YELLOW','amarelo',['🔵','🟡','🟢']],['🎨 COLOURS','🟠','ORANGE','laranja',['🟣','🟢','🟠']],
+['🔢 NUMBERS','1️⃣','ONE','um',['1️⃣','2️⃣','3️⃣']],['🔢 NUMBERS','2️⃣','TWO','dois',['3️⃣','2️⃣','1️⃣']],['🔢 NUMBERS','3️⃣','THREE','três',['4️⃣','1️⃣','3️⃣']],['🔢 NUMBERS','4️⃣','FOUR','quatro',['2️⃣','4️⃣','5️⃣']],['🔢 NUMBERS','5️⃣','FIVE','cinco',['5️⃣','3️⃣','4️⃣']],
+['🍎 FOOD','🍎','APPLE','maçã',['🍌','🍎','🍓']],['🍎 FOOD','🍌','BANANA','banana',['🍎','🍌','🍇']],['🍎 FOOD','🍓','STRAWBERRY','morango',['🍓','🍊','🍐']],['🍎 FOOD','🥛','MILK','leite',['💧','🥛','🧃']],['🍎 FOOD','🍞','BREAD','pão',['🧀','🍞','🥚']],
+['🏠 HOME','🚪','DOOR','porta',['🪟','🚪','🛏️']],['🏠 HOME','🛏️','BED','cama',['🪑','🛏️','🚪']],['🏠 HOME','🪑','CHAIR','cadeira',['🪑','🛋️','🛏️']],['🏠 HOME','🪟','WINDOW','janela',['🚪','🪟','🪑']],['🏠 HOME','🏠','HOUSE','casa',['🏫','🏠','🏥']],
+['👤 BODY','👁️','EYE','olho',['👂','👁️','👃']],['👤 BODY','👂','EAR','orelha',['👄','👂','👁️']],['👤 BODY','👃','NOSE','nariz',['👃','👄','👂']],['👤 BODY','👄','MOUTH','boca',['👁️','👃','👄']],['👤 BODY','✋','HAND','mão',['🦶','✋','👂']]
+];
+const activities=[
+['🤸','Pule 5 vezes!','Vamos pular cinco vezes bem alto!'],
+['🐶','Imite um cachorrinho!','Ande como um cachorrinho e faça au-au!'],
+['😜','Faça uma careta!','Faça a careta mais engraçada que conseguir!'],
+['🕺','Dance!','Dance do seu jeito até o tempo acabar!'],
+['🐸','Pule como um sapinho!','Faça pulinhos como um sapinho!'],
+['👏','Bata palmas!','Bata palmas e tente fazer um ritmo!'],
+['🦁','Imite um leão!','Faça uma pose de leão e um rugido!'],
+['🧍','Equilibre-se!','Tente ficar em um pé só por alguns segundos!'],
+['✈️','Vire um avião!','Abra os braços e caminhe como um avião!'],
+['😊','Sorriso gigante!','Faça um sorriso enorme e mexa o corpo!']
+];
+let index=0,score=0,ptDone=false,enDone=false,timerId=null,activityNo=0,gameStarted=false,englishStepReady=false,childName='Leonardo',audioBusy=false,lessonOrder=[],activityOrder=[];
+const $=id=>document.getElementById(id);
+function shuffled(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r}
+function resetOrders(){
+ lessonOrder=[];
+ for(let s=0;s<6;s++)lessonOrder.push(...shuffled(lessons.slice(s*5,s*5+5)));
+ activityOrder=shuffled(activities);
+ activityNo=0;
+}
+function setAudioBusy(b){audioBusy=b}
+
+function speak(text,lang,onDone){
+ if(!('speechSynthesis'in window)){ $('feedback').textContent='🔇 Voz não disponível.';setAudioBusy(false);if(onDone)onDone();return; }
+ setAudioBusy(true);speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.72;u.pitch=1.05;
+ const vs=speechSynthesis.getVoices();const v=vs.find(x=>x.lang.toLowerCase()===lang.toLowerCase())||vs.find(x=>x.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));if(v)u.voice=v;
+ const done=()=>{setAudioBusy(false);if(onDone)onDone()};u.onend=done;u.onerror=done;speechSynthesis.speak(u);
+}
+
+function openingPrompt(category){
+ if(category.includes('ANIMALS')) return 'Em português, que animal é este?';
+ if(category.includes('COLOURS')) return 'Em português, que cor é esta?';
+ if(category.includes('NUMBERS')) return 'Em português, que número é este?';
+ if(category.includes('FOOD')) return 'Em português, que alimento é este?';
+ if(category.includes('HOME')) return 'Em português, que objeto é este?';
+ if(category.includes('BODY')) return 'Em português, que parte do corpo é esta?';
+ return 'Em português, o que é isto?';
+}
+
+function englishPrompt(category){
+ if(category.includes('ANIMALS')) return 'E em inglês, que animal é este?';
+ if(category.includes('COLOURS')) return 'E em inglês, que cor é esta?';
+ if(category.includes('NUMBERS')) return 'E em inglês, que número é este?';
+ if(category.includes('FOOD')) return 'E em inglês, que alimento é este?';
+ if(category.includes('HOME')) return 'E em inglês, que objeto é este?';
+ if(category.includes('BODY')) return 'E em inglês, que parte do corpo é esta?';
+ return 'E em inglês, o que é isto?';
+}
+
+function unlock(b){b.disabled=false;b.classList.remove('locked')}
+
+function hideGameScreens(){['introScreen','lessonScreen','successScreen','activityScreen','finalPrizeScreen','bonusScreen'].forEach(id=>$(id).classList.add('hidden'));$('next').classList.add('hidden');$('feedback').textContent=''}
+function flyStar(){const s=document.createElement('div');s.className='flying-star';s.textContent='⭐';document.body.appendChild(s);setTimeout(()=>s.remove(),1000)}
+function showBonus(t,txt,c){speechSynthesis.cancel();setAudioBusy(false);hideGameScreens();$('bonusScreen').classList.remove('hidden');$('bonusTitle').textContent=t;$('bonusText').textContent=txt||'';$('bonusContent').innerHTML=c||'';$('bonusNext').classList.add('hidden')}
+function revealBonusNext(after,audio='Amazing!',lang='en-GB'){speak(audio,lang,()=>{$('bonusNext').classList.remove('hidden');$('bonusNext').onclick=()=>goWithNext(after)})}
+function treasureBonus(after){const gifts=['🦖','🚗','🚀','🦁','🐼','⚽','🌈','🛸'],gift=gifts[Math.floor(Math.random()*gifts.length)];showBonus('Baú surpresa!','Toque no baú!','<button id="chestBtn" class="big-touch" disabled>🎁</button>');speak('Toque no baú surpresa!','pt-BR',()=>{$('chestBtn').disabled=false;$('chestBtn').onclick=()=>{if(audioBusy)return;$('chestBtn').disabled=true;$('chestBtn').innerHTML=`<span class="reward-reveal">${gift}</span>`;$('bonusText').textContent='Surpresa!';revealBonusNext(after)}})}
+function balloonBonus(after){showBonus('Estoure os balões!','Toque em todos!','<div id="balloonArea" class="balloon-area"></div>');const area=$('balloonArea');let left=4;for(let i=0;i<4;i++){const b=document.createElement('button');b.className='balloon';b.textContent='🎈';b.disabled=true;b.onclick=()=>{if(audioBusy||b.classList.contains('popped'))return;b.classList.add('popped');left--;if(left===0)revealBonusNext(after,'Well done!')};area.appendChild(b)}speak('Estoure todos os balões!','pt-BR',()=>[...area.children].forEach(b=>b.disabled=false))}
+function listeningBonus(after){const x=lessonOrder[index];showBonus('Desafio do ouvido','Escute. Não vou mostrar a palavra.','<div id="listenChoices" class="answers"></div>');const box=$('listenChoices');shuffled(x[4]).forEach(v=>{const b=document.createElement('button');b.className='answer';b.textContent=v;b.disabled=true;b.onclick=()=>{if(audioBusy)return;if(v===x[1]){[...box.children].forEach(z=>z.disabled=true);b.classList.add('correct-pop');flyStar();revealBonusNext(after,'Well done!')}else{b.classList.add('wrong-shake');setTimeout(()=>b.classList.remove('wrong-shake'),450);speak('Try again!','en-GB')}};box.appendChild(b)});speak(`Where is the ${x[2]}?`,'en-GB',()=>[...box.children].forEach(b=>b.disabled=false))}
+function memoryBonus(after){const x=lessonOrder[index],pool=shuffled(x[4]).slice(0,3),missing=pool[Math.floor(Math.random()*pool.length)];showBonus('Quem desapareceu?','Olhe com atenção!','<div id="memoryRow" class="memory-row"></div>');const row=$('memoryRow');pool.forEach(v=>{const d=document.createElement('span');d.className='memory-item';d.textContent=v;row.appendChild(d)});speak('Olhe com atenção!','pt-BR',()=>setTimeout(()=>{row.innerHTML=pool.map(v=>`<button class="answer" data-v="${v}">${v===missing?'❓':v}</button>`).join('');$('bonusText').textContent='Qual desapareceu?';[...row.querySelectorAll('button')].forEach(b=>b.onclick=()=>{if(audioBusy)return;if(b.dataset.v===missing){b.textContent=missing;b.classList.add('correct-pop');revealBonusNext(after,'Muito bem!','pt-BR')}else{speak('Tente novamente!','pt-BR')}})},1200))}
+function repeatWordBonus(after){const x=lessonOrder[index];showBonus('Agora é sua vez!','Escute e depois repita.','<button id="micBtn" class="mic-big" disabled>🎤</button>');speak(x[2],'en-GB',()=>speak('Now you say it!','en-GB',()=>{$('micBtn').disabled=false;$('bonusText').textContent=`Diga: ${x[2]}`;$('micBtn').onclick=()=>{if(audioBusy)return;$('micBtn').disabled=true;setTimeout(()=>revealBonusNext(after,'Great job!'),1800)}}))}
+function themedMovement(after){const x=lessonOrder[index];let icon=x[1],title='Mexa o corpo!',txt='Faça um movimento divertido!';if(x[2]==='DOG'){title='Imite um cachorrinho!';txt='Ande como um cachorrinho e faça au-au!'}else if(x[2]==='BIRD'){title='Voe como um passarinho!';txt='Abra os braços como um passarinho!'}else if(x[2]==='FISH'){title='Nade como um peixe!';txt='Mexa os braços como se estivesse nadando!'}else if(x[2]==='COW'){title='Imite uma vaquinha!';txt='Faça muu e caminhe devagar!'}else if(x[0].includes('BODY')){title='Mostre no seu corpo!';txt=`Mostre onde está ${x[3]}!`}else if(x[0].includes('NUMBERS')){icon='👏';title='Conte com palmas!';txt=`Bata palmas ${x[3]} vezes!`}showBonus(title,txt,`<div><div class="activity-icon">${icon}</div><button id="moveDone" class="btn emergency" style="width:min(80vw,650px);min-height:125px;font-size:34px" disabled>✓ Consegui!</button></div>`);speak(title+' '+txt,'pt-BR',()=>{$('moveDone').disabled=false;$('moveDone').onclick=()=>{if(audioBusy)return;$('moveDone').disabled=true;revealBonusNext(after,`Muito bem, ${childName}!`,'pt-BR')}})}
+function sectionPath(after){showBonus('Seu caminho!','Veja quanto você já avançou!','<div id="pathRow" class="path-row"></div>');const row=$('pathRow');for(let i=0;i<30;i++){const d=document.createElement('span');d.className='path-dot '+(i<index?'done':i===index?'now':'');d.textContent=i===29?'🏆':(i%5===4?'🎁':'⭐');row.appendChild(d)}revealBonusNext(after,'Continue assim!','pt-BR')}
+function runPostSuccessExtras(after){const n=index+1,q=[];if([5,10,15,20,25].includes(n))q.push(treasureBonus);if([6,12,18,24].includes(n))q.push(balloonBonus);if([4,9,14,19,24,29].includes(n))q.push(listeningBonus);if([7,17,27].includes(n))q.push(memoryBonus);if([2,8,13,22,28].includes(n))q.push(repeatWordBonus);if([3,11,16,21,26].includes(n))q.push(themedMovement);if([5,10,15,20,25].includes(n))q.push(sectionPath);function run(){const f=q.shift();if(f)f(run);else after()}run()}
+
+function render(){
+ clearInterval(timerId);ptDone=false;enDone=false;englishStepReady=false;const x=lessonOrder[index];
+ $('bonusScreen').classList.add('hidden');$('introScreen').classList.add('hidden');$('lessonScreen').classList.remove('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('learn').classList.remove('hidden');$('quiz').classList.add('hidden');$('emoji').classList.remove('hidden');
+ $('stage').textContent=`Fase ${index+1} de ${lessonOrder.length}`;$('stars').textContent=`⭐ ${score}`;$('progress').style.width=`${(index+1)/lessonOrder.length*100}%`;
+ $('category').textContent=x[0];$('emoji').textContent=x[1];$('word').textContent=x[2];$('translation').textContent=x[3];$('feedback').textContent='';$('next').classList.add('hidden');
+ $('translation').classList.remove('hidden');$('word').classList.add('hidden');$('repeatInstruction').classList.remove('hidden');$('hearPt').classList.remove('hidden');$('hearPt').disabled=true;$('repeatInstruction').disabled=true;$('hearWord').classList.add('hidden');$('startQuiz').classList.add('hidden');
+ setTimeout(()=>speak(openingPrompt(x[0]),'pt-BR',()=>{$('hearPt').disabled=false;$('repeatInstruction').disabled=false}),250);
+}
+$('beginGame').onclick=()=>{
+ if(gameStarted)return;
+ const typedName=$('childName').value.trim();
+ childName=typedName || 'Leonardo';
+ resetOrders();index=0;score=0;
+ gameStarted=true;
+ const msg=`${childName}, se você conseguir passar pelos desafios, você poderá ganhar um prêmio!`;
+ $('childName').disabled=true;
+ $('beginGame').disabled=true;
+ $('beginGame').textContent='🔊 Escute...';
+ if(!('speechSynthesis' in window)){
+   setTimeout(()=>render(),5500);
+   return;
+ }
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(msg);
+ u.lang='pt-BR'; u.rate=.72; u.pitch=1.05;
+ const vs=speechSynthesis.getVoices();
+ const v=vs.find(x=>x.lang.toLowerCase()==='pt-br')||vs.find(x=>x.lang.toLowerCase().startsWith('pt'));
+ if(v)u.voice=v;
+ u.onend=()=>setTimeout(()=>render(),1800);
+ u.onerror=()=>setTimeout(()=>render(),5500);
+ speechSynthesis.speak(u);
+};
+$('repeatInstruction').onclick=()=>{
+ if(audioBusy)return;
+ $('hearPt').disabled=true;$('repeatInstruction').disabled=true;
+ speak(openingPrompt(lessonOrder[index][0]),'pt-BR',()=>{$('hearPt').disabled=false;$('repeatInstruction').disabled=false});
+};
+$('hearPt').onclick=()=>{
+ if(audioBusy||$('hearPt').disabled)return;
+ ptDone=true;
+ const x=lessonOrder[index];
+ if(!('speechSynthesis'in window)){
+   $('hearPt').classList.add('hidden');$('repeatInstruction').classList.add('hidden');$('translation').classList.add('hidden');$('word').classList.remove('hidden');$('hearWord').classList.remove('hidden');englishStepReady=true;return;
+ }
+ setAudioBusy(true);speechSynthesis.cancel();
+ const answer=new SpeechSynthesisUtterance(x[3]);answer.lang='pt-BR';answer.rate=.72;answer.pitch=1.05;
+ const vs=speechSynthesis.getVoices();const pv=vs.find(v=>v.lang.toLowerCase()==='pt-br')||vs.find(v=>v.lang.toLowerCase().startsWith('pt'));if(pv)answer.voice=pv;
+ answer.onend=()=>{
+   $('hearPt').classList.add('hidden');
+   $('repeatInstruction').classList.add('hidden');
+   $('translation').classList.add('hidden');
+   $('word').classList.remove('hidden');
+   $('hearWord').classList.remove('hidden');$('hearWord').disabled=true;
+   setTimeout(()=>{
+     const q=new SpeechSynthesisUtterance(englishPrompt(x[0]));q.lang='pt-BR';q.rate=.72;q.pitch=1.05;if(pv)q.voice=pv;
+     q.onend=()=>{englishStepReady=true;$('hearWord').disabled=false;setAudioBusy(false)};
+     q.onerror=()=>{englishStepReady=true;$('hearWord').disabled=false;setAudioBusy(false)};
+     speechSynthesis.speak(q);
+   },1000);
+ };
+ speechSynthesis.speak(answer);
+};
+$('hearWord').onclick=()=>{if(!ptDone||!englishStepReady||audioBusy||$('hearWord').disabled)return;enDone=true;$('hearWord').classList.add('hidden');speak(lessonOrder[index][2],'en-GB',()=>{$('startQuiz').classList.remove('hidden')})};
+function speakSequence(onDone){
+ if(!('speechSynthesis'in window)){if(onDone)onDone();return}
+ setAudioBusy(true);speechSynthesis.cancel();
+ const items=[['Muito bem! Parabéns!','pt-BR'],['Well done!','en-GB']];let n=0;
+ function play(){
+   if(n>=items.length){setAudioBusy(false);if(onDone)onDone();return}
+   const [text,lang]=items[n++];const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.72;u.pitch=1.05;
+   const vs=speechSynthesis.getVoices();const v=vs.find(x=>x.lang.toLowerCase()===lang.toLowerCase())||vs.find(x=>x.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));if(v)u.voice=v;
+   u.onend=play;u.onerror=play;speechSynthesis.speak(u)
+ }play();
+}
+$('startQuiz').onclick=()=>{if(!ptDone||!enDone)return;goWithNext(()=>{const x=lessonOrder[index];$('repeatInstruction').classList.add('hidden');$('learn').classList.add('hidden');$('emoji').classList.add('hidden');$('quiz').classList.remove('hidden');$('question').textContent=`Where is the ${x[2]}?`;$('answers').innerHTML='';const choices=[...x[4]];for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]]}choices.forEach(v=>{const b=document.createElement('button');b.className='answer';b.textContent=v;b.onclick=()=>{if(audioBusy)return;if(v===x[1]){score++;b.classList.add('correct-pop');flyStar();$('stars').textContent=`⭐ ${score}`;[...$('answers').children].forEach(z=>z.disabled=true);$('repeatInstruction').classList.add('hidden');$('quiz').classList.add('hidden');$('successScreen').classList.remove('hidden');$('feedback').textContent='';speakSequence(()=>{$('next').textContent='Next';$('next').classList.remove('hidden')})}else{b.classList.add('wrong-shake');setTimeout(()=>b.classList.remove('wrong-shake'),450);$('feedback').textContent='😊 TRY AGAIN!';speak('Try again!','en-GB')}};$('answers').appendChild(b)});speak(`Where is the ${x[2]}?`,'en-GB')});};
+$('hearQuestion').onclick=()=>speak(`Where is the ${lessonOrder[index][2]}?`,'en-GB');
+function showActivity(){
+ if(activityNo>=activityOrder.length){activityOrder=shuffled(activities);activityNo=0}const a=activityOrder[activityNo++];$('lessonScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('activityScreen').classList.remove('hidden');$('next').classList.add('hidden');$('feedback').textContent='';
+ $('activityIcon').textContent=a[0];$('activityTitle').textContent=a[1];$('activityText').textContent=a[2];$('timer').textContent='20';$('startActivity').classList.remove('hidden');$('startActivity').disabled=true;$('doneEarly').classList.add('hidden');$('finishActivity').classList.add('hidden');
+ speak(a[1]+' '+a[2],'pt-BR',()=>{$('startActivity').disabled=false});
+}
+$('startActivity').onclick=()=>{
+ if(audioBusy)return;
+ let t=20;
+ $('startActivity').classList.add('hidden');$('doneEarly').classList.remove('hidden');$('timer').textContent=t;
+ timerId=setInterval(()=>{
+   t--;$('timer').textContent=t;
+   if(t===10)speak(`Vamos, ${childName}! Você vai conseguir!`,'pt-BR');
+   if(t<=0){
+     clearInterval(timerId);timerId=null;$('timer').textContent='🎉';$('doneEarly').classList.add('hidden');$('finishActivity').classList.add('hidden');
+     speak(`Muito bem, ${childName}! Você conseguiu!`,'pt-BR',()=>{$('finishActivity').classList.remove('hidden')});
+   }
+ },1000)
+};
+$('doneEarly').onclick=()=>{
+ if(timerId){clearInterval(timerId);timerId=null}
+ $('timer').textContent='🎉';$('doneEarly').classList.add('hidden');$('finishActivity').classList.add('hidden');
+ speak(`Muito bem, ${childName}! Você conseguiu!`,'pt-BR',()=>{$('finishActivity').classList.remove('hidden')});
+};
+
+function goWithNext(action){
+ if(audioBusy)return;
+ setAudioBusy(true);speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance('Next');
+ u.lang='en-GB';u.rate=.72;u.pitch=1.05;
+ const voices=speechSynthesis.getVoices();
+ const v=voices.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en-gb'))||voices.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en'));
+ if(v)u.voice=v;
+ let moved=false;
+ const go=()=>{if(moved)return;moved=true;setAudioBusy(false);action()};
+ u.onend=()=>setTimeout(go,180);
+ u.onerror=()=>setTimeout(go,180);
+ speechSynthesis.speak(u);
+ setTimeout(go,1600);
+}
+
+function advance(){if(index===lessonOrder.length-1){showFinalPrize()}else{index++;render()}}
+function showFinalPrize(){
+ speechSynthesis.cancel();
+ $('lessonScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('activityScreen').classList.add('hidden');$('bonusScreen').classList.add('hidden');$('next').classList.add('hidden');
+ $('finalPrizeScreen').classList.remove('hidden');$('finalPrizeScreen').classList.add('final-show');$('feedback').textContent='';
+ $('stage').textContent='🏆 Campeão!';$('progress').style.width='100%';$('finalWinnerName').textContent=childName;
+ const pieces=['🎉','⭐','🎊','✨'];
+ $('confetti').innerHTML=Array.from({length:28},(_,i)=>`<i style="left:${(i*37)%100}%;animation-delay:${(i%8)*.18}s">${pieces[i%pieces.length]}</i>`).join('');
+ speak(`${childName}, você completou todos os desafios! Parabéns! Você ganhou o prêmio!`,'pt-BR');
+}
+$('finishActivity').onclick=()=>goWithNext(advance);
+$('next').onclick=()=>goWithNext(()=>{const completed=index+1;$('next').classList.add('hidden');runPostSuccessExtras(()=>{if(completed>=lessonOrder.length)showFinalPrize();else if(completed%3===0)showActivity();else advance()})});
+
+$('closeBtn').onclick=async()=>{
+ speechSynthesis.cancel();setAudioBusy(false);clearInterval(timerId);
+ if(document.fullscreenElement){try{await document.exitFullscreen()}catch(e){}}
+ try{window.close()}catch(e){}
+ setTimeout(()=>{
+   $('lessonScreen').classList.add('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('bonusScreen').classList.add('hidden');$('introScreen').classList.remove('hidden');
+   $('stage').textContent='30 desafios';$('progress').style.width='0%';$('stars').textContent='⭐ 0';
+   $('beginGame').disabled=false;$('childName').disabled=false;gameStarted=false;
+ },150);
+};
+
+$('backBtn').onclick=()=>{
+ speechSynthesis.cancel();setAudioBusy(false);
+ clearInterval(timerId);
+ if(!$('finalPrizeScreen').classList.contains('hidden')){render();return;}
+ if(!$('introScreen').classList.contains('hidden')){
+   return;
+ }
+ if(index>0){
+   index--;
+   render();
+ }else{
+   $('lessonScreen').classList.add('hidden');
+   $('activityScreen').classList.add('hidden');
+   $('successScreen').classList.add('hidden');
+   $('introScreen').classList.remove('hidden');
+   $('stage').textContent='30 desafios';
+   $('progress').style.width='0%';
+   $('feedback').textContent='';
+   $('beginGame').disabled=false;$('childName').disabled=false;gameStarted=false;
+   $('beginGame').textContent='▶ Começar o jogo';
+ }
+};
+const fs=$('fullscreen');function fsLabel(){fs.textContent=document.fullscreenElement?'✕ Sair da tela cheia':'⛶ Tela cheia'}
+fs.onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){$('feedback').textContent='ℹ️ Tela cheia não permitida.'}fsLabel()};document.addEventListener('fullscreenchange',fsLabel);
+if('speechSynthesis'in window)speechSynthesis.getVoices();
+$('stage').textContent='30 desafios';
+$('progress').style.width='0%';
+</script>
+</body></html>
