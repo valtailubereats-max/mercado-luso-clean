@@ -80,20 +80,470 @@ button,input{user-select:auto;-webkit-user-select:auto}
 /* 10 MELHORIAS */
 #bonusScreen{height:100%;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;overflow:hidden}#bonusScreen.hidden{display:none!important}
 #bonusContent{width:100%;display:flex;justify-content:center;align-items:center;min-height:0;flex:1}.bonus-title{font-size:clamp(28px,5vw,44px);font-weight:900;margin:0}.bonus-sub{font-size:clamp(18px,3vw,26px);font-weight:800;margin:0}
-.big-touch,.mic-big{border:0;background:transparent;font-size:min(23vh,175px);line-height:1}.balloon-area,.memory-row{width:min(94%,700px);display:flex;justify-content:space-evenly;align-items:center;gap:10px}.balloon{border:0;background:transparent;font-size:min(16vh,120px);transition:.2s}.balloon.popped{transform:scale(1.7);opacity:0;pointer-events:none}.memory-item{font-size:min(16vh,120px)}
+.big-touch,.mic-big{border:0;background:transparent;font-size:min(23vh,175px);line-height:1}.balloon-area{width:min(92%,520px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));place-items:center;gap:12px;max-height:52dvh}.memory-row{width:min(94%,700px);display:flex;justify-content:space-evenly;align-items:center;gap:10px}.balloon{border:0;background:transparent;font-size:clamp(64px,18vw,110px);line-height:1;transition:.2s;padding:8px;min-width:0;max-width:100%}.balloon.popped{transform:scale(1.7);opacity:0;pointer-events:none}.memory-item{font-size:min(16vh,120px)}
 .path-row{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;width:min(96%,760px);font-size:32px}.path-dot{opacity:.28}.path-dot.done{opacity:1}.path-dot.now{opacity:1;transform:scale(1.4)}
 .reward-reveal{display:block;font-size:min(23vh,180px);animation:rewardPop .55s ease both}@keyframes rewardPop{0%{transform:scale(.1) rotate(-18deg)}75%{transform:scale(1.22)}100%{transform:scale(1)}}
 .answer.correct-pop{animation:correctPop .55s ease}.answer.wrong-shake{animation:wrongShake .4s ease}@keyframes correctPop{50%{transform:scale(1.13)}}@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-16px)}75%{transform:translateX(16px)}}
 .flying-star{position:fixed;z-index:9999;font-size:76px;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;animation:flyStar .95s ease-in forwards}@keyframes flyStar{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.45)}100%{left:88%;top:7%;opacity:0;transform:translate(-50%,-50%) scale(.3)}}
 .final-name-big{font-size:clamp(52px,11vw,100px)!important;font-weight:1000!important;margin:0!important}.final-prize-word{font-size:clamp(36px,7vw,68px);font-weight:1000}#finalPrizeScreen.final-show .final-trophy{animation:finalTrophy .9s ease both}@keyframes finalTrophy{0%{transform:scale(.05)}70%{transform:scale(1.28)}100%{transform:scale(1)}}
+
+/* VISUAL INFANTIL PASTEL — inspirado nos exemplos aprovados */
+body{
+  background:
+    radial-gradient(circle at 8% 16%,rgba(255,255,255,.92) 0 18px,transparent 19px),
+    radial-gradient(circle at 92% 20%,rgba(255,255,255,.72) 0 24px,transparent 25px),
+    linear-gradient(145deg,#eaf7ff 0%,#f7f1ff 48%,#fff7df 100%);
+  transition:background .45s ease;
+}
+.card{
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(5px);
+  border-color:rgba(255,255,255,.9);
+  box-shadow:0 8px 26px rgba(70,95,130,.12);
+}
+.category{
+  width:100%;
+  text-align:left;
+  padding-left:6px;
+  color:#173d88;
+  letter-spacing:.3px;
+}
+.emoji{
+  width:min(58vw,330px);
+  height:min(25vh,230px);
+  min-height:130px;
+  margin:6px auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:34px;
+  background:linear-gradient(145deg,#dff3ff,#ccecff);
+  border:2px solid rgba(255,255,255,.8);
+  box-shadow:0 10px 22px rgba(60,110,160,.13),inset 0 1px 0 rgba(255,255,255,.9);
+  position:relative;
+  overflow:hidden;
+  animation:figurePop .48s ease both;
+}
+.emoji::before,.emoji::after{
+  position:absolute;
+  pointer-events:none;
+  opacity:.28;
+  font-size:28px;
+}
+.emoji::before{content:"★";left:15px;top:12px}
+.emoji::after{content:"●";right:17px;bottom:13px;font-size:20px}
+@keyframes figurePop{0%{opacity:0;transform:scale(.82)}70%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+
+/* Cada categoria recebe a sua própria atmosfera suave */
+body.theme-animals{background:linear-gradient(145deg,#e8f7ff 0%,#dff4ff 58%,#efffe7 100%)}
+body.theme-animals .emoji{background:linear-gradient(145deg,#d9f2ff,#bfe8ff)}
+body.theme-animals .emoji::before{content:"☁️"} body.theme-animals .emoji::after{content:"🐾"}
+
+body.theme-colours{background:linear-gradient(145deg,#f4e9ff 0%,#eadcff 58%,#fff0fb 100%)}
+body.theme-colours .emoji{background:linear-gradient(145deg,#eadbff,#dcc8ff)}
+body.theme-colours .emoji::before{content:"✨"} body.theme-colours .emoji::after{content:"⭐"}
+
+body.theme-numbers{background:linear-gradient(145deg,#fff8dc 0%,#fff0b8 58%,#fff9e8 100%)}
+body.theme-numbers .emoji{background:linear-gradient(145deg,#fff1b8,#ffe18a)}
+body.theme-numbers .emoji::before{content:"⭐"} body.theme-numbers .emoji::after{content:"✨"}
+
+body.theme-food{background:linear-gradient(145deg,#ecffe8 0%,#dff8d8 58%,#f5ffef 100%)}
+body.theme-food .emoji{background:linear-gradient(145deg,#dff7d8,#c9efc0)}
+body.theme-food .emoji::before{content:"✿"} body.theme-food .emoji::after{content:"♥"}
+
+body.theme-home{background:linear-gradient(145deg,#e9f7ff 0%,#dcefff 58%,#f3fbff 100%)}
+body.theme-home .emoji{background:linear-gradient(145deg,#dcefff,#c9e5fa)}
+body.theme-home .emoji::before{content:"☁️"} body.theme-home .emoji::after{content:"★"}
+
+body.theme-body{background:linear-gradient(145deg,#fff0f3 0%,#ffe0e8 58%,#fff6f7 100%)}
+body.theme-body .emoji{background:linear-gradient(145deg,#ffe3ea,#ffd0dc)}
+body.theme-body .emoji::before{content:"♥"} body.theme-body .emoji::after{content:"♡"}
+
+@media(max-width:600px){
+  .category{padding-left:4px}
+  .emoji{
+    width:min(62vw,270px);
+    height:min(22vh,185px);
+    min-height:112px;
+    border-radius:28px;
+    margin:4px auto;
+  }
+}
+
+
+/* CARDS TEMÁTICOS COMPLETOS — referência visual aprovada */
+#lessonScreen{
+  position:relative;
+  isolation:isolate;
+  border-radius:28px;
+  padding:10px 14px 12px;
+  overflow:hidden;
+  border:2px solid rgba(255,255,255,.78);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 10px 26px rgba(56,76,110,.10);
+}
+#lessonScreen>*:not(.theme-decor){position:relative;z-index:2}
+.theme-decor{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.decor{position:absolute;display:block;opacity:.24;filter:saturate(.85);line-height:1}
+.d1{left:3%;top:11%;font-size:38px}.d2{right:5%;top:9%;font-size:32px}
+.d3{left:5%;bottom:16%;font-size:34px}.d4{right:4%;bottom:17%;font-size:38px}
+.d5{left:16%;bottom:4%;font-size:24px}.d6{right:18%;bottom:5%;font-size:26px}
+
+#lessonScreen .category{
+  align-self:flex-start;
+  width:auto;
+  padding:7px 14px;
+  margin:0 0 2px 0;
+  border-radius:999px;
+  background:rgba(255,255,255,.62);
+  box-shadow:0 3px 10px rgba(50,70,100,.07);
+  font-weight:1000;
+}
+#lessonScreen .emoji{
+  width:min(66vw,390px);
+  height:min(29vh,250px);
+  min-height:145px;
+  border-radius:38px;
+  border:3px solid rgba(255,255,255,.82);
+  box-shadow:0 14px 28px rgba(60,90,130,.14),inset 0 2px 0 rgba(255,255,255,.92);
+}
+#lessonScreen .emoji::before{font-size:34px;left:18px;top:15px;opacity:.42}
+#lessonScreen .emoji::after{font-size:30px;right:18px;bottom:15px;opacity:.42}
+#lessonScreen .translation,#lessonScreen .word{
+  text-shadow:0 2px 0 rgba(255,255,255,.75);
+}
+#lessonScreen .learn-actions .btn,#lessonScreen #hearQuestion{
+  box-shadow:0 7px 15px rgba(48,70,110,.12);
+}
+#lessonScreen .answer{
+  background:rgba(255,255,255,.76);
+  border:2px solid rgba(255,255,255,.9);
+  box-shadow:0 7px 16px rgba(50,80,120,.10);
+}
+
+/* ANIMALS — céu, nuvens, patinhas */
+body.theme-animals #lessonScreen{background:linear-gradient(180deg,#bfeaff,#d6f8c9)}
+body.theme-animals #lessonScreen .emoji{background:linear-gradient(180deg,#a9e3ff 0 68%,#aee89d 68% 100%)}
+body.theme-animals .d1::before{content:"☁️"} body.theme-animals .d2::before{content:"☁️"}
+body.theme-animals .d3::before{content:"🐾"} body.theme-animals .d4::before{content:"🐾"}
+body.theme-animals .d5::before{content:"🌿"} body.theme-animals .d6::before{content:"⭐"}
+
+/* COLOURS — lilás, estrelas e brilhos */
+body.theme-colours #lessonScreen{background:linear-gradient(160deg,#dfc5ff,#f5c8ee)}
+body.theme-colours #lessonScreen .emoji{background:linear-gradient(145deg,#d5b4ff,#c5a0ff)}
+body.theme-colours .d1::before{content:"⭐"} body.theme-colours .d2::before{content:"✨"}
+body.theme-colours .d3::before{content:"💜"} body.theme-colours .d4::before{content:"⭐"}
+body.theme-colours .d5::before{content:"✨"} body.theme-colours .d6::before{content:"💫"}
+
+/* NUMBERS — amarelo alegre, números e estrelas */
+body.theme-numbers #lessonScreen{background:linear-gradient(160deg,#fff0a8,#ffd96b)}
+body.theme-numbers #lessonScreen .emoji{background:linear-gradient(145deg,#ffe783,#ffc94d)}
+body.theme-numbers .d1::before{content:"1"} body.theme-numbers .d2::before{content:"2"}
+body.theme-numbers .d3::before{content:"3"} body.theme-numbers .d4::before{content:"5"}
+body.theme-numbers .d5::before{content:"⭐"} body.theme-numbers .d6::before{content:"✨"}
+
+/* FOOD — jardim verde e frutinhas */
+body.theme-food #lessonScreen{background:linear-gradient(160deg,#c9f6b9,#e5f99e)}
+body.theme-food #lessonScreen .emoji{background:linear-gradient(180deg,#c3f0ad 0 68%,#9dde87 68% 100%)}
+body.theme-food .d1::before{content:"🍓"} body.theme-food .d2::before{content:"🍎"}
+body.theme-food .d3::before{content:"🌼"} body.theme-food .d4::before{content:"🍌"}
+body.theme-food .d5::before{content:"🌿"} body.theme-food .d6::before{content:"♥"}
+
+/* HOME — céu azul e pequenos elementos de casa */
+body.theme-home #lessonScreen{background:linear-gradient(160deg,#bee7ff,#d6efff)}
+body.theme-home #lessonScreen .emoji{background:linear-gradient(180deg,#acdfff 0 70%,#b9e59c 70% 100%)}
+body.theme-home .d1::before{content:"☁️"} body.theme-home .d2::before{content:"☀️"}
+body.theme-home .d3::before{content:"🌳"} body.theme-home .d4::before{content:"🏠"}
+body.theme-home .d5::before{content:"🌼"} body.theme-home .d6::before{content:"☁️"}
+
+/* BODY — rosa feliz, corações e brilhos */
+body.theme-body #lessonScreen{background:linear-gradient(160deg,#ffc9d8,#ffe0b9)}
+body.theme-body #lessonScreen .emoji{background:linear-gradient(145deg,#ffbcd0,#ffcfad)}
+body.theme-body .d1::before{content:"♥"} body.theme-body .d2::before{content:"✨"}
+body.theme-body .d3::before{content:"♡"} body.theme-body .d4::before{content:"♥"}
+body.theme-body .d5::before{content:"⭐"} body.theme-body .d6::before{content:"✨"}
+
+@media(max-width:600px){
+  #lessonScreen{padding:7px 9px 9px;border-radius:24px}
+  #lessonScreen .category{padding:5px 10px;margin-left:0}
+  #lessonScreen .emoji{
+    width:min(72vw,310px);
+    height:min(24vh,200px);
+    min-height:120px;
+    border-radius:30px;
+  }
+  .d1,.d4{font-size:28px}.d2,.d3{font-size:25px}.d5,.d6{font-size:20px}
+}
+
+
+/* AJUSTE MOBILE — sem tela cortada */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+body{min-height:100dvh}
+.app{min-height:100dvh;height:100dvh;max-height:100dvh;overflow:hidden}
+#lessonScreen.hidden,#successScreen.hidden,#activityScreen.hidden,#bonusScreen.hidden,#finalPrizeScreen.hidden{display:none!important}
+#successScreen:not(.hidden){
+  min-height:0!important;
+  height:auto!important;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:8px 12px;
+}
+#successScreen:not(.hidden) .success-icon{margin:0!important}
+#successScreen:not(.hidden) h2{margin:4px 0!important}
+#successScreen:not(.hidden) p{margin:2px 0!important}
+#successScreen:not(.hidden)+#next:not(.hidden){margin-top:8px}
+
+@media(max-width:600px){
+  header{flex:0 0 auto}
+  main{min-height:0;overflow:hidden}
+  #lessonScreen{min-height:0;max-height:100%;overflow:hidden}
+  #lessonScreen .emoji{
+    height:clamp(112px,21dvh,180px);
+    min-height:105px;
+  }
+  #successScreen:not(.hidden){justify-content:center}
+}
+
+
+/* SUCESSO — restaura troféu e centralização, sem cenário da lição */
+#lessonScreen:has(#successScreen:not(.hidden)){
+  background:rgba(255,255,255,.94)!important;
+  border-color:rgba(255,255,255,.95);
+  display:flex!important;
+  flex-direction:column;
+  justify-content:center!important;
+  align-items:center!important;
+}
+#lessonScreen:has(#successScreen:not(.hidden)) .theme-decor,
+#lessonScreen:has(#successScreen:not(.hidden)) .category,
+#lessonScreen:has(#successScreen:not(.hidden)) .emoji,
+#lessonScreen:has(#successScreen:not(.hidden)) .word,
+#lessonScreen:has(#successScreen:not(.hidden)) .translation,
+#lessonScreen:has(#successScreen:not(.hidden)) .learn-actions,
+#lessonScreen:has(#successScreen:not(.hidden)) #hearQuestion,
+#lessonScreen:has(#successScreen:not(.hidden)) #feedback{
+  display:none!important;
+}
+#successScreen:not(.hidden){
+  flex:0 0 auto!important;
+  width:100%;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:4px;
+  padding:0!important;
+  margin:auto 0 12px!important;
+}
+#successScreen:not(.hidden) .success-icon{
+  display:block!important;
+  font-size:clamp(92px,20vh,150px)!important;
+  line-height:1!important;
+  margin:0 0 8px!important;
+}
+#successScreen:not(.hidden) h2{
+  font-size:clamp(36px,8vw,56px)!important;
+  line-height:1.05;
+  margin:0!important;
+}
+#successScreen:not(.hidden) p{
+  font-size:clamp(24px,5vw,34px)!important;
+  margin:4px 0!important;
+}
+#lessonScreen:has(#successScreen:not(.hidden))+#next:not(.hidden){
+  margin:10px auto 0!important;
+}
+
+
+/* ATIVIDADE — contador regressivo restaurado */
+#activityScreen:not(.hidden) .timer{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(64px,16vw,110px)!important;
+  font-weight:1000;
+  line-height:1;
+  min-height:90px;
+  margin:6px auto!important;
+}
+
+
+/* REPETIR ÁUDIO TOCANDO NA PRÓPRIA FIGURA */
+#emoji{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#emoji:active{transform:scale(.985)}
+
+
+/* FIGURA/CARD — ocupa a grande área marcada em amarelo */
+#lessonScreen .emoji{
+  width:calc(100% - 8px)!important;
+  max-width:none!important;
+  height:clamp(430px,48dvh,620px)!important;
+  min-height:430px!important;
+  aspect-ratio:auto!important;
+  margin:4px auto 8px!important;
+  font-size:clamp(150px,42vw,270px)!important;
+  flex-shrink:0;
+}
+@media(max-width:600px){
+  #lessonScreen .emoji{
+    width:calc(100% - 4px)!important;
+    height:clamp(410px,46dvh,560px)!important;
+    min-height:410px!important;
+    aspect-ratio:auto!important;
+    font-size:clamp(145px,43vw,245px)!important;
+  }
+}
+
+
+/* FLUXO DE TELAS — uma tela por vez */
+#bonusScreen:not(.hidden),#activityScreen:not(.hidden),#successScreen:not(.hidden){
+  position:relative;
+  z-index:3;
+}
+.speak-countdown{
+  font-size:clamp(90px,22vw,150px);
+  line-height:1.1;
+  margin:12px auto;
+}
+
+
+/* AUDITORIA MOBILE — todas as telas cabem no viewport */
+html,body{width:100%;max-width:100%;min-height:100dvh;overflow-x:hidden}
+.wrap,.card{max-width:100%}
+.card{min-height:0}
+#introScreen,#lessonScreen,#quiz,#bonusScreen,#activityScreen,#successScreen,#finalPrizeScreen{
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+#bonusScreen:not(.hidden),#activityScreen:not(.hidden),#finalPrizeScreen:not(.hidden){
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
+#bonusContent{width:100%;max-width:100%;min-height:0;overflow:hidden}
+.balloon-area .balloon{display:flex;align-items:center;justify-content:center}
+
+@media(max-width:600px){
+  .bonus-title{font-size:clamp(28px,8vw,40px);line-height:1.05;text-align:center}
+  .bonus-sub{font-size:clamp(18px,5vw,26px);text-align:center}
+  #bonusScreen{padding:8px 10px;gap:6px}
+  #bonusContent{flex:1}
+  .balloon-area{
+    width:min(88vw,430px);
+    height:min(48dvh,430px);
+    max-height:48dvh;
+    gap:6px;
+  }
+  .balloon{font-size:clamp(70px,22vw,105px);padding:2px}
+  .memory-row{width:94%;gap:4px;flex-wrap:wrap}
+  .memory-item{font-size:clamp(60px,18vw,100px)}
+  #activityScreen{padding:8px 10px}
+  #activityScreen .activity-icon{font-size:clamp(72px,20vw,120px)}
+  #activityScreen h2{font-size:clamp(28px,8vw,42px);margin:4px 0}
+  #activityScreen p{font-size:clamp(19px,5vw,28px);margin:3px 0}
+  #quiz .answers{width:94%;max-height:58dvh}
+  #quiz .answer{font-size:clamp(54px,16vw,82px)}
+  #finalPrizeScreen{padding:8px 10px}
+  .final-trophy{font-size:clamp(80px,22vw,125px)}
+}
+
+
+/* CONSOLIDAÇÃO FINAL MOBILE — nenhuma tela pode aparecer junto com outra */
+.hidden{display:none!important}
+#introScreen.hidden,#lessonScreen.hidden,#quiz.hidden,#bonusScreen.hidden,
+#activityScreen.hidden,#successScreen.hidden,#finalPrizeScreen.hidden{display:none!important}
+
+#activityScreen:not(.hidden){
+  display:flex!important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:space-evenly;
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
+#activityScreen .timer{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  font-size:clamp(72px,20vw,118px)!important;
+  font-weight:1000!important;
+  line-height:1!important;
+  margin:4px auto!important;
+}
+#activityScreen #startActivity,
+#activityScreen #doneEarly,
+#activityScreen #finishActivity{
+  flex:0 0 auto;
+  max-width:92%;
+}
+
+@media(max-width:600px){
+  header{max-height:24dvh;overflow:hidden}
+  main{height:calc(100dvh - 24dvh);min-height:0;overflow:hidden}
+  #bonusScreen:not(.hidden),#activityScreen:not(.hidden),#successScreen:not(.hidden),
+  #finalPrizeScreen:not(.hidden),#lessonScreen:not(.hidden){
+    max-height:100%;
+    overflow:hidden;
+  }
+  #activityScreen{padding:6px 10px!important;gap:3px}
+  #activityScreen .activity-icon{font-size:clamp(66px,18vw,100px)!important;line-height:1}
+  #activityScreen h2{font-size:clamp(27px,7.5vw,38px)!important;line-height:1.05}
+  #activityScreen p{font-size:clamp(18px,4.8vw,25px)!important;line-height:1.15}
+  #activityScreen .timer{font-size:clamp(76px,22vw,112px)!important}
+}
+
+
+/* MUNDOS — pensado para 3–4 anos */
+.world-screen{height:100%;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;text-align:center;overflow:hidden;background:linear-gradient(160deg,#cfefff,#ead9ff 52%,#fff0b5)}
+.world-screen.hidden{display:none!important}.world-hero{font-size:clamp(50px,14vw,82px);line-height:1}.world-screen h2{font-size:clamp(34px,9vw,52px);margin:4px;color:#17345f}.world-screen p{font-size:clamp(19px,5vw,26px);margin:2px 0 9px}
+.world-grid{width:min(96%,620px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.world-btn{min-height:110px;border:3px solid #fff;border-radius:24px;background:rgba(255,255,255,.88);box-shadow:0 8px 18px rgba(50,75,115,.13);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#17345f}.world-btn span{font-size:clamp(42px,11vw,66px);line-height:1}.world-btn b{font-size:clamp(19px,5vw,26px)}.world-btn small{font-size:14px;color:#65728a}.world-btn.locked{opacity:.5}
+body.theme-alphabet{background:linear-gradient(145deg,#e4f4ff,#eee2ff,#fff5cf)}
+body.theme-alphabet #lessonScreen{background:linear-gradient(160deg,#c8eaff,#dfccff)}
+body.theme-alphabet #lessonScreen .emoji{background:linear-gradient(145deg,#b6e1ff,#d2baff)}
+@media(max-width:600px){.world-grid{gap:7px}.world-btn{min-height:104px;border-radius:21px}}
+
+
+#emoji:not(.alphabet-card)::before{content:attr(data-emoji)}
+#emoji.alphabet-card{font-size:initial!important;display:flex!important;align-items:center;justify-content:center}
+.alphabet-visual{width:100%;height:100%;display:grid;grid-template-columns:42% 58%;grid-template-rows:1fr auto;align-items:center;justify-items:center;padding:5% 5% 4%;box-sizing:border-box}
+.alphabet-visual.hidden{display:none!important}
+.alphabet-letter{font-size:clamp(150px,38vw,250px);line-height:.8;font-weight:1000;color:#2457d6;text-shadow:0 7px 0 rgba(255,255,255,.85),0 11px 18px rgba(40,60,130,.18);animation:letterHello .75s cubic-bezier(.2,.9,.25,1.25) both}
+.alphabet-picture{font-size:clamp(125px,32vw,215px);line-height:1;animation:pictureHello .8s .12s cubic-bezier(.2,.9,.25,1.18) both}
+.alphabet-word{grid-column:1/-1;width:90%;padding:7px 12px;border-radius:18px;background:rgba(255,255,255,.72);font-size:clamp(32px,8vw,52px);line-height:1;font-weight:1000;letter-spacing:2px;color:#17345f;animation:wordHello .55s .32s ease-out both}
+@keyframes letterHello{0%{opacity:0;transform:scale(.65) rotate(-8deg)}65%{opacity:1;transform:scale(1.12) rotate(3deg)}100%{opacity:1;transform:scale(1)}}
+@keyframes pictureHello{0%{opacity:0;transform:scale(.72)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+@keyframes wordHello{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.alphabet-visual{grid-template-columns:40% 60%;padding:4% 3% 3%}.alphabet-letter{font-size:clamp(135px,36vw,210px)}.alphabet-picture{font-size:clamp(115px,31vw,190px)}.alphabet-word{font-size:clamp(30px,7.8vw,45px)}}
+@media(prefers-reduced-motion:reduce){.alphabet-letter,.alphabet-picture,.alphabet-word{animation:none!important}}
+
 </style>
 </head>
 <body>
 <div class="wrap" id="gameRoot">
-<div class="top"><div><div class="muted">🇬🇧 Inglês para 3–4 anos</div><h1 id="stage">Fase 1 de 30</h1></div><div class="top-actions"><button id="closeBtn" class="fs-btn close-btn" type="button" aria-label="Fechar">✕ Fechar</button><button id="backBtn" class="fs-btn" type="button">← Voltar</button><div id="stars">⭐ 0</div><button id="fullscreen" class="fs-btn">⛶ Tela cheia</button></div></div>
+<div class="top"><div><div class="muted">🇬🇧 Inglês para 3–4 anos</div><h1 id="stage">Fase 1 de 30</h1></div><div class="top-actions"><button id="closeBtn" class="fs-btn close-btn" type="button" aria-label="Fechar">✕ Fechar</button><button id="backBtn" class="fs-btn" type="button">← Voltar</button><div id="stars">⭐ 0</div></div></div>
 <div class="bar"><div id="progress"></div></div>
 <div class="card">
-<div id="introScreen" class="intro">
+<div id="worldScreen" class="world-screen">
+<div class="world-hero">🇬🇧</div>
+<h2>Vamos aprender!</h2>
+<p>Escolha uma aventura:</p>
+<div class="world-grid">
+<button class="world-btn" data-world="animals"><span>🐶</span><b>Animais</b><small>Animals</small></button>
+<button class="world-btn" data-world="numbers"><span>🔢</span><b>Números</b><small>1–10</small></button>
+<button class="world-btn" data-world="alphabet"><span>🔤</span><b>Alfabeto</b><small>A–Z</small></button>
+<button class="world-btn locked" disabled><span>🎨</span><b>Cores</b><small>Em breve</small></button>
+<button class="world-btn locked" disabled><span>🏠</span><b>Objetos</b><small>Em breve</small></button>
+<button class="world-btn locked" disabled><span>🍎</span><b>Comidas</b><small>Em breve</small></button>
+</div></div>
+<div id="introScreen" class="intro hidden">
 <div class="intro-star">⭐</div>
 <h2>Pronto para os desafios?</h2>
 <p>Complete todas as fases e chegue até o final!</p>
@@ -104,9 +554,13 @@ button,input{user-select:auto;-webkit-user-select:auto}
 <button id="beginGame" class="btn primary">▶ Começar o jogo</button>
 </div>
 <div id="lessonScreen" class="hidden">
+<div class="theme-decor" aria-hidden="true">
+  <span class="decor d1"></span><span class="decor d2"></span>
+  <span class="decor d3"></span><span class="decor d4"></span>
+  <span class="decor d5"></span><span class="decor d6"></span>
+</div>
 <div id="category" class="category"></div>
-<button id="repeatInstruction" class="repeat-btn icon-repeat" type="button" aria-label="Repetir pergunta" title="Repetir pergunta"><span aria-hidden="true">👂 🔊</span></button>
-<div id="emoji" class="emoji"></div>
+<div id="emoji" class="emoji"><div id="alphabetVisual" class="alphabet-visual hidden"><div id="alphabetLetter" class="alphabet-letter"></div><div id="alphabetPicture" class="alphabet-picture"></div><div id="alphabetWord" class="alphabet-word"></div></div></div>
 <div id="learn">
 
 <div id="translation" class="translation lang-pt"></div><div id="word" class="word lang-en hidden"></div>
@@ -154,6 +608,29 @@ const lessons=[
 ['🏠 HOME','🚪','DOOR','porta',['🪟','🚪','🛏️']],['🏠 HOME','🛏️','BED','cama',['🪑','🛏️','🚪']],['🏠 HOME','🪑','CHAIR','cadeira',['🪑','🛋️','🛏️']],['🏠 HOME','🪟','WINDOW','janela',['🚪','🪟','🪑']],['🏠 HOME','🏠','HOUSE','casa',['🏫','🏠','🏥']],
 ['👤 BODY','👁️','EYE','olho',['👂','👁️','👃']],['👤 BODY','👂','EAR','orelha',['👄','👂','👁️']],['👤 BODY','👃','NOSE','nariz',['👃','👄','👂']],['👤 BODY','👄','MOUTH','boca',['👁️','👃','👄']],['👤 BODY','✋','HAND','mão',['🦶','✋','👂']]
 ];
+const numberWorld=[
+['🔢 NUMBERS','1️⃣','ONE','um',['1️⃣','2️⃣','3️⃣']],['🔢 NUMBERS','2️⃣','TWO','dois',['1️⃣','2️⃣','3️⃣']],
+['🔢 NUMBERS','3️⃣','THREE','três',['2️⃣','3️⃣','4️⃣']],['🔢 NUMBERS','4️⃣','FOUR','quatro',['3️⃣','4️⃣','5️⃣']],
+['🔢 NUMBERS','5️⃣','FIVE','cinco',['4️⃣','5️⃣','6️⃣']],['🔢 NUMBERS','6️⃣','SIX','seis',['5️⃣','6️⃣','7️⃣']],
+['🔢 NUMBERS','7️⃣','SEVEN','sete',['6️⃣','7️⃣','8️⃣']],['🔢 NUMBERS','8️⃣','EIGHT','oito',['7️⃣','8️⃣','9️⃣']],
+['🔢 NUMBERS','9️⃣','NINE','nove',['8️⃣','9️⃣','🔟']],['🔢 NUMBERS','🔟','TEN','dez',['8️⃣','9️⃣','🔟']]
+];
+const alphabetWorld=[
+['🔤 ALPHABET','🍎','A, APPLE','A de apple',['🍎','⚽','🐱']],['🔤 ALPHABET','⚽','B, BALL','B de ball',['🍎','⚽','🐱']],
+['🔤 ALPHABET','🐱','C, CAT','C de cat',['🐱','🐶','🥚']],['🔤 ALPHABET','🐶','D, DOG','D de dog',['🐱','🐶','🐟']],
+['🔤 ALPHABET','🥚','E, EGG','E de egg',['🥚','🐟','🎁']],['🔤 ALPHABET','🐟','F, FISH','F de fish',['🐟','🎁','🏠']],
+['🔤 ALPHABET','🎁','G, GIFT','G de gift',['🎁','🏠','🍦']],['🔤 ALPHABET','🏠','H, HOUSE','H de house',['🏠','🍦','🧃']],
+['🔤 ALPHABET','🍦','I, ICE CREAM','I de ice cream',['🍦','🧃','🔑']],['🔤 ALPHABET','🧃','J, JUICE','J de juice',['🧃','🔑','🦁']],
+['🔤 ALPHABET','🔑','K, KEY','K de key',['🔑','🦁','🌙']],['🔤 ALPHABET','🦁','L, LION','L de lion',['🦁','🌙','👃']],
+['🔤 ALPHABET','🌙','M, MOON','M de moon',['🌙','👃','🍊']],['🔤 ALPHABET','👃','N, NOSE','N de nose',['👃','🍊','🐷']],
+['🔤 ALPHABET','🍊','O, ORANGE','O de orange',['🍊','🐷','👸']],['🔤 ALPHABET','🐷','P, PIG','P de pig',['🐷','👸','🌈']],
+['🔤 ALPHABET','👸','Q, QUEEN','Q de queen',['👸','🌈','☀️']],['🔤 ALPHABET','🌈','R, RAINBOW','R de rainbow',['🌈','☀️','🐯']],
+['🔤 ALPHABET','☀️','S, SUN','S de sun',['☀️','🐯','☂️']],['🔤 ALPHABET','🐯','T, TIGER','T de tiger',['🐯','☂️','🚐']],
+['🔤 ALPHABET','☂️','U, UMBRELLA','U de umbrella',['☂️','🚐','💧']],['🔤 ALPHABET','🚐','V, VAN','V de van',['🚐','💧','❌']],
+['🔤 ALPHABET','💧','W, WATER','W de water',['💧','❌','🪀']],['🔤 ALPHABET','❌','X, X-RAY','X de x-ray',['❌','🪀','🦓']],
+['🔤 ALPHABET','🪀','Y, YO-YO','Y de yo-yo',['🪀','🦓','🍎']],['🔤 ALPHABET','🦓','Z, ZEBRA','Z de zebra',['🦓','🍎','⚽']]
+];
+let currentWorld='animals';
 const activities=[
 ['🤸','Pule 5 vezes!','Vamos pular cinco vezes bem alto!'],
 ['🐶','Imite um cachorrinho!','Ande como um cachorrinho e faça au-au!'],
@@ -166,12 +643,13 @@ const activities=[
 ['✈️','Vire um avião!','Abra os braços e caminhe como um avião!'],
 ['😊','Sorriso gigante!','Faça um sorriso enorme e mexa o corpo!']
 ];
-let index=0,score=0,ptDone=false,enDone=false,timerId=null,activityNo=0,gameStarted=false,englishStepReady=false,childName='Leonardo',audioBusy=false,lessonOrder=[],activityOrder=[];
+let index=0,score=0,ptDone=false,enDone=false,timerId=null,activityNo=0,gameStarted=false,englishStepReady=false,childName='Leonardo',audioBusy=false,speechToken=0,activityFinishing=false,lessonOrder=[],activityOrder=[];
 const $=id=>document.getElementById(id);
 function shuffled(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r}
 function resetOrders(){
- lessonOrder=[];
- for(let s=0;s<6;s++)lessonOrder.push(...shuffled(lessons.slice(s*5,s*5+5)));
+ if(currentWorld==='numbers') lessonOrder=[...numberWorld];
+ else if(currentWorld==='alphabet') lessonOrder=[...alphabetWorld];
+ else lessonOrder=shuffled(lessons.slice(0,5));
  activityOrder=shuffled(activities);
  activityNo=0;
 }
@@ -179,13 +657,17 @@ function setAudioBusy(b){audioBusy=b}
 
 function speak(text,lang,onDone){
  if(!('speechSynthesis'in window)){ $('feedback').textContent='🔇 Voz não disponível.';setAudioBusy(false);if(onDone)onDone();return; }
+ const myToken=++speechToken;
  setAudioBusy(true);speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.72;u.pitch=1.05;
+ const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.80;u.pitch=1.05;
  const vs=speechSynthesis.getVoices();const v=vs.find(x=>x.lang.toLowerCase()===lang.toLowerCase())||vs.find(x=>x.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));if(v)u.voice=v;
- const done=()=>{setAudioBusy(false);if(onDone)onDone()};u.onend=done;u.onerror=done;speechSynthesis.speak(u);
+ let finished=false;
+ const done=()=>{if(finished||myToken!==speechToken)return;finished=true;setAudioBusy(false);if(onDone)onDone()};
+ u.onend=done;u.onerror=done;speechSynthesis.speak(u);
 }
 
 function openingPrompt(category){
+ if(category.includes('ALPHABET')) return 'Que letra é esta?';
  if(category.includes('ANIMALS')) return 'Em português, que animal é este?';
  if(category.includes('COLOURS')) return 'Em português, que cor é esta?';
  if(category.includes('NUMBERS')) return 'Em português, que número é este?';
@@ -196,38 +678,81 @@ function openingPrompt(category){
 }
 
 function englishPrompt(category){
- if(category.includes('ANIMALS')) return 'E em inglês, que animal é este?';
- if(category.includes('COLOURS')) return 'E em inglês, que cor é esta?';
- if(category.includes('NUMBERS')) return 'E em inglês, que número é este?';
- if(category.includes('FOOD')) return 'E em inglês, que alimento é este?';
- if(category.includes('HOME')) return 'E em inglês, que objeto é este?';
- if(category.includes('BODY')) return 'E em inglês, que parte do corpo é esta?';
- return 'E em inglês, o que é isto?';
+ if(category.includes('ALPHABET')) return 'Escute a letra e a palavra em inglês.';
+ if(category.includes('ANIMALS')) return 'Em inglês, que animal é este?';
+ if(category.includes('COLOURS')) return 'Em inglês, que cor é esta?';
+ if(category.includes('NUMBERS')) return 'Em inglês, que número é este?';
+ if(category.includes('FOOD')) return 'Em inglês, que alimento é este?';
+ if(category.includes('HOME')) return 'Em inglês, que objeto é este?';
+ if(category.includes('BODY')) return 'Em inglês, que parte do corpo é esta?';
+ return 'Em inglês, o que é isto?';
 }
 
 function unlock(b){b.disabled=false;b.classList.remove('locked')}
 
 function hideGameScreens(){['introScreen','lessonScreen','successScreen','activityScreen','finalPrizeScreen','bonusScreen'].forEach(id=>$(id).classList.add('hidden'));$('next').classList.add('hidden');$('feedback').textContent=''}
 function flyStar(){const s=document.createElement('div');s.className='flying-star';s.textContent='⭐';document.body.appendChild(s);setTimeout(()=>s.remove(),1000)}
-function showBonus(t,txt,c){speechSynthesis.cancel();setAudioBusy(false);hideGameScreens();$('bonusScreen').classList.remove('hidden');$('bonusTitle').textContent=t;$('bonusText').textContent=txt||'';$('bonusContent').innerHTML=c||'';$('bonusNext').classList.add('hidden')}
-function revealBonusNext(after,audio='Amazing!',lang='en-GB'){speak(audio,lang,()=>{$('bonusNext').classList.remove('hidden');$('bonusNext').onclick=()=>goWithNext(after)})}
+function showBonus(t,txt,c){speechSynthesis.cancel();setAudioBusy(false);hideGameScreens();showOnlyScreen('bonusScreen');$('bonusTitle').textContent=t;$('bonusText').textContent=txt||'';$('bonusContent').innerHTML=c||'';$('bonusNext').classList.add('hidden')}
+function revealBonusNext(after,audio='Amazing!',lang='en-GB'){speak(audio,lang,()=>{$('bonusNext').classList.remove('hidden');$('bonusNext').onclick=()=>goWithNext(()=>{showOnlyScreen('lessonScreen');after()})})}
 function treasureBonus(after){const gifts=['🦖','🚗','🚀','🦁','🐼','⚽','🌈','🛸'],gift=gifts[Math.floor(Math.random()*gifts.length)];showBonus('Baú surpresa!','Toque no baú!','<button id="chestBtn" class="big-touch" disabled>🎁</button>');speak('Toque no baú surpresa!','pt-BR',()=>{$('chestBtn').disabled=false;$('chestBtn').onclick=()=>{if(audioBusy)return;$('chestBtn').disabled=true;$('chestBtn').innerHTML=`<span class="reward-reveal">${gift}</span>`;$('bonusText').textContent='Surpresa!';revealBonusNext(after)}})}
 function balloonBonus(after){showBonus('Estoure os balões!','Toque em todos!','<div id="balloonArea" class="balloon-area"></div>');const area=$('balloonArea');let left=4;for(let i=0;i<4;i++){const b=document.createElement('button');b.className='balloon';b.textContent='🎈';b.disabled=true;b.onclick=()=>{if(audioBusy||b.classList.contains('popped'))return;b.classList.add('popped');left--;if(left===0)revealBonusNext(after,'Well done!')};area.appendChild(b)}speak('Estoure todos os balões!','pt-BR',()=>[...area.children].forEach(b=>b.disabled=false))}
 function listeningBonus(after){const x=lessonOrder[index];showBonus('Desafio do ouvido','Escute. Não vou mostrar a palavra.','<div id="listenChoices" class="answers"></div>');const box=$('listenChoices');shuffled(x[4]).forEach(v=>{const b=document.createElement('button');b.className='answer';b.textContent=v;b.disabled=true;b.onclick=()=>{if(audioBusy)return;if(v===x[1]){[...box.children].forEach(z=>z.disabled=true);b.classList.add('correct-pop');flyStar();revealBonusNext(after,'Well done!')}else{b.classList.add('wrong-shake');setTimeout(()=>b.classList.remove('wrong-shake'),450);speak('Try again!','en-GB')}};box.appendChild(b)});speak(`Where is the ${x[2]}?`,'en-GB',()=>[...box.children].forEach(b=>b.disabled=false))}
 function memoryBonus(after){const x=lessonOrder[index],pool=shuffled(x[4]).slice(0,3),missing=pool[Math.floor(Math.random()*pool.length)];showBonus('Quem desapareceu?','Olhe com atenção!','<div id="memoryRow" class="memory-row"></div>');const row=$('memoryRow');pool.forEach(v=>{const d=document.createElement('span');d.className='memory-item';d.textContent=v;row.appendChild(d)});speak('Olhe com atenção!','pt-BR',()=>setTimeout(()=>{row.innerHTML=pool.map(v=>`<button class="answer" data-v="${v}">${v===missing?'❓':v}</button>`).join('');$('bonusText').textContent='Qual desapareceu?';[...row.querySelectorAll('button')].forEach(b=>b.onclick=()=>{if(audioBusy)return;if(b.dataset.v===missing){b.textContent=missing;b.classList.add('correct-pop');revealBonusNext(after,'Muito bem!','pt-BR')}else{speak('Tente novamente!','pt-BR')}})},1200))}
-function repeatWordBonus(after){const x=lessonOrder[index];showBonus('Agora é sua vez!','Escute e depois repita.','<button id="micBtn" class="mic-big" disabled>🎤</button>');speak(x[2],'en-GB',()=>speak('Now you say it!','en-GB',()=>{$('micBtn').disabled=false;$('bonusText').textContent=`Diga: ${x[2]}`;$('micBtn').onclick=()=>{if(audioBusy)return;$('micBtn').disabled=true;setTimeout(()=>revealBonusNext(after,'Great job!'),1800)}}))}
+function repeatWordBonus(after){
+ const x=lessonOrder[index];
+ showBonus('Agora é sua vez!','Escute e depois repita.','<div id="speakCountdown" class="speak-countdown">🗣️</div>');
+ speak(x[2],'en-GB',()=>speak('Now you say it!','en-GB',()=>{
+   let t=5;
+   $('bonusText').textContent=`Repita: ${x[2]} — ${t}`;
+   const id=setInterval(()=>{
+     t--;
+     if(t>0)$('bonusText').textContent=`Repita: ${x[2]} — ${t}`;
+     else{
+       clearInterval(id);
+       $('bonusText').textContent='Muito bem por tentar!';
+       $('bonusNext').classList.remove('hidden');
+       $('bonusNext').onclick=()=>goWithNext(()=>{showOnlyScreen('lessonScreen');after()});
+     }
+   },1000);
+ }));
+}
 function themedMovement(after){const x=lessonOrder[index];let icon=x[1],title='Mexa o corpo!',txt='Faça um movimento divertido!';if(x[2]==='DOG'){title='Imite um cachorrinho!';txt='Ande como um cachorrinho e faça au-au!'}else if(x[2]==='BIRD'){title='Voe como um passarinho!';txt='Abra os braços como um passarinho!'}else if(x[2]==='FISH'){title='Nade como um peixe!';txt='Mexa os braços como se estivesse nadando!'}else if(x[2]==='COW'){title='Imite uma vaquinha!';txt='Faça muu e caminhe devagar!'}else if(x[0].includes('BODY')){title='Mostre no seu corpo!';txt=`Mostre onde está ${x[3]}!`}else if(x[0].includes('NUMBERS')){icon='👏';title='Conte com palmas!';txt=`Bata palmas ${x[3]} vezes!`}showBonus(title,txt,`<div><div class="activity-icon">${icon}</div><button id="moveDone" class="btn emergency" style="width:min(80vw,650px);min-height:125px;font-size:34px" disabled>✓ Consegui!</button></div>`);speak(title+' '+txt,'pt-BR',()=>{$('moveDone').disabled=false;$('moveDone').onclick=()=>{if(audioBusy)return;$('moveDone').disabled=true;revealBonusNext(after,`Muito bem, ${childName}!`,'pt-BR')}})}
 function sectionPath(after){showBonus('Seu caminho!','Veja quanto você já avançou!','<div id="pathRow" class="path-row"></div>');const row=$('pathRow');for(let i=0;i<30;i++){const d=document.createElement('span');d.className='path-dot '+(i<index?'done':i===index?'now':'');d.textContent=i===29?'🏆':(i%5===4?'🎁':'⭐');row.appendChild(d)}revealBonusNext(after,'Continue assim!','pt-BR')}
-function runPostSuccessExtras(after){const n=index+1,q=[];if([5,10,15,20,25].includes(n))q.push(treasureBonus);if([6,12,18,24].includes(n))q.push(balloonBonus);if([4,9,14,19,24,29].includes(n))q.push(listeningBonus);if([7,17,27].includes(n))q.push(memoryBonus);if([2,8,13,22,28].includes(n))q.push(repeatWordBonus);if([3,11,16,21,26].includes(n))q.push(themedMovement);if([5,10,15,20,25].includes(n))q.push(sectionPath);function run(){const f=q.shift();if(f)f(run);else after()}run()}
+function runPostSuccessExtras(after){
+ const completed=index+1;
+ if(completed%3!==0||completed>=lessonOrder.length){after();return}
+ const pool=[treasureBonus,balloonBonus,listeningBonus,memoryBonus,repeatWordBonus,sectionPath];
+ const chosen=pool[Math.floor(Math.random()*pool.length)];
+ chosen(after);
+}
 
 function render(){
  clearInterval(timerId);ptDone=false;enDone=false;englishStepReady=false;const x=lessonOrder[index];
  $('bonusScreen').classList.add('hidden');$('introScreen').classList.add('hidden');$('lessonScreen').classList.remove('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('learn').classList.remove('hidden');$('quiz').classList.add('hidden');$('emoji').classList.remove('hidden');
  $('stage').textContent=`Fase ${index+1} de ${lessonOrder.length}`;$('stars').textContent=`⭐ ${score}`;$('progress').style.width=`${(index+1)/lessonOrder.length*100}%`;
- $('category').textContent=x[0];$('emoji').textContent=x[1];$('word').textContent=x[2];$('translation').textContent=x[3];$('feedback').textContent='';$('next').classList.add('hidden');
- $('translation').classList.remove('hidden');$('word').classList.add('hidden');$('repeatInstruction').classList.remove('hidden');$('hearPt').classList.remove('hidden');$('hearPt').disabled=true;$('repeatInstruction').disabled=true;$('hearWord').classList.add('hidden');$('startQuiz').classList.add('hidden');
+ $('category').textContent=x[0];
+ document.body.classList.remove('theme-animals','theme-alphabet','theme-colours','theme-numbers','theme-food','theme-home','theme-body');
+ const theme=x[0].includes('ANIMALS')?'animals':x[0].includes('ALPHABET')?'alphabet':x[0].includes('COLOURS')?'colours':x[0].includes('NUMBERS')?'numbers':x[0].includes('FOOD')?'food':x[0].includes('HOME')?'home':'body';
+ document.body.classList.add('theme-'+theme);
+ if(theme==='alphabet'){
+   const parts=x[2].split(',').map(s=>s.trim());
+   $('alphabetVisual').classList.remove('hidden');$('alphabetLetter').textContent=parts[0]||'';$('alphabetPicture').textContent=x[1];$('alphabetWord').textContent=parts.slice(1).join(' ')||'';$('emoji').classList.add('alphabet-card');$('emoji').removeAttribute('data-emoji');
+ }else{
+   $('alphabetVisual').classList.add('hidden');$('emoji').classList.remove('alphabet-card');$('emoji').setAttribute('data-emoji',x[1]);
+ }
+ $('word').textContent=x[2];$('translation').textContent=x[3];$('feedback').textContent='';$('next').classList.add('hidden');
+ $('translation').classList.remove('hidden');$('word').classList.add('hidden');$('hearPt').classList.remove('hidden');$('hearPt').disabled=true;$('hearWord').classList.add('hidden');$('startQuiz').classList.add('hidden');
  setTimeout(()=>speak(openingPrompt(x[0]),'pt-BR',()=>{$('hearPt').disabled=false;$('repeatInstruction').disabled=false}),250);
 }
+document.querySelectorAll('.world-btn[data-world]').forEach(btn=>{
+ btn.onclick=()=>{
+   currentWorld=btn.dataset.world;
+   const names={animals:'Animais',numbers:'Números 1–10',alphabet:'Alfabeto A–Z'};
+   showOnlyScreen('introScreen');
+   $('stage').textContent=names[currentWorld];
+   $('progress').style.width='0%';
+ };
+});
 $('beginGame').onclick=()=>{
  if(gameStarted)return;
  const typedName=$('childName').value.trim();
@@ -244,7 +769,7 @@ $('beginGame').onclick=()=>{
  }
  speechSynthesis.cancel();
  const u=new SpeechSynthesisUtterance(msg);
- u.lang='pt-BR'; u.rate=.72; u.pitch=1.05;
+ u.lang='pt-BR'; u.rate=.80; u.pitch=1.05;
  const vs=speechSynthesis.getVoices();
  const v=vs.find(x=>x.lang.toLowerCase()==='pt-br')||vs.find(x=>x.lang.toLowerCase().startsWith('pt'));
  if(v)u.voice=v;
@@ -252,24 +777,31 @@ $('beginGame').onclick=()=>{
  u.onerror=()=>setTimeout(()=>render(),5500);
  speechSynthesis.speak(u);
 };
-$('repeatInstruction').onclick=()=>{
- if(audioBusy)return;
- $('hearPt').disabled=true;$('repeatInstruction').disabled=true;
- speak(openingPrompt(lessonOrder[index][0]),'pt-BR',()=>{$('hearPt').disabled=false;$('repeatInstruction').disabled=false});
+
+$('emoji').onclick=()=>{
+ if(audioBusy||$('emoji').classList.contains('hidden'))return;
+ const x=lessonOrder[index];
+ if(!ptDone){
+   speak(openingPrompt(x[0]),'pt-BR');
+ }else if(!enDone){
+   if(englishStepReady)speak(englishPrompt(x[0]),'pt-BR');
+ }else{
+   speak(x[2],'en-GB');
+ }
 };
 $('hearPt').onclick=()=>{
  if(audioBusy||$('hearPt').disabled)return;
  ptDone=true;
  const x=lessonOrder[index];
  if(!('speechSynthesis'in window)){
-   $('hearPt').classList.add('hidden');$('repeatInstruction').classList.add('hidden');$('translation').classList.add('hidden');$('word').classList.remove('hidden');$('hearWord').classList.remove('hidden');englishStepReady=true;return;
+   $('hearPt').classList.add('hidden');$('translation').classList.add('hidden');$('word').classList.remove('hidden');$('hearWord').classList.remove('hidden');englishStepReady=true;return;
  }
  setAudioBusy(true);speechSynthesis.cancel();
  const answer=new SpeechSynthesisUtterance(x[3]);answer.lang='pt-BR';answer.rate=.72;answer.pitch=1.05;
  const vs=speechSynthesis.getVoices();const pv=vs.find(v=>v.lang.toLowerCase()==='pt-br')||vs.find(v=>v.lang.toLowerCase().startsWith('pt'));if(pv)answer.voice=pv;
  answer.onend=()=>{
    $('hearPt').classList.add('hidden');
-   $('repeatInstruction').classList.add('hidden');
+   
    $('translation').classList.add('hidden');
    $('word').classList.remove('hidden');
    $('hearWord').classList.remove('hidden');$('hearWord').disabled=true;
@@ -289,35 +821,68 @@ function speakSequence(onDone){
  const items=[['Muito bem! Parabéns!','pt-BR'],['Well done!','en-GB']];let n=0;
  function play(){
    if(n>=items.length){setAudioBusy(false);if(onDone)onDone();return}
-   const [text,lang]=items[n++];const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.72;u.pitch=1.05;
+   const [text,lang]=items[n++];const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.80;u.pitch=1.05;
    const vs=speechSynthesis.getVoices();const v=vs.find(x=>x.lang.toLowerCase()===lang.toLowerCase())||vs.find(x=>x.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));if(v)u.voice=v;
    u.onend=play;u.onerror=play;speechSynthesis.speak(u)
  }play();
 }
-$('startQuiz').onclick=()=>{if(!ptDone||!enDone)return;goWithNext(()=>{const x=lessonOrder[index];$('repeatInstruction').classList.add('hidden');$('learn').classList.add('hidden');$('emoji').classList.add('hidden');$('quiz').classList.remove('hidden');$('question').textContent=`Where is the ${x[2]}?`;$('answers').innerHTML='';const choices=[...x[4]];for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]]}choices.forEach(v=>{const b=document.createElement('button');b.className='answer';b.textContent=v;b.onclick=()=>{if(audioBusy)return;if(v===x[1]){score++;b.classList.add('correct-pop');flyStar();$('stars').textContent=`⭐ ${score}`;[...$('answers').children].forEach(z=>z.disabled=true);$('repeatInstruction').classList.add('hidden');$('quiz').classList.add('hidden');$('successScreen').classList.remove('hidden');$('feedback').textContent='';speakSequence(()=>{$('next').textContent='Next';$('next').classList.remove('hidden')})}else{b.classList.add('wrong-shake');setTimeout(()=>b.classList.remove('wrong-shake'),450);$('feedback').textContent='😊 TRY AGAIN!';speak('Try again!','en-GB')}};$('answers').appendChild(b)});speak(`Where is the ${x[2]}?`,'en-GB')});};
+$('startQuiz').onclick=()=>{if(!ptDone||!enDone)return;goWithNext(()=>{const x=lessonOrder[index];$('learn').classList.add('hidden');$('emoji').classList.add('hidden');$('quiz').classList.remove('hidden');$('question').textContent=`Where is the ${x[2]}?`;$('answers').innerHTML='';const choices=[...x[4]];for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]]}choices.forEach(v=>{const b=document.createElement('button');b.className='answer';b.textContent=v;b.onclick=()=>{if(audioBusy)return;if(v===x[1]){score++;b.classList.add('correct-pop');flyStar();$('stars').textContent=`⭐ ${score}`;[...$('answers').children].forEach(z=>z.disabled=true);$('quiz').classList.add('hidden');$('successScreen').classList.remove('hidden');$('feedback').textContent='';speakSequence(()=>{$('next').textContent='Next';$('next').classList.remove('hidden')})}else{b.classList.add('wrong-shake');setTimeout(()=>b.classList.remove('wrong-shake'),450);$('feedback').textContent='😊 TRY AGAIN!';speak('Try again!','en-GB')}};$('answers').appendChild(b)});speak(`Where is the ${x[2]}?`,'en-GB')});};
 $('hearQuestion').onclick=()=>speak(`Where is the ${lessonOrder[index][2]}?`,'en-GB');
+function showOnlyScreen(id){
+ speechSynthesis.cancel();
+ setAudioBusy(false);
+ ['worldScreen','introScreen','lessonScreen','bonusScreen','activityScreen','successScreen','finalPrizeScreen'].forEach(screenId=>{
+   const el=$(screenId);
+   if(el)el.classList.toggle('hidden',screenId!==id);
+ });
+ if(id!=='lessonScreen'){
+   $('learn').classList.add('hidden');
+   $('quiz').classList.add('hidden');
+ }
+ $('next').classList.add('hidden');
+ window.scrollTo(0,0);
+}
 function showActivity(){
- if(activityNo>=activityOrder.length){activityOrder=shuffled(activities);activityNo=0}const a=activityOrder[activityNo++];$('lessonScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('activityScreen').classList.remove('hidden');$('next').classList.add('hidden');$('feedback').textContent='';
- $('activityIcon').textContent=a[0];$('activityTitle').textContent=a[1];$('activityText').textContent=a[2];$('timer').textContent='20';$('startActivity').classList.remove('hidden');$('startActivity').disabled=true;$('doneEarly').classList.add('hidden');$('finishActivity').classList.add('hidden');
+ activityFinishing=false;
+ if(timerId){clearInterval(timerId);timerId=null}
+ showOnlyScreen('activityScreen');
+ if(activityNo>=activityOrder.length){activityOrder=shuffled(activities);activityNo=0}
+ const a=activityOrder[activityNo++];
+ $('feedback').textContent='';
+ $('activityIcon').textContent=a[0];
+ $('activityTitle').textContent=a[1];
+ $('activityText').textContent=a[2];
+ $('timer').textContent='20';
+ $('timer').classList.remove('hidden');
+ $('startActivity').classList.remove('hidden');
+ $('startActivity').disabled=true;
+ $('doneEarly').classList.add('hidden');
+ $('finishActivity').classList.add('hidden');
  speak(a[1]+' '+a[2],'pt-BR',()=>{$('startActivity').disabled=false});
 }
-$('startActivity').onclick=()=>{
- if(audioBusy)return;
- let t=20;
- $('startActivity').classList.add('hidden');$('doneEarly').classList.remove('hidden');$('timer').textContent=t;
- timerId=setInterval(()=>{
-   t--;$('timer').textContent=t;
-   if(t===10)speak(`Vamos, ${childName}! Você vai conseguir!`,'pt-BR');
-   if(t<=0){
-     clearInterval(timerId);timerId=null;$('timer').textContent='🎉';$('doneEarly').classList.add('hidden');$('finishActivity').classList.add('hidden');
-     speak(`Muito bem, ${childName}! Você conseguiu!`,'pt-BR',()=>{$('finishActivity').classList.remove('hidden')});
-   }
- },1000)
-};
-$('doneEarly').onclick=()=>{
+function finishActiveBreak(){
+ if(activityFinishing)return;
+ activityFinishing=true;
  if(timerId){clearInterval(timerId);timerId=null}
  $('timer').textContent='🎉';$('doneEarly').classList.add('hidden');$('finishActivity').classList.add('hidden');
  speak(`Muito bem, ${childName}! Você conseguiu!`,'pt-BR',()=>{$('finishActivity').classList.remove('hidden')});
+}
+$('startActivity').onclick=()=>{
+ if(audioBusy||activityFinishing||timerId)return;
+ let t=20;
+ $('startActivity').classList.add('hidden');$('doneEarly').classList.remove('hidden');$('timer').textContent=t;
+ timerId=setInterval(()=>{
+   t--;
+   if(t>0)$('timer').textContent=t;
+   if(t===10){
+     speak(`Vamos, ${childName}! Você vai conseguir!`,'pt-BR');
+   }
+   if(t<=0)finishActiveBreak();
+ },1000)
+};
+$('doneEarly').onclick=()=>{
+ if(audioBusy||activityFinishing)return;
+ finishActiveBreak();
 };
 
 function goWithNext(action){
@@ -347,14 +912,19 @@ function showFinalPrize(){
  speak(`${childName}, você completou todos os desafios! Parabéns! Você ganhou o prêmio!`,'pt-BR');
 }
 $('finishActivity').onclick=()=>goWithNext(advance);
-$('next').onclick=()=>goWithNext(()=>{const completed=index+1;$('next').classList.add('hidden');runPostSuccessExtras(()=>{if(completed>=lessonOrder.length)showFinalPrize();else if(completed%3===0)showActivity();else advance()})});
+$('next').onclick=()=>goWithNext(()=>{
+ const completed=index+1;
+ $('next').classList.add('hidden');
+ if(completed>=lessonOrder.length){showFinalPrize();return}
+ if(completed%3===0){runPostSuccessExtras(showActivity);return}
+ advance();
+});
 
 $('closeBtn').onclick=async()=>{
  speechSynthesis.cancel();setAudioBusy(false);clearInterval(timerId);
- if(document.fullscreenElement){try{await document.exitFullscreen()}catch(e){}}
  try{window.close()}catch(e){}
  setTimeout(()=>{
-   $('lessonScreen').classList.add('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('bonusScreen').classList.add('hidden');$('introScreen').classList.remove('hidden');
+   $('lessonScreen').classList.add('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('bonusScreen').classList.add('hidden');$('worldScreen').classList.remove('hidden');$('introScreen').classList.add('hidden');
    $('stage').textContent='30 desafios';$('progress').style.width='0%';$('stars').textContent='⭐ 0';
    $('beginGame').disabled=false;$('childName').disabled=false;gameStarted=false;
  },150);
@@ -371,21 +941,17 @@ $('backBtn').onclick=()=>{
    index--;
    render();
  }else{
-   $('lessonScreen').classList.add('hidden');
-   $('activityScreen').classList.add('hidden');
-   $('successScreen').classList.add('hidden');
-   $('introScreen').classList.remove('hidden');
-   $('stage').textContent='30 desafios';
+   showOnlyScreen('worldScreen');
+   $('stage').textContent='Escolha uma aventura';
    $('progress').style.width='0%';
    $('feedback').textContent='';
    $('beginGame').disabled=false;$('childName').disabled=false;gameStarted=false;
    $('beginGame').textContent='▶ Começar o jogo';
  }
 };
-const fs=$('fullscreen');function fsLabel(){fs.textContent=document.fullscreenElement?'✕ Sair da tela cheia':'⛶ Tela cheia'}
-fs.onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){$('feedback').textContent='ℹ️ Tela cheia não permitida.'}fsLabel()};document.addEventListener('fullscreenchange',fsLabel);
+
 if('speechSynthesis'in window)speechSynthesis.getVoices();
-$('stage').textContent='30 desafios';
+$('stage').textContent='Escolha uma aventura';
 $('progress').style.width='0%';
 </script>
 </body></html>
