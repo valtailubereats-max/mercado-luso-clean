@@ -524,25 +524,54 @@ body.theme-alphabet #lessonScreen .emoji{background:linear-gradient(145deg,#b6e1
 @media(max-width:600px){.alphabet-visual{grid-template-columns:40% 60%;padding:4% 3% 3%}.alphabet-letter{font-size:clamp(135px,36vw,210px)}.alphabet-picture{font-size:clamp(115px,31vw,190px)}.alphabet-word{font-size:clamp(30px,7.8vw,45px)}}
 @media(prefers-reduced-motion:reduce){.alphabet-letter,.alphabet-picture,.alphabet-word{animation:none!important}}
 
+
+/* SEIS MUNDOS LIBERADOS */
+.world-btn{cursor:pointer}
+.number-visual{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.number-visual.hidden{display:none!important}
+#emoji.number-card{font-size:initial!important}
+.big-number{font-size:clamp(150px,40vw,260px);font-weight:1000;line-height:.85;color:#2457d6;text-shadow:0 7px 0 rgba(255,255,255,.85);animation:letterHello .7s cubic-bezier(.2,.9,.25,1.2)}
+.number-count{max-width:90%;font-size:clamp(24px,6vw,38px);line-height:1.3;letter-spacing:4px;color:#e75a39;text-align:center}
+
+
+/* CORREÇÃO VISUAL DOS MUNDOS */
+.standard-visual{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:clamp(170px,44vw,290px);line-height:1;filter:drop-shadow(0 10px 10px rgba(20,40,70,.12));animation:pictureHello .65s cubic-bezier(.2,.9,.25,1.15)}
+.standard-visual.hidden{display:none!important}
+#emoji.standard-card::before,#emoji.standard-card::after{font-size:34px}
+@media(max-width:700px){
+ .top-actions{gap:5px;flex-wrap:wrap;justify-content:flex-end}
+ .top-actions .fs-btn{padding:9px 11px;font-size:14px}
+ #fullscreen{order:4}
+ .standard-visual{font-size:clamp(155px,43vw,245px)}
+}
+
+
+.parent-btn{background:linear-gradient(145deg,#fff8dc,#f3e8ff)}
+.parent-screen{text-align:center;padding:18px;max-width:760px;margin:auto}.parent-icon{font-size:72px}.math-question{font-size:clamp(48px,12vw,84px);font-weight:1000;color:#173e72;margin:18px 0}.parent-input{box-sizing:border-box;width:100%;font-size:24px;border:3px solid #cdd8ea;border-radius:18px;padding:14px 16px;background:white;color:#14263d}.math-input{max-width:260px;text-align:center;font-size:34px;font-weight:900}.parent-error{min-height:32px;color:#c43b3b;font-weight:800;margin:8px}.parent-form{display:grid;gap:12px;text-align:left;background:#f7faff;border-radius:24px;padding:16px;margin:12px 0}.parent-form label{font-weight:900;color:#173e72}.emoji-input{text-align:center;font-size:34px}.admin-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}.admin-actions .btn{flex:1;min-width:180px}.parent-status{min-height:30px;font-weight:900;color:#197044}.saved-head{display:flex;justify-content:space-between;font-size:20px;margin:16px 4px 8px}.custom-list{display:grid;gap:8px;max-height:300px;overflow:auto}.custom-row{display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;text-align:left;background:white;border:2px solid #e0e7f1;border-radius:16px;padding:10px}.custom-row .ce{font-size:38px;text-align:center}.custom-row small{display:block;color:#68778a}.delete-word{border:0;background:#ffe5e5;border-radius:12px;font-size:20px;padding:10px}.empty-words{padding:22px;color:#68778a;background:#f7f9fc;border-radius:16px}.import-btn{display:flex;align-items:center;justify-content:center}
+
+#secretParentTrigger{cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 </style>
 </head>
 <body>
 <div class="wrap" id="gameRoot">
-<div class="top"><div><div class="muted">🇬🇧 Inglês para 3–4 anos</div><h1 id="stage">Fase 1 de 30</h1></div><div class="top-actions"><button id="closeBtn" class="fs-btn close-btn" type="button" aria-label="Fechar">✕ Fechar</button><button id="backBtn" class="fs-btn" type="button">← Voltar</button><div id="stars">⭐ 0</div></div></div>
+<div class="top"><div><div class="muted">🇬🇧 Inglês para 3–4 anos</div><h1 id="stage">Fase 1 de 30</h1></div><div class="top-actions"><button id="closeBtn" class="fs-btn close-btn" type="button" aria-label="Fechar">✕ Fechar</button><button id="backBtn" class="fs-btn" type="button">← Voltar</button><button id="fullscreen" class="fs-btn" type="button" aria-label="Tela cheia">⛶ Tela cheia</button><div id="stars">⭐ 0</div></div></div>
 <div class="bar"><div id="progress"></div></div>
 <div class="card">
 <div id="worldScreen" class="world-screen">
-<div class="world-hero">🇬🇧</div>
+<div class="world-hero" id="secretParentTrigger" role="button" aria-label="Bandeira britânica">🇬🇧</div>
 <h2>Vamos aprender!</h2>
 <p>Escolha uma aventura:</p>
 <div class="world-grid">
 <button class="world-btn" data-world="animals"><span>🐶</span><b>Animais</b><small>Animals</small></button>
 <button class="world-btn" data-world="numbers"><span>🔢</span><b>Números</b><small>1–10</small></button>
 <button class="world-btn" data-world="alphabet"><span>🔤</span><b>Alfabeto</b><small>A–Z</small></button>
-<button class="world-btn locked" disabled><span>🎨</span><b>Cores</b><small>Em breve</small></button>
-<button class="world-btn locked" disabled><span>🏠</span><b>Objetos</b><small>Em breve</small></button>
-<button class="world-btn locked" disabled><span>🍎</span><b>Comidas</b><small>Em breve</small></button>
+<button class="world-btn" data-world="colours"><span>🎨</span><b>Cores</b><small>Colours</small></button>
+<button class="world-btn" data-world="objects"><span>🏠</span><b>Objetos</b><small>Objects</small></button>
+<button class="world-btn" data-world="food"><span>🍎</span><b>Comidas</b><small>Food</small></button><button class="world-btn" data-world="custom"><span>📚</span><b>Minhas Palavras</b><small>My Words</small></button>
+
 </div></div>
+<div id="parentGateScreen" class="parent-screen hidden"><div class="parent-icon">🔐</div><h2>Área dos Pais</h2><p>Resolva para entrar:</p><div id="mathQuestion" class="math-question"></div><input id="mathAnswer" class="parent-input math-input" type="number" inputmode="numeric" placeholder="Resposta"><div id="mathError" class="parent-error"></div><button id="mathEnter" class="btn primary">Entrar</button><button id="mathCancel" class="btn">← Voltar</button></div>
+<div id="parentAdminScreen" class="parent-screen hidden"><div class="parent-icon">📚</div><h2>Palavras do Leonardo</h2><p>Adicione palavras que ele já conhece.</p><div class="parent-form"><label>Português<input id="customPt" class="parent-input" maxlength="40" placeholder="Ex.: carro"></label><label>Inglês<input id="customEn" class="parent-input" maxlength="40" placeholder="Ex.: car"></label><label>Emoji / desenho<input id="customEmoji" class="parent-input emoji-input" maxlength="8" placeholder="🚗"></label><div class="admin-actions"><button id="testCustom" class="btn audio">🔊 Testar inglês</button><button id="saveCustom" class="btn primary">💾 Salvar palavra</button></div></div><div id="customStatus" class="parent-status"></div><div class="saved-head"><b>Palavras salvas</b><span id="customCount">0</span></div><div id="customList" class="custom-list"></div><div class="admin-actions"><button id="exportCustom" class="btn">📤 Exportar</button><label class="btn import-btn">📥 Importar<input id="importCustom" type="file" accept=".json,application/json" hidden></label></div><button id="adminDone" class="btn primary">✓ Concluir</button></div>
 <div id="introScreen" class="intro hidden">
 <div class="intro-star">⭐</div>
 <h2>Pronto para os desafios?</h2>
@@ -560,7 +589,7 @@ body.theme-alphabet #lessonScreen .emoji{background:linear-gradient(145deg,#b6e1
   <span class="decor d5"></span><span class="decor d6"></span>
 </div>
 <div id="category" class="category"></div>
-<div id="emoji" class="emoji"><div id="alphabetVisual" class="alphabet-visual hidden"><div id="alphabetLetter" class="alphabet-letter"></div><div id="alphabetPicture" class="alphabet-picture"></div><div id="alphabetWord" class="alphabet-word"></div></div></div>
+<div id="emoji" class="emoji"><div id="standardVisual" class="standard-visual hidden"></div><div id="numberVisual" class="number-visual hidden"><div id="bigNumber" class="big-number"></div><div id="numberCount" class="number-count"></div></div><div id="alphabetVisual" class="alphabet-visual hidden"><div id="alphabetLetter" class="alphabet-letter"></div><div id="alphabetPicture" class="alphabet-picture"></div><div id="alphabetWord" class="alphabet-word"></div></div></div>
 <div id="learn">
 
 <div id="translation" class="translation lang-pt"></div><div id="word" class="word lang-en hidden"></div>
@@ -615,6 +644,27 @@ const numberWorld=[
 ['🔢 NUMBERS','7️⃣','SEVEN','sete',['6️⃣','7️⃣','8️⃣']],['🔢 NUMBERS','8️⃣','EIGHT','oito',['7️⃣','8️⃣','9️⃣']],
 ['🔢 NUMBERS','9️⃣','NINE','nove',['8️⃣','9️⃣','🔟']],['🔢 NUMBERS','🔟','TEN','dez',['8️⃣','9️⃣','🔟']]
 ];
+const colourWorld=[
+['🎨 COLOURS','🔴','RED','vermelho',['🔴','🔵','🟢']],['🎨 COLOURS','🔵','BLUE','azul',['🔵','🟡','🟣']],
+['🎨 COLOURS','🟢','GREEN','verde',['🟢','🔴','🟠']],['🎨 COLOURS','🟡','YELLOW','amarelo',['🟡','🔵','🟢']],
+['🎨 COLOURS','🟠','ORANGE','laranja',['🟠','🟣','🔴']],['🎨 COLOURS','🟣','PURPLE','roxo',['🟣','🟢','🟡']],
+['🎨 COLOURS','🩷','PINK','rosa',['🩷','🔵','🟠']],['🎨 COLOURS','🟤','BROWN','marrom',['🟤','🟢','🟣']],
+['🎨 COLOURS','⚫','BLACK','preto',['⚫','⚪','🔴']],['🎨 COLOURS','⚪','WHITE','branco',['⚪','⚫','🔵']]
+];
+const objectWorld=[
+['🏠 OBJECTS','🚪','DOOR','porta',['🚪','🪟','🛏️']],['🏠 OBJECTS','🪑','CHAIR','cadeira',['🪑','🛏️','🚪']],
+['🏠 OBJECTS','🛏️','BED','cama',['🛏️','🪑','🛋️']],['🏠 OBJECTS','🪟','WINDOW','janela',['🪟','🚪','🪑']],
+['🏠 OBJECTS','📕','BOOK','livro',['📕','✏️','🎒']],['🏠 OBJECTS','✏️','PENCIL','lápis',['✏️','📕','🖍️']],
+['🏠 OBJECTS','🥄','SPOON','colher',['🥄','🍴','🥤']],['🏠 OBJECTS','🥤','CUP','copo',['🥤','🥄','🍽️']],
+['🏠 OBJECTS','🧸','TOY','brinquedo',['🧸','⚽','🎁']],['🏠 OBJECTS','🪥','TOOTHBRUSH','escova de dentes',['🪥','🧼','🧴']]
+];
+const foodWorld=[
+['🍎 FOOD','🍎','APPLE','maçã',['🍎','🍌','🍓']],['🍎 FOOD','🍌','BANANA','banana',['🍌','🍎','🍊']],
+['🍎 FOOD','🍓','STRAWBERRY','morango',['🍓','🍇','🍐']],['🍎 FOOD','🍊','ORANGE','laranja',['🍊','🍎','🍌']],
+['🍎 FOOD','🍞','BREAD','pão',['🍞','🧀','🥚']],['🍎 FOOD','🥛','MILK','leite',['🥛','💧','🧃']],
+['🍎 FOOD','🥚','EGG','ovo',['🥚','🍞','🧀']],['🍎 FOOD','🧀','CHEESE','queijo',['🧀','🥚','🍞']],
+['🍎 FOOD','🥕','CARROT','cenoura',['🥕','🍅','🥦']],['🍎 FOOD','💧','WATER','água',['💧','🥛','🧃']]
+];
 const alphabetWorld=[
 ['🔤 ALPHABET','🍎','A, APPLE','A de apple',['🍎','⚽','🐱']],['🔤 ALPHABET','⚽','B, BALL','B de ball',['🍎','⚽','🐱']],
 ['🔤 ALPHABET','🐱','C, CAT','C de cat',['🐱','🐶','🥚']],['🔤 ALPHABET','🐶','D, DOG','D de dog',['🐱','🐶','🐟']],
@@ -644,11 +694,29 @@ const activities=[
 ['😊','Sorriso gigante!','Faça um sorriso enorme e mexa o corpo!']
 ];
 let index=0,score=0,ptDone=false,enDone=false,timerId=null,activityNo=0,gameStarted=false,englishStepReady=false,childName='Leonardo',audioBusy=false,speechToken=0,activityFinishing=false,lessonOrder=[],activityOrder=[];
+const SAVED_NAME_KEY='inglesInfantilChildName';
+function savedChildName(){try{return (localStorage.getItem(SAVED_NAME_KEY)||'').trim()}catch(e){return ''}}
+function saveChildName(name){try{localStorage.setItem(SAVED_NAME_KEY,name)}catch(e){}}
+
+const CUSTOM_WORDS_KEY='inglesInfantilCustomWordsV1';
+function loadCustomWords(){try{const a=JSON.parse(localStorage.getItem(CUSTOM_WORDS_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function saveCustomWords(a){try{localStorage.setItem(CUSTOM_WORDS_KEY,JSON.stringify(a))}catch(e){}}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function makeCustomWorld(){const a=loadCustomWords();return a.map((w,i)=>{const pool=a.filter((_,j)=>j!==i).map(v=>v.emoji).concat(['⭐','❤️','🌈','⚽','🎁']);const choices=[w.emoji,...pool].filter((v,j,z)=>v&&z.indexOf(v)===j).slice(0,3);return ['📚 MY WORDS',w.emoji,w.en.toUpperCase(),w.pt,choices]})}
+function renderCustomList(){const a=loadCustomWords();$('customCount').textContent=a.length;$('customList').innerHTML=a.length?'':'<div class="empty-words">Nenhuma palavra cadastrada ainda.</div>';a.forEach((w,i)=>{const row=document.createElement('div');row.className='custom-row';row.innerHTML=`<div class="ce">${escapeHtml(w.emoji)}</div><div><b>${escapeHtml(w.pt)} → ${escapeHtml(w.en)}</b><small>${escapeHtml(w.en)}</small></div><button class="delete-word" type="button">🗑️</button>`;row.querySelector('.delete-word').onclick=()=>{const b=loadCustomWords();b.splice(i,1);saveCustomWords(b);renderCustomList()};$('customList').appendChild(row)})}
+let parentMathAnswer=0;
+function openParentGate(){const n=2+Math.floor(Math.random()*8);parentMathAnswer=7*n;$('mathQuestion').textContent=`7 × ${n} = ?`;$('mathAnswer').value='';$('mathError').textContent='';showOnlyScreen('parentGateScreen');$('stage').textContent='Área dos Pais';setTimeout(()=>$('mathAnswer').focus(),100)}
+
+
 const $=id=>document.getElementById(id);
 function shuffled(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r}
 function resetOrders(){
  if(currentWorld==='numbers') lessonOrder=[...numberWorld];
  else if(currentWorld==='alphabet') lessonOrder=[...alphabetWorld];
+ else if(currentWorld==='colours') lessonOrder=shuffled(colourWorld);
+ else if(currentWorld==='objects') lessonOrder=shuffled(objectWorld);
+ else if(currentWorld==='food') lessonOrder=shuffled(foodWorld);
+ else if(currentWorld==='custom') lessonOrder=shuffled(makeCustomWorld());
  else lessonOrder=shuffled(lessons.slice(0,5));
  activityOrder=shuffled(activities);
  activityNo=0;
@@ -672,7 +740,8 @@ function openingPrompt(category){
  if(category.includes('COLOURS')) return 'Em português, que cor é esta?';
  if(category.includes('NUMBERS')) return 'Em português, que número é este?';
  if(category.includes('FOOD')) return 'Em português, que alimento é este?';
- if(category.includes('HOME')) return 'Em português, que objeto é este?';
+ if(category.includes('HOME')||category.includes('OBJECTS')) return 'Em português, que objeto é este?';
+ if(category.includes('MY WORDS')) return 'Em português, o que é isto?';
  if(category.includes('BODY')) return 'Em português, que parte do corpo é esta?';
  return 'Em português, o que é isto?';
 }
@@ -683,7 +752,8 @@ function englishPrompt(category){
  if(category.includes('COLOURS')) return 'Em inglês, que cor é esta?';
  if(category.includes('NUMBERS')) return 'Em inglês, que número é este?';
  if(category.includes('FOOD')) return 'Em inglês, que alimento é este?';
- if(category.includes('HOME')) return 'Em inglês, que objeto é este?';
+ if(category.includes('HOME')||category.includes('OBJECTS')) return 'Em inglês, que objeto é este?';
+ if(category.includes('MY WORDS')) return 'Em inglês, como se diz?';
  if(category.includes('BODY')) return 'Em inglês, que parte do corpo é esta?';
  return 'Em inglês, o que é isto?';
 }
@@ -717,7 +787,7 @@ function repeatWordBonus(after){
  }));
 }
 function themedMovement(after){const x=lessonOrder[index];let icon=x[1],title='Mexa o corpo!',txt='Faça um movimento divertido!';if(x[2]==='DOG'){title='Imite um cachorrinho!';txt='Ande como um cachorrinho e faça au-au!'}else if(x[2]==='BIRD'){title='Voe como um passarinho!';txt='Abra os braços como um passarinho!'}else if(x[2]==='FISH'){title='Nade como um peixe!';txt='Mexa os braços como se estivesse nadando!'}else if(x[2]==='COW'){title='Imite uma vaquinha!';txt='Faça muu e caminhe devagar!'}else if(x[0].includes('BODY')){title='Mostre no seu corpo!';txt=`Mostre onde está ${x[3]}!`}else if(x[0].includes('NUMBERS')){icon='👏';title='Conte com palmas!';txt=`Bata palmas ${x[3]} vezes!`}showBonus(title,txt,`<div><div class="activity-icon">${icon}</div><button id="moveDone" class="btn emergency" style="width:min(80vw,650px);min-height:125px;font-size:34px" disabled>✓ Consegui!</button></div>`);speak(title+' '+txt,'pt-BR',()=>{$('moveDone').disabled=false;$('moveDone').onclick=()=>{if(audioBusy)return;$('moveDone').disabled=true;revealBonusNext(after,`Muito bem, ${childName}!`,'pt-BR')}})}
-function sectionPath(after){showBonus('Seu caminho!','Veja quanto você já avançou!','<div id="pathRow" class="path-row"></div>');const row=$('pathRow');for(let i=0;i<30;i++){const d=document.createElement('span');d.className='path-dot '+(i<index?'done':i===index?'now':'');d.textContent=i===29?'🏆':(i%5===4?'🎁':'⭐');row.appendChild(d)}revealBonusNext(after,'Continue assim!','pt-BR')}
+function sectionPath(after){showBonus('Seu caminho!','Veja quanto você já avançou!','<div id="pathRow" class="path-row"></div>');const row=$('pathRow');for(let i=0;i<lessonOrder.length;i++){const d=document.createElement('span');d.className='path-dot '+(i<index?'done':i===index?'now':'');d.textContent=i===lessonOrder.length-1?'🏆':(i%5===4?'🎁':'⭐');row.appendChild(d)}revealBonusNext(after,'Continue assim!','pt-BR')}
 function runPostSuccessExtras(after){
  const completed=index+1;
  if(completed%3!==0||completed>=lessonOrder.length){after();return}
@@ -732,13 +802,16 @@ function render(){
  $('stage').textContent=`Fase ${index+1} de ${lessonOrder.length}`;$('stars').textContent=`⭐ ${score}`;$('progress').style.width=`${(index+1)/lessonOrder.length*100}%`;
  $('category').textContent=x[0];
  document.body.classList.remove('theme-animals','theme-alphabet','theme-colours','theme-numbers','theme-food','theme-home','theme-body');
- const theme=x[0].includes('ANIMALS')?'animals':x[0].includes('ALPHABET')?'alphabet':x[0].includes('COLOURS')?'colours':x[0].includes('NUMBERS')?'numbers':x[0].includes('FOOD')?'food':x[0].includes('HOME')?'home':'body';
+ const theme=x[0].includes('ANIMALS')?'animals':x[0].includes('ALPHABET')?'alphabet':x[0].includes('COLOURS')?'colours':x[0].includes('NUMBERS')?'numbers':x[0].includes('FOOD')?'food':(x[0].includes('HOME')||x[0].includes('OBJECTS'))?'home':x[0].includes('MY WORDS')?'custom':'body';
  document.body.classList.add('theme-'+theme);
+ $('standardVisual').classList.add('hidden');$('numberVisual').classList.add('hidden');$('alphabetVisual').classList.add('hidden');$('emoji').classList.remove('alphabet-card','number-card','standard-card');$('emoji').removeAttribute('data-emoji');
  if(theme==='alphabet'){
    const parts=x[2].split(',').map(s=>s.trim());
-   $('alphabetVisual').classList.remove('hidden');$('alphabetLetter').textContent=parts[0]||'';$('alphabetPicture').textContent=x[1];$('alphabetWord').textContent=parts.slice(1).join(' ')||'';$('emoji').classList.add('alphabet-card');$('emoji').removeAttribute('data-emoji');
+   $('alphabetVisual').classList.remove('hidden');$('alphabetLetter').textContent=parts[0]||'';$('alphabetPicture').textContent=x[1];$('alphabetWord').textContent=parts.slice(1).join(' ')||'';$('emoji').classList.add('alphabet-card');
+ }else if(theme==='numbers'){
+   const n=numberWorld.findIndex(v=>v[2]===x[2])+1;$('numberVisual').classList.remove('hidden');$('bigNumber').textContent=n;$('numberCount').textContent='● '.repeat(n).trim();$('emoji').classList.add('number-card');
  }else{
-   $('alphabetVisual').classList.add('hidden');$('emoji').classList.remove('alphabet-card');$('emoji').setAttribute('data-emoji',x[1]);
+   $('standardVisual').textContent=x[1];$('standardVisual').classList.remove('hidden');$('emoji').classList.add('standard-card');
  }
  $('word').textContent=x[2];$('translation').textContent=x[3];$('feedback').textContent='';$('next').classList.add('hidden');
  $('translation').classList.remove('hidden');$('word').classList.add('hidden');$('hearPt').classList.remove('hidden');$('hearPt').disabled=true;$('hearWord').classList.add('hidden');$('startQuiz').classList.add('hidden');
@@ -747,16 +820,22 @@ function render(){
 document.querySelectorAll('.world-btn[data-world]').forEach(btn=>{
  btn.onclick=()=>{
    currentWorld=btn.dataset.world;
-   const names={animals:'Animais',numbers:'Números 1–10',alphabet:'Alfabeto A–Z'};
-   showOnlyScreen('introScreen');
-   $('stage').textContent=names[currentWorld];
-   $('progress').style.width='0%';
+   if(currentWorld==='custom'&&loadCustomWords().length<3){$('feedback').textContent='📚 Adicione pelo menos 3 palavras na Área dos Pais para começar.';setTimeout(()=>{$('feedback').textContent=''},3500);return}
+   const names={animals:'Animais',numbers:'Números 1–10',alphabet:'Alfabeto A–Z',colours:'Cores',objects:'Objetos',food:'Comidas',custom:'Minhas Palavras'};
+   const remembered=savedChildName();
+   if(!remembered){
+     showOnlyScreen('introScreen');$('stage').textContent=names[currentWorld];$('progress').style.width='0%';return;
+   }
+   childName=remembered;$('childName').value=remembered;
+   gameStarted=false;resetOrders();index=0;score=0;ptDone=false;enDone=false;englishStepReady=false;
+   render();
  };
 });
 $('beginGame').onclick=()=>{
  if(gameStarted)return;
  const typedName=$('childName').value.trim();
  childName=typedName || 'Leonardo';
+ saveChildName(childName);
  resetOrders();index=0;score=0;
  gameStarted=true;
  const msg=`${childName}, se você conseguir passar pelos desafios, você poderá ganhar um prêmio!`;
@@ -831,7 +910,7 @@ $('hearQuestion').onclick=()=>speak(`Where is the ${lessonOrder[index][2]}?`,'en
 function showOnlyScreen(id){
  speechSynthesis.cancel();
  setAudioBusy(false);
- ['worldScreen','introScreen','lessonScreen','bonusScreen','activityScreen','successScreen','finalPrizeScreen'].forEach(screenId=>{
+ ['worldScreen','introScreen','lessonScreen','bonusScreen','activityScreen','successScreen','finalPrizeScreen','parentGateScreen','parentAdminScreen'].forEach(screenId=>{
    const el=$(screenId);
    if(el)el.classList.toggle('hidden',screenId!==id);
  });
@@ -920,19 +999,39 @@ $('next').onclick=()=>goWithNext(()=>{
  advance();
 });
 
-$('closeBtn').onclick=async()=>{
- speechSynthesis.cancel();setAudioBusy(false);clearInterval(timerId);
- try{window.close()}catch(e){}
- setTimeout(()=>{
-   $('lessonScreen').classList.add('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('bonusScreen').classList.add('hidden');$('worldScreen').classList.remove('hidden');$('introScreen').classList.add('hidden');
-   $('stage').textContent='30 desafios';$('progress').style.width='0%';$('stars').textContent='⭐ 0';
-   $('beginGame').disabled=false;$('childName').disabled=false;gameStarted=false;
- },150);
+let secretParentTaps=0,secretParentTimer=null;
+$('secretParentTrigger').onclick=()=>{
+ secretParentTaps++;
+ clearTimeout(secretParentTimer);
+ if(secretParentTaps>=5){
+   secretParentTaps=0;
+   openParentGate();
+   return;
+ }
+ secretParentTimer=setTimeout(()=>{secretParentTaps=0},2500);
+};
+$('mathEnter').onclick=()=>{if(Number($('mathAnswer').value)!==parentMathAnswer){$('mathError').textContent='Resposta incorreta. Tente novamente.';$('mathAnswer').select();return}$('mathError').textContent='';showOnlyScreen('parentAdminScreen');$('stage').textContent='Área dos Pais';renderCustomList()};
+$('mathAnswer').addEventListener('keydown',e=>{if(e.key==='Enter')$('mathEnter').click()});
+$('mathCancel').onclick=()=>{showOnlyScreen('worldScreen');$('stage').textContent='Escolha uma aventura'};
+$('testCustom').onclick=()=>{const en=$('customEn').value.trim();if(en)speak(en,'en-GB')};
+$('saveCustom').onclick=()=>{const pt=$('customPt').value.trim(),en=$('customEn').value.trim(),emoji=$('customEmoji').value.trim();if(!pt||!en||!emoji){$('customStatus').textContent='Preencha português, inglês e emoji.';return}const a=loadCustomWords();a.push({pt,en,emoji});saveCustomWords(a);$('customPt').value='';$('customEn').value='';$('customEmoji').value='';$('customStatus').textContent='✓ Palavra salva!';renderCustomList();setTimeout(()=>{$('customStatus').textContent=''},1800)};
+$('adminDone').onclick=()=>{showOnlyScreen('worldScreen');$('stage').textContent='Escolha uma aventura';$('progress').style.width='0%'};
+$('exportCustom').onclick=()=>{const blob=new Blob([JSON.stringify(loadCustomWords(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='palavras-leonardo.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('importCustom').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;try{const a=JSON.parse(await f.text());if(!Array.isArray(a)||!a.every(w=>w&&w.pt&&w.en&&w.emoji))throw 0;saveCustomWords(a.map(w=>({pt:String(w.pt),en:String(w.en),emoji:String(w.emoji)})));renderCustomList();$('customStatus').textContent='✓ Palavras importadas!'}catch(err){$('customStatus').textContent='Arquivo inválido.'}e.target.value=''};
+
+$('closeBtn').onclick=()=>{
+ speechSynthesis.cancel();setAudioBusy(false);clearInterval(timerId);activityFinishing=false;
+ showOnlyScreen('worldScreen');
+ document.body.classList.remove('theme-animals','theme-alphabet','theme-colours','theme-numbers','theme-food','theme-home','theme-body');
+ $('stage').textContent='Escolha uma aventura';$('progress').style.width='0%';$('stars').textContent='⭐ 0';$('feedback').textContent='';
+ $('beginGame').disabled=false;$('childName').disabled=false;$('beginGame').textContent='▶ Começar o jogo';
+ gameStarted=false;index=0;score=0;
 };
 
 $('backBtn').onclick=()=>{
  speechSynthesis.cancel();setAudioBusy(false);
  clearInterval(timerId);
+ if(!$('parentGateScreen').classList.contains('hidden')||!$('parentAdminScreen').classList.contains('hidden')){showOnlyScreen('worldScreen');$('stage').textContent='Escolha uma aventura';$('progress').style.width='0%';return}
  if(!$('finalPrizeScreen').classList.contains('hidden')){render();return;}
  if(!$('introScreen').classList.contains('hidden')){
    return;
@@ -950,8 +1049,26 @@ $('backBtn').onclick=()=>{
  }
 };
 
+$('fullscreen').onclick=async()=>{
+ try{
+   if(document.fullscreenElement||document.webkitFullscreenElement){
+     if(document.exitFullscreen) await document.exitFullscreen();
+     else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+   }else{
+     const el=document.documentElement;
+     if(el.requestFullscreen) await el.requestFullscreen();
+     else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+   }
+ }catch(e){}
+};
+document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'⛶ Sair':'⛶ Tela cheia'});
 if('speechSynthesis'in window)speechSynthesis.getVoices();
-$('stage').textContent='Escolha uma aventura';
-$('progress').style.width='0%';
+const rememberedAtStart=savedChildName();
+if(rememberedAtStart){
+ childName=rememberedAtStart;$('childName').value=rememberedAtStart;
+ showOnlyScreen('worldScreen');$('stage').textContent='Escolha uma aventura';$('progress').style.width='0%';
+}else{
+ showOnlyScreen('introScreen');$('stage').textContent='Bem-vindo!';$('progress').style.width='0%';
+}
 </script>
 </body></html>
