@@ -550,6 +550,19 @@ body.theme-alphabet #lessonScreen .emoji{background:linear-gradient(145deg,#b6e1
 .parent-screen{text-align:center;padding:18px;max-width:760px;margin:auto}.parent-icon{font-size:72px}.math-question{font-size:clamp(48px,12vw,84px);font-weight:1000;color:#173e72;margin:18px 0}.parent-input{box-sizing:border-box;width:100%;font-size:24px;border:3px solid #cdd8ea;border-radius:18px;padding:14px 16px;background:white;color:#14263d}.math-input{max-width:260px;text-align:center;font-size:34px;font-weight:900}.parent-error{min-height:32px;color:#c43b3b;font-weight:800;margin:8px}.parent-form{display:grid;gap:12px;text-align:left;background:#f7faff;border-radius:24px;padding:16px;margin:12px 0}.parent-form label{font-weight:900;color:#173e72}.emoji-input{text-align:center;font-size:34px}.admin-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}.admin-actions .btn{flex:1;min-width:180px}.parent-status{min-height:30px;font-weight:900;color:#197044}.saved-head{display:flex;justify-content:space-between;font-size:20px;margin:16px 4px 8px}.custom-list{display:grid;gap:8px;max-height:300px;overflow:auto}.custom-row{display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;text-align:left;background:white;border:2px solid #e0e7f1;border-radius:16px;padding:10px}.custom-row .ce{font-size:38px;text-align:center}.custom-row small{display:block;color:#68778a}.delete-word{border:0;background:#ffe5e5;border-radius:12px;font-size:20px;padding:10px}.empty-words{padding:22px;color:#68778a;background:#f7f9fc;border-radius:16px}.import-btn{display:flex;align-items:center;justify-content:center}
 
 #secretParentTrigger{cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+
+/* CORREÇÃO 13/10 — fase isolada e ajuste real à viewport/fullscreen */
+.wrap{width:100%;max-width:1000px;min-height:0}
+.card{min-height:0}
+#lessonScreen:not(.hidden){min-height:0;flex:1}
+@media(max-width:700px){
+  .wrap{height:calc(100dvh - 10px)}
+  .card{flex:1;min-height:0}
+  #lessonScreen:not(.hidden){height:100%;max-height:100%;overflow:hidden}
+}
+:fullscreen .wrap{height:calc(100dvh - 16px)!important;min-height:0}
+:fullscreen .card{flex:1;min-height:0;overflow:hidden}
+:fullscreen #lessonScreen:not(.hidden){height:100%;max-height:100%;overflow:hidden}
 </style>
 </head>
 <body>
@@ -797,6 +810,7 @@ function runPostSuccessExtras(after){
 }
 
 function render(){
+ showOnlyScreen('lessonScreen');
  clearInterval(timerId);ptDone=false;enDone=false;englishStepReady=false;const x=lessonOrder[index];
  $('bonusScreen').classList.add('hidden');$('introScreen').classList.add('hidden');$('lessonScreen').classList.remove('hidden');$('activityScreen').classList.add('hidden');$('successScreen').classList.add('hidden');$('finalPrizeScreen').classList.add('hidden');$('learn').classList.remove('hidden');$('quiz').classList.add('hidden');$('emoji').classList.remove('hidden');
  $('stage').textContent=`Fase ${index+1} de ${lessonOrder.length}`;$('stars').textContent=`⭐ ${score}`;$('progress').style.width=`${(index+1)/lessonOrder.length*100}%`;
